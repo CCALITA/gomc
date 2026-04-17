@@ -1,0 +1,205 @@
+package player
+
+import (
+	"github.com/fanxiyao/gomc/internal/block"
+	"github.com/fanxiyao/gomc/internal/input"
+	"github.com/fanxiyao/gomc/internal/inventory"
+	"github.com/fanxiyao/gomc/internal/item"
+	"github.com/fanxiyao/gomc/internal/mcmath"
+	"github.com/fanxiyao/gomc/internal/physics"
+	"github.com/fanxiyao/gomc/internal/world"
+)
+
+const (
+	// baseBreakTime is the base time multiplier for breaking blocks.
+	// Actual break time = block.Hardness * baseBreakTime seconds.
+	baseBreakTime float32 = 1.5
+)
+
+// interactionState holds mutable state for block breaking.
+type interactionState struct {
+	breakingBlockID block.BlockID
+}
+
+// UpdateInteraction handles block breaking and placement each frame.
+func (c *Controller) UpdateInteraction(inp *input.Manager, w *world.World, dt float32) {
+	c.updateBreaking(inp, w, dt)
+	c.updatePlacement(inp, w)
+}
+
+// updateBreaking handles the progressive block-breaking mechanic when the
+// attack button is held. Break progress accumulates based on block hardness;
+// once it reaches 1.0, the block is removed and progress resets.
+func (c *Controller) updateBreaking(inp *input.Manager, w *world.World, dt float32) {
+	attackBtn := c.KeyMap.GetKey(input.Attack)
+
+	if !inp.IsMouseDown(attackBtn) {
+		c.resetBreaking()
+		return
+	}
+
+	hit, pos, _ := c.GetTargetBlock(w)
+	if !hit {
+		c.resetBreaking()
+		return
+	}
+
+	// If the targeted block changed, reset progress.
+	if c.BreakingBlock == nil || *c.BreakingBlock != pos {
+		c.BreakingBlock = &pos
+		c.BreakProgress = 0
+		blockID := w.GetBlock(pos)
+		c.interaction.breakingBlockID = blockID
+	}
+
+	props := block.GetProperties(c.interaction.breakingBlockID)
+
+	// Unbreakable blocks (hardness < 0, e.g. bedrock).
+	if props.Hardness < 0 {
+		return
+	}
+
+	// Instant-break blocks (hardness == 0).
+	if props.Hardness == 0 {
+		w.SetBlock(pos, block.Air)
+		c.resetBreaking()
+		return
+	}
+
+	breakTime := props.Hardness * baseBreakTime
+	c.BreakProgress += dt / breakTime
+
+	if c.BreakProgress >= 1.0 {
+		w.SetBlock(pos, block.Air)
+		c.resetBreaking()
+	}
+}
+
+// updatePlacement handles block placement when the Use button is just pressed.
+func (c *Controller) updatePlacement(inp *input.Manager, w *world.World) {
+	useBtn := c.KeyMap.GetKey(input.Use)
+
+	if !inp.IsMouseJustPressed(useBtn) {
+		return
+	}
+
+	hit, pos, face := c.GetTargetBlock(w)
+	if !hit {
+		return
+	}
+
+	// Calculate the adjacent block position using the face normal.
+	normal := face.Normal()
+	placePos := mcmath.BlockPos{
+		X: pos.X + int32(normal.X),
+		Y: pos.Y + int32(normal.Y),
+		Z: pos.Z + int32(normal.Z),
+	}
+
+	// Do not place if the position already contains a solid block.
+	if block.IsSolid(w.GetBlock(placePos)) {
+		return
+	}
+
+	// Do not place inside the player's bounding box.
+	placeAABB := mcmath.BlockAABB(placePos)
+	playerAABB := c.PlayerAABB()
+	if placeAABB.Intersects(playerAABB) {
+		return
+	}
+
+	// Check that the selected hotbar item is a placeable block.
+	selectedItem := c.getSelectedHotbarItem()
+	if selectedItem.IsEmpty() {
+		return
+	}
+	itemProps := item.GetProperties(selectedItem.ItemID)
+	if !itemProps.IsBlock {
+		return
+	}
+
+	w.SetBlock(placePos, itemProps.BlockID)
+}
+
+// getSelectedHotbarItem returns the item stack in the currently selected
+// hotbar slot. Returns an empty stack if no inventory is available.
+func (c *Controller) getSelectedHotbarItem() item.ItemStack {
+	return item.ItemStack{}
+}
+
+// GetSelectedItemFromInventory returns the item in the selected hotbar
+// slot from the given inventory.
+func (c *Controller) GetSelectedItemFromInventory(inv *inventory.Inventory) item.ItemStack {
+	return inv.GetSlot(c.SelectedSlot)
+}
+
+// PlaceBlockFromInventory attempts to place a block and decrements the
+// item from the inventory. Returns true if a block was placed.
+func (c *Controller) PlaceBlockFromInventory(inp *input.Manager, w *world.World, inv *inventory.Inventory) bool {
+	useBtn := c.KeyMap.GetKey(input.Use)
+
+	if !inp.IsMouseJustPressed(useBtn) {
+		return false
+	}
+
+	hit, pos, face := c.GetTargetBlock(w)
+	if !hit {
+		return false
+	}
+
+	normal := face.Normal()
+	placePos := mcmath.BlockPos{
+		X: pos.X + int32(normal.X),
+		Y: pos.Y + int32(normal.Y),
+		Z: pos.Z + int32(normal.Z),
+	}
+
+	if block.IsSolid(w.GetBlock(placePos)) {
+		return false
+	}
+
+	placeAABB := mcmath.BlockAABB(placePos)
+	playerAABB := c.PlayerAABB()
+	if placeAABB.Intersects(playerAABB) {
+		return false
+	}
+
+	selectedItem := inv.GetSlot(c.SelectedSlot)
+	if selectedItem.IsEmpty() {
+		return false
+	}
+	itemProps := item.GetProperties(selectedItem.ItemID)
+	if !itemProps.IsBlock {
+		return false
+	}
+
+	w.SetBlock(placePos, itemProps.BlockID)
+	inv.RemoveItem(c.SelectedSlot, 1)
+	return true
+}
+
+// GetTargetBlock performs a raycast from the camera along the forward
+// direction up to Reach distance and returns the first solid block hit.
+func (c *Controller) GetTargetBlock(w *world.World) (hit bool, pos mcmath.BlockPos, face mcmath.Direction) {
+	origin := c.Camera.Position
+	direction := c.Camera.Forward()
+
+	isSolid := func(bp mcmath.BlockPos) bool {
+		return block.IsSolid(w.GetBlock(bp))
+	}
+
+	hit, pos, face, _ = physics.RaycastBlocks(origin, direction, c.Reach, isSolid)
+	return hit, pos, face
+}
+
+// GetBreakProgress returns the current block breaking progress (0.0 to 1.0).
+func (c *Controller) GetBreakProgress() float32 {
+	return c.BreakProgress
+}
+
+// resetBreaking clears all breaking state.
+func (c *Controller) resetBreaking() {
+	c.BreakProgress = 0
+	c.BreakingBlock = nil
+	c.interaction.breakingBlockID = block.Air
+}
