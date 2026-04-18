@@ -132,6 +132,11 @@ var properties = map[BlockID]BlockProperties{
 		Hardness: 100, BlastResistance: 100,
 		LightEmission: 15, LightFilter: 0,
 	},
+	Fire: {
+		Name: "fire", Solid: false, Transparent: true,
+		Hardness: 0, BlastResistance: 0,
+		LightEmission: 15, LightFilter: 0,
+	},
 }
 
 // GetProperties returns the BlockProperties for the given block ID.

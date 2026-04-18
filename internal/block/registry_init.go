@@ -53,4 +53,5 @@ var blockOrder = []BlockID{
 	Sandstone,
 	FlowingWater,
 	FlowingLava,
+	Fire,
 }

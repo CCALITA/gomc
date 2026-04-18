@@ -17,6 +17,10 @@ type World struct {
 	chunks    map[[2]int32]*chunk.Chunk
 	generator *TerrainGenerator
 	ticker    *tick.Ticker
+
+	// OnBlockChange is called after a block is set, with the chunk position
+	// of the modified block. It can be used to trigger mesh rebuilds.
+	OnBlockChange func(pos mcmath.ChunkPos)
 }
 
 // NewWorld creates a new World with the given seed for terrain generation.
@@ -99,6 +103,9 @@ func (w *World) SetBlock(pos mcmath.BlockPos, id uint16) {
 	}
 	local := pos.LocalPos()
 	c.SetBlock(int(local.X), int(local.Y), int(local.Z), id)
+	if w.OnBlockChange != nil {
+		w.OnBlockChange(cp)
+	}
 }
 
 // GetBlockAABBs returns the AABBs of all solid blocks that intersect the given region.

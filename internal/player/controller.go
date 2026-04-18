@@ -8,6 +8,7 @@ import (
 	"github.com/fanxiyao/gomc/internal/ecs"
 	"github.com/fanxiyao/gomc/internal/entity"
 	"github.com/fanxiyao/gomc/internal/input"
+	"github.com/fanxiyao/gomc/internal/inventory"
 	"github.com/fanxiyao/gomc/internal/mcmath"
 	"github.com/fanxiyao/gomc/internal/physics"
 	"github.com/fanxiyao/gomc/internal/render"
@@ -63,6 +64,7 @@ type Controller struct {
 	Sensitivity   float32
 	BreakProgress float32
 	BreakingBlock *mcmath.BlockPos
+	Inventory     *inventory.Inventory
 	SelectedSlot  int
 	Flying        bool
 

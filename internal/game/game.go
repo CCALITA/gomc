@@ -10,6 +10,7 @@ import (
 
 	"github.com/fanxiyao/gomc/internal/audio"
 	"github.com/fanxiyao/gomc/internal/block"
+	"github.com/fanxiyao/gomc/internal/chunk"
 	"github.com/fanxiyao/gomc/internal/config"
 	"github.com/fanxiyao/gomc/internal/ecs"
 	"github.com/fanxiyao/gomc/internal/entity"
@@ -125,6 +126,7 @@ func (g *Game) setupSystems() {
 	g.Scheduler.Add(&entity.LifetimeSystem{})
 	g.Scheduler.Add(&entity.DamageSystem{})
 	g.Scheduler.Add(&entity.HealthSystem{})
+	g.Scheduler.Add(&entity.HungerSystem{})
 }
 
 func (g *Game) setupUI() {
@@ -301,6 +303,28 @@ func (g *Game) StartSingleplayer() {
 		g.startNewWorld(storage)
 	}
 
+	// Wire up block-change callback to trigger chunk re-meshing.
+	if g.World != nil && g.Renderer != nil && g.Renderer.ChunkRenderer != nil {
+		cr := g.Renderer.ChunkRenderer
+		w := g.World
+		g.World.OnBlockChange = func(cp mcmath.ChunkPos) {
+			c := w.GetChunk(cp)
+			if c == nil {
+				return
+			}
+			neighbors := [4]*chunk.Chunk{
+				w.GetChunk(mcmath.ChunkPos{X: cp.X, Z: cp.Z - 1}),
+				w.GetChunk(mcmath.ChunkPos{X: cp.X, Z: cp.Z + 1}),
+				w.GetChunk(mcmath.ChunkPos{X: cp.X + 1, Z: cp.Z}),
+				w.GetChunk(mcmath.ChunkPos{X: cp.X - 1, Z: cp.Z}),
+			}
+			mesh := chunk.MeshChunk(c, neighbors, block.IsSolid, block.IsTransparent)
+			if err := cr.UploadMesh(cp, mesh.Vertices, mesh.Indices); err != nil {
+				log.Printf("failed to re-mesh chunk %v: %v", cp, err)
+			}
+		}
+	}
+
 	g.State.SetState(StatePlaying)
 }
 
@@ -347,6 +371,7 @@ func (g *Game) loadExistingSave(storage *world.Storage) {
 	playerEntity := entity.SpawnPlayer(g.ECSWorld, "Player", spawnPos)
 	g.Player = player.NewController(playerEntity, g.ECSWorld, cam, g.KeyMap)
 	g.Player.Mode = g.Mode
+	g.Player.Inventory = g.Inventory
 
 	// Restore player orientation.
 	if playerErr == nil {
@@ -379,6 +404,7 @@ func (g *Game) startNewWorld(storage *world.Storage) {
 	playerEntity := entity.SpawnPlayer(g.ECSWorld, "Player", spawnPos)
 	g.Player = player.NewController(playerEntity, g.ECSWorld, cam, g.KeyMap)
 	g.Player.Mode = g.Mode
+	g.Player.Inventory = g.Inventory
 
 	// Save initial level data.
 	levelData := world.LevelData{
