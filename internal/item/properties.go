@@ -136,6 +136,42 @@ func init() {
 	registerFood(Cookie, "Cookie", 2, 0.4)
 	registerFood(Carrot, "Carrot", 3, 3.6)
 	registerFood(BakedPotato, "Baked Potato", 5, 6.0)
+
+	// ---- armor items ----
+	registerArmor := func(id ItemID, name string, slot, defense, durability int) {
+		properties[id] = ItemProperties{
+			Name:         name,
+			MaxStackSize: 1,
+			Durability:   durability,
+			ToolType:     ToolNone,
+			ArmorSlot:    slot,
+			ArmorDefense: defense,
+		}
+	}
+
+	// Leather armor
+	registerArmor(LeatherHelmet, "Leather Helmet", 0, 1, 55)
+	registerArmor(LeatherChestplate, "Leather Chestplate", 1, 3, 80)
+	registerArmor(LeatherLeggings, "Leather Leggings", 2, 2, 75)
+	registerArmor(LeatherBoots, "Leather Boots", 3, 1, 65)
+
+	// Iron armor
+	registerArmor(IronHelmet, "Iron Helmet", 0, 2, 165)
+	registerArmor(IronChestplate, "Iron Chestplate", 1, 6, 240)
+	registerArmor(IronLeggings, "Iron Leggings", 2, 5, 225)
+	registerArmor(IronBoots, "Iron Boots", 3, 2, 195)
+
+	// Gold armor
+	registerArmor(GoldHelmet, "Gold Helmet", 0, 2, 77)
+	registerArmor(GoldChestplate, "Gold Chestplate", 1, 5, 112)
+	registerArmor(GoldLeggings, "Gold Leggings", 2, 3, 105)
+	registerArmor(GoldBoots, "Gold Boots", 3, 1, 91)
+
+	// Diamond armor
+	registerArmor(DiamondHelmet, "Diamond Helmet", 0, 3, 363)
+	registerArmor(DiamondChestplate, "Diamond Chestplate", 1, 8, 528)
+	registerArmor(DiamondLeggings, "Diamond Leggings", 2, 6, 495)
+	registerArmor(DiamondBoots, "Diamond Boots", 3, 3, 429)
 }
 
 // GetProperties returns the static properties for the given item ID.

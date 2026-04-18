@@ -24,6 +24,30 @@ var itemBBox = mcmath.AABB{
 	Max: mcmath.Vec3{X: 0.125, Y: 0.25, Z: 0.125},
 }
 
+// cowBBox is the bounding box for a cow (0.9 wide, 1.4 tall).
+var cowBBox = mcmath.AABB{
+	Min: mcmath.Vec3{X: -0.45, Y: 0, Z: -0.45},
+	Max: mcmath.Vec3{X: 0.45, Y: 1.4, Z: 0.45},
+}
+
+// pigBBox is the bounding box for a pig (0.9 wide, 0.9 tall).
+var pigBBox = mcmath.AABB{
+	Min: mcmath.Vec3{X: -0.45, Y: 0, Z: -0.45},
+	Max: mcmath.Vec3{X: 0.45, Y: 0.9, Z: 0.45},
+}
+
+// sheepBBox is the bounding box for a sheep (0.9 wide, 1.3 tall).
+var sheepBBox = mcmath.AABB{
+	Min: mcmath.Vec3{X: -0.45, Y: 0, Z: -0.45},
+	Max: mcmath.Vec3{X: 0.45, Y: 1.3, Z: 0.45},
+}
+
+// chickenBBox is the bounding box for a chicken (0.4 wide, 0.7 tall).
+var chickenBBox = mcmath.AABB{
+	Min: mcmath.Vec3{X: -0.2, Y: 0, Z: -0.2},
+	Max: mcmath.Vec3{X: 0.2, Y: 0.7, Z: 0.2},
+}
+
 // SpawnPlayer creates a fully configured player entity.
 func SpawnPlayer(w *ecs.World, name string, pos mcmath.Vec3) ecs.Entity {
 	e := w.NewEntity()
@@ -38,6 +62,7 @@ func SpawnPlayer(w *ecs.World, name string, pos mcmath.Vec3) ecs.Entity {
 	ecs.GetStore[Name](w).Set(e, Name{Value: name})
 	ecs.GetStore[EntityTypeComp](w).Set(e, EntityTypeComp{Type: TypePlayer})
 	ecs.GetStore[Inventory](w).Set(e, Inventory{})
+	ecs.GetStore[Armor](w).Set(e, Armor{})
 	ecs.GetStore[Hunger](w).Set(e, NewHunger())
 
 	return e
@@ -73,6 +98,74 @@ func SpawnSkeleton(w *ecs.World, pos mcmath.Vec3) ecs.Entity {
 	ecs.GetStore[Health](w).Set(e, Health{Current: 20, Max: 20})
 	ecs.GetStore[EntityTypeComp](w).Set(e, EntityTypeComp{Type: TypeSkeleton})
 	ecs.GetStore[AI](w).Set(e, AI{State: AIIdle})
+
+	return e
+}
+
+// SpawnCow creates a cow passive mob entity.
+func SpawnCow(w *ecs.World, pos mcmath.Vec3) ecs.Entity {
+	e := w.NewEntity()
+
+	ecs.GetStore[Transform](w).Set(e, Transform{Position: pos})
+
+	body := physics.NewBody(cowBBox)
+	body.Position = pos
+	ecs.GetStore[PhysicsBody](w).Set(e, PhysicsBody{Body: &body})
+
+	ecs.GetStore[Health](w).Set(e, Health{Current: 10, Max: 10})
+	ecs.GetStore[EntityTypeComp](w).Set(e, EntityTypeComp{Type: TypeCow})
+	ecs.GetStore[AI](w).Set(e, AI{State: AIIdle, Passive: true})
+
+	return e
+}
+
+// SpawnPig creates a pig passive mob entity.
+func SpawnPig(w *ecs.World, pos mcmath.Vec3) ecs.Entity {
+	e := w.NewEntity()
+
+	ecs.GetStore[Transform](w).Set(e, Transform{Position: pos})
+
+	body := physics.NewBody(pigBBox)
+	body.Position = pos
+	ecs.GetStore[PhysicsBody](w).Set(e, PhysicsBody{Body: &body})
+
+	ecs.GetStore[Health](w).Set(e, Health{Current: 10, Max: 10})
+	ecs.GetStore[EntityTypeComp](w).Set(e, EntityTypeComp{Type: TypePig})
+	ecs.GetStore[AI](w).Set(e, AI{State: AIIdle, Passive: true})
+
+	return e
+}
+
+// SpawnSheep creates a sheep passive mob entity.
+func SpawnSheep(w *ecs.World, pos mcmath.Vec3) ecs.Entity {
+	e := w.NewEntity()
+
+	ecs.GetStore[Transform](w).Set(e, Transform{Position: pos})
+
+	body := physics.NewBody(sheepBBox)
+	body.Position = pos
+	ecs.GetStore[PhysicsBody](w).Set(e, PhysicsBody{Body: &body})
+
+	ecs.GetStore[Health](w).Set(e, Health{Current: 8, Max: 8})
+	ecs.GetStore[EntityTypeComp](w).Set(e, EntityTypeComp{Type: TypeSheep})
+	ecs.GetStore[AI](w).Set(e, AI{State: AIIdle, Passive: true})
+
+	return e
+}
+
+// SpawnChicken creates a chicken passive mob entity.
+func SpawnChicken(w *ecs.World, pos mcmath.Vec3) ecs.Entity {
+	e := w.NewEntity()
+
+	ecs.GetStore[Transform](w).Set(e, Transform{Position: pos})
+
+	body := physics.NewBody(chickenBBox)
+	body.Position = pos
+	ecs.GetStore[PhysicsBody](w).Set(e, PhysicsBody{Body: &body})
+
+	ecs.GetStore[Health](w).Set(e, Health{Current: 4, Max: 4})
+	ecs.GetStore[EntityTypeComp](w).Set(e, EntityTypeComp{Type: TypeChicken})
+	ecs.GetStore[AI](w).Set(e, AI{State: AIIdle, Passive: true})
 
 	return e
 }

@@ -96,6 +96,27 @@ func (s *AISystem) Update(w *ecs.World, dt float64) {
 	ecs.Query2[AI, Transform](w, func(e ecs.Entity, ai *AI, t *Transform) {
 		ai.Timer -= dt
 
+		// Passive mobs only idle and wander — skip player detection.
+		if ai.Passive {
+			switch ai.State {
+			case AIIdle:
+				if ai.Timer <= 0 {
+					ai.State = AIWander
+					ai.Timer = s.randomWanderTime()
+				}
+			case AIWander:
+				if ai.Timer <= 0 {
+					ai.State = AIIdle
+					ai.Timer = s.randomIdleTime()
+				}
+			default:
+				// Reset unexpected states to idle.
+				ai.State = AIIdle
+				ai.Timer = s.randomIdleTime()
+			}
+			return
+		}
+
 		// Find nearest player.
 		var nearestDist float32 = math.MaxFloat32
 		var nearestPos mcmath.Vec3
@@ -259,13 +280,20 @@ func (s *DamageSystem) Update(w *ecs.World, dt float64) {
 	dmgStore := ecs.GetStore[Damage](w)
 	healthStore := ecs.GetStore[Health](w)
 	pbStore := ecs.GetStore[PhysicsBody](w)
+	armorStore := ecs.GetStore[Armor](w)
 
 	var processed []ecs.Entity
 
 	dmgStore.Each(func(e ecs.Entity, d *Damage) {
-		// Apply damage to health.
+		amount := d.Amount
+
+		if a, ok := armorStore.Get(e); ok {
+			amount = a.DamageReduction(amount)
+			a.DamageArmor(1)
+		}
+
 		if h, ok := healthStore.Get(e); ok {
-			h.Current -= d.Amount
+			h.Current -= amount
 		}
 
 		// Apply knockback to physics body.

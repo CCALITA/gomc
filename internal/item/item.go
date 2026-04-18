@@ -35,6 +35,13 @@ type ItemProperties struct {
 	ToolLevel      int     // one of the Level* constants
 	FoodRestore    int     // hunger points restored when eaten; 0 for non-food
 	FoodSaturation float64 // saturation points restored when eaten; 0 for non-food
+	ArmorSlot      int     // armor equipment slot (0=helmet, 1=chest, 2=legs, 3=boots); only meaningful when ArmorDefense > 0
+	ArmorDefense   int     // defense points provided by this armor piece; 0 for non-armor
+}
+
+// IsArmor reports whether the item is an armor piece.
+func (p ItemProperties) IsArmor() bool {
+	return p.ArmorDefense > 0
 }
 
 // ----- Block item IDs (items that correspond to placeable blocks) -----
@@ -115,4 +122,28 @@ const (
 	Cookie                            // 205
 	Carrot                            // 206
 	BakedPotato                       // 207
+)
+
+// ----- Armor item IDs -----
+
+const (
+	LeatherHelmet     ItemID = iota + 400 // 400
+	LeatherChestplate                     // 401
+	LeatherLeggings                       // 402
+	LeatherBoots                          // 403
+
+	IronHelmet     // 404
+	IronChestplate // 405
+	IronLeggings   // 406
+	IronBoots      // 407
+
+	GoldHelmet     // 408
+	GoldChestplate // 409
+	GoldLeggings   // 410
+	GoldBoots      // 411
+
+	DiamondHelmet     // 412
+	DiamondChestplate // 413
+	DiamondLeggings   // 414
+	DiamondBoots      // 415
 )

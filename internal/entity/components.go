@@ -14,6 +14,10 @@ const (
 	TypeCreeper  uint8 = 4
 	TypeItem     uint8 = 5
 	TypeArrow    uint8 = 6
+	TypeCow      uint8 = 7
+	TypePig      uint8 = 8
+	TypeSheep    uint8 = 9
+	TypeChicken  uint8 = 10
 )
 
 // AI state constants.
@@ -55,9 +59,10 @@ type EntityTypeComp struct {
 
 // AI holds mob behaviour state machine data.
 type AI struct {
-	State  uint8
-	Target ecs.Entity
-	Timer  float64
+	State   uint8
+	Target  ecs.Entity
+	Timer   float64
+	Passive bool // Passive mobs only Idle and Wander, never Chase or Attack.
 }
 
 // ItemSlot represents an item stack in an inventory slot.
