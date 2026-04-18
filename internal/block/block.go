@@ -45,6 +45,66 @@ const (
 	FlowingWater  BlockID = 24
 	FlowingLava   BlockID = 25
 	Fire          BlockID = 26
+
+	// Wood variants (27-41)
+	BirchLog      BlockID = 27
+	BirchPlanks   BlockID = 28
+	BirchLeaves   BlockID = 29
+	SpruceLog     BlockID = 30
+	SprucePlanks  BlockID = 31
+	SpruceLeaves  BlockID = 32
+	JungleLog     BlockID = 33
+	JunglePlanks  BlockID = 34
+	JungleLeaves  BlockID = 35
+	DarkOakLog    BlockID = 36
+	DarkOakPlanks BlockID = 37
+	DarkOakLeaves BlockID = 38
+	AcaciaLog     BlockID = 39
+	AcaciaPlanks  BlockID = 40
+	AcaciaLeaves  BlockID = 41
+
+	// Wool colors (42-57)
+	WhiteWool     BlockID = 42
+	OrangeWool    BlockID = 43
+	MagentaWool   BlockID = 44
+	LightBlueWool BlockID = 45
+	YellowWool    BlockID = 46
+	LimeWool      BlockID = 47
+	PinkWool      BlockID = 48
+	GrayWool      BlockID = 49
+	LightGrayWool BlockID = 50
+	CyanWool      BlockID = 51
+	PurpleWool    BlockID = 52
+	BlueWool      BlockID = 53
+	BrownWool     BlockID = 54
+	GreenWool     BlockID = 55
+	RedWool       BlockID = 56
+	BlackWool     BlockID = 57
+
+	// Functional and nature blocks (58-80)
+	IronBlock    BlockID = 58
+	GoldBlock    BlockID = 59
+	DiamondBlock BlockID = 60
+	Bookshelf    BlockID = 61
+	TNT          BlockID = 62
+	Rail         BlockID = 63
+	Ladder       BlockID = 64
+	Farmland     BlockID = 65
+	WheatCrop    BlockID = 66
+	Sugarcane    BlockID = 67
+	Cactus       BlockID = 68
+	Clay         BlockID = 69
+	Bricks       BlockID = 70
+	NetherRack   BlockID = 71
+	SoulSand     BlockID = 72
+	Glowstone    BlockID = 73
+	EndStone     BlockID = 74
+	Snow         BlockID = 75
+	Ice          BlockID = 76
+	Sponge       BlockID = 77
+	RedstoneOre  BlockID = 78
+	LapisOre     BlockID = 79
+	EmeraldOre   BlockID = 80
 )
 
 // fluidBaseMask extracts the base block ID (lower 8 bits) from a block that
