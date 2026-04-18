@@ -122,44 +122,45 @@ var properties = map[BlockID]BlockProperties{
 		Hardness: 0.8, BlastResistance: 0.8,
 		LightEmission: 0, LightFilter: 15,
 	},
-	FlowingWater: {
-		Name: "flowing_water", Solid: false, Transparent: true,
-		Hardness: 100, BlastResistance: 100,
-		LightEmission: 0, LightFilter: 2,
-	},
-	FlowingLava: {
-		Name: "flowing_lava", Solid: false, Transparent: true,
-		Hardness: 100, BlastResistance: 100,
+	Fire: {
+		Name: "fire", Solid: false, Transparent: true,
+		Hardness: 0, BlastResistance: 0,
 		LightEmission: 15, LightFilter: 0,
 	},
 }
 
 // GetProperties returns the BlockProperties for the given block ID.
-// For flowing fluid blocks with encoded levels, the base ID is used for lookup.
 // If the ID is unknown, a zero-value BlockProperties is returned.
 func GetProperties(id BlockID) BlockProperties {
-	if p, ok := properties[id]; ok {
-		return p
-	}
-	// Only fall back to base ID for blocks that encode a fluid level.
-	base := BaseID(id)
-	if base == FlowingWater || base == FlowingLava {
-		return properties[base]
-	}
-	return BlockProperties{}
+	return properties[id]
 }
 
 // IsSolid reports whether the block with the given ID is solid.
 func IsSolid(id BlockID) bool {
-	return GetProperties(id).Solid
+	return properties[id].Solid
 }
 
 // IsTransparent reports whether the block with the given ID is transparent.
 func IsTransparent(id BlockID) bool {
-	return GetProperties(id).Transparent
+	return properties[id].Transparent
 }
 
 // IsLightSource reports whether the block with the given ID emits light.
 func IsLightSource(id BlockID) bool {
-	return GetProperties(id).LightEmission > 0
+	return properties[id].LightEmission > 0
+}
+
+// IsLava reports whether the block with the given ID is lava.
+func IsLava(id BlockID) bool {
+	return id == Lava
+}
+
+// IsWater reports whether the block with the given ID is water.
+func IsWater(id BlockID) bool {
+	return id == Water
+}
+
+// IsFire reports whether the block with the given ID is fire.
+func IsFire(id BlockID) bool {
+	return id == Fire
 }
