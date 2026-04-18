@@ -8,6 +8,7 @@ import (
 // The values mirror mcmath.Direction so they can be converted freely.
 type BlockFace int
 
+// Block face constants for each of the six cube faces.
 const (
 	FaceNorth  BlockFace = BlockFace(mcmath.North) // -Z
 	FaceSouth  BlockFace = BlockFace(mcmath.South) // +Z

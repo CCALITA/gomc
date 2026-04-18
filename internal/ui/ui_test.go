@@ -145,7 +145,7 @@ func TestUIRenderer_DrawRect(t *testing.T) {
 	assert.Equal(t, 1, r.CommandCount())
 
 	cmd := r.Commands()[0]
-	assert.Equal(t, DrawCmdRect, cmd.Type)
+	assert.Equal(t, drawCmdRect, cmd.Type)
 	assert.Equal(t, float32(10), cmd.X)
 	assert.Equal(t, float32(20), cmd.Y)
 	assert.Equal(t, float32(100), cmd.W)
@@ -162,7 +162,7 @@ func TestUIRenderer_DrawTexturedRect(t *testing.T) {
 	assert.Equal(t, 1, r.CommandCount())
 
 	cmd := r.Commands()[0]
-	assert.Equal(t, DrawCmdTexturedRect, cmd.Type)
+	assert.Equal(t, drawCmdTexturedRect, cmd.Type)
 	assert.Equal(t, float32(0.25), cmd.U)
 	assert.Equal(t, float32(0.5), cmd.V)
 }
@@ -173,7 +173,7 @@ func TestUIRenderer_DrawText(t *testing.T) {
 	assert.Equal(t, 1, r.CommandCount())
 
 	cmd := r.Commands()[0]
-	assert.Equal(t, DrawCmdText, cmd.Type)
+	assert.Equal(t, drawCmdText, cmd.Type)
 	assert.Equal(t, "Hello", cmd.Text)
 	assert.Equal(t, float32(1.5), cmd.Scale)
 	assert.Equal(t, float32(1.0), cmd.A) // alpha defaults to 1.0 for text
@@ -186,7 +186,7 @@ func TestUIRenderer_DrawItemSlot(t *testing.T) {
 	assert.Equal(t, 1, r.CommandCount())
 
 	cmd := r.Commands()[0]
-	assert.Equal(t, DrawCmdItemSlot, cmd.Type)
+	assert.Equal(t, drawCmdItemSlot, cmd.Type)
 	assert.Equal(t, item.Stone, cmd.Stack.ItemID)
 	assert.Equal(t, 32, cmd.Stack.Count)
 }
@@ -289,7 +289,7 @@ func TestHUD_DrawWithFPS(t *testing.T) {
 	// Check that at least one text command contains FPS info.
 	foundFPS := false
 	for _, cmd := range r.Commands() {
-		if cmd.Type == DrawCmdText && cmd.Text == "FPS: 60 (16.7ms)" {
+		if cmd.Type == drawCmdText && cmd.Text == "FPS: 60 (16.7ms)" {
 			foundFPS = true
 			break
 		}
@@ -309,7 +309,7 @@ func TestHUD_DrawHotbarWithItems(t *testing.T) {
 	// Count item slot commands.
 	itemSlotCount := 0
 	for _, cmd := range r.Commands() {
-		if cmd.Type == DrawCmdItemSlot {
+		if cmd.Type == drawCmdItemSlot {
 			itemSlotCount++
 		}
 	}
@@ -367,7 +367,7 @@ func TestHUD_HungerBar_HalfDrumstick(t *testing.T) {
 
 // ---------- Debug overlay tests ----------
 
-func TestFacingDirectionFromYaw(t *testing.T) {
+func TestfacingDirectionFromYaw(t *testing.T) {
 	tests := []struct {
 		name     string
 		yaw      float32
@@ -394,7 +394,7 @@ func TestFacingDirectionFromYaw(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := FacingDirectionFromYaw(tt.yaw)
+			got := facingDirectionFromYaw(tt.yaw)
 			assert.Equal(t, tt.expected, got)
 		})
 	}
@@ -446,9 +446,9 @@ func TestHUD_DebugOverlayDrawCommandCount(t *testing.T) {
 	rectCount := 0
 	for _, cmd := range r.Commands() {
 		switch cmd.Type {
-		case DrawCmdText:
+		case drawCmdText:
 			textCount++
-		case DrawCmdRect:
+		case drawCmdRect:
 			rectCount++
 		}
 	}
@@ -853,14 +853,14 @@ func TestMainMenu_New(t *testing.T) {
 }
 
 func TestMainMenu_ButtonAction(t *testing.T) {
-	var receivedAction MainMenuAction
-	menu := NewMainMenu(func(a MainMenuAction) { receivedAction = a })
+	var receivedAction mainMenuAction
+	menu := NewMainMenu(func(a mainMenuAction) { receivedAction = a })
 
 	menu.executeButton(0)
-	assert.Equal(t, MainMenuSingleplayer, receivedAction)
+	assert.Equal(t, mainMenuSingleplayer, receivedAction)
 
 	menu.executeButton(3)
-	assert.Equal(t, MainMenuQuit, receivedAction)
+	assert.Equal(t, mainMenuQuit, receivedAction)
 }
 
 func TestMainMenu_InvalidButtonIndex(t *testing.T) {

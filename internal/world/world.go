@@ -1,6 +1,7 @@
 package world
 
 import (
+	"errors"
 	"fmt"
 	"math"
 	"sync"
@@ -188,37 +189,36 @@ func (w *World) SaveAll(storage *Storage) error {
 	}
 	w.mu.RUnlock()
 
-	var firstErr error
+	var errs []error
 	for key, c := range snapshot {
 		pos := mcmath.ChunkPos{X: key[0], Z: key[1]}
 		if err := storage.SaveChunk(pos, c); err != nil {
-			if firstErr == nil {
-				firstErr = fmt.Errorf("failed to save chunk %v: %w", pos, err)
-			}
+			errs = append(errs, fmt.Errorf("SaveAll: %w", err))
 		}
 	}
-	return firstErr
+	return errors.Join(errs...)
 }
 
 // LoadAll reads all saved chunks from Storage and loads them into the world.
 func (w *World) LoadAll(storage *Storage) error {
-	entries, err := storage.ListChunks()
-	if err != nil {
-		return fmt.Errorf("failed to list saved chunks: %w", err)
+	entries, listErr := storage.ListChunks()
+	if entries == nil && listErr != nil {
+		return fmt.Errorf("LoadAll: list chunks: %w", listErr)
 	}
 
-	var firstErr error
+	var errs []error
+	if listErr != nil {
+		errs = append(errs, fmt.Errorf("LoadAll: list chunks: %w", listErr))
+	}
 	for _, pos := range entries {
 		c, err := storage.LoadChunk(pos)
 		if err != nil {
-			if firstErr == nil {
-				firstErr = fmt.Errorf("failed to load chunk %v: %w", pos, err)
-			}
+			errs = append(errs, fmt.Errorf("LoadAll: %w", err))
 			continue
 		}
 		w.mu.Lock()
 		w.chunks[pos.Key()] = c
 		w.mu.Unlock()
 	}
-	return firstErr
+	return errors.Join(errs...)
 }

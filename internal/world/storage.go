@@ -2,6 +2,7 @@ package world
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -56,7 +57,7 @@ type Storage struct {
 func NewStorage(savePath string) (*Storage, error) {
 	chunksDir := filepath.Join(savePath, "chunks")
 	if err := os.MkdirAll(chunksDir, 0o755); err != nil {
-		return nil, fmt.Errorf("failed to create save directory: %w", err)
+		return nil, fmt.Errorf("NewStorage: create directory: %w", err)
 	}
 	return &Storage{
 		savePath:  savePath,
@@ -73,11 +74,11 @@ func (s *Storage) chunkFileName(pos mcmath.ChunkPos) string {
 func (s *Storage) SaveChunk(pos mcmath.ChunkPos, c *chunk.Chunk) error {
 	data, err := chunk.SerializeChunk(c)
 	if err != nil {
-		return fmt.Errorf("failed to serialize chunk %v: %w", pos, err)
+		return fmt.Errorf("SaveChunk: serialize chunk %v: %w", pos, err)
 	}
 	path := s.chunkFileName(pos)
 	if err := os.WriteFile(path, data, 0o644); err != nil {
-		return fmt.Errorf("failed to write chunk file %s: %w", path, err)
+		return fmt.Errorf("SaveChunk: write file %s: %w", path, err)
 	}
 	return nil
 }
@@ -87,11 +88,11 @@ func (s *Storage) LoadChunk(pos mcmath.ChunkPos) (*chunk.Chunk, error) {
 	path := s.chunkFileName(pos)
 	data, err := os.ReadFile(path)
 	if err != nil {
-		return nil, fmt.Errorf("failed to read chunk file %s: %w", path, err)
+		return nil, fmt.Errorf("LoadChunk: read file %s: %w", path, err)
 	}
 	c, err := chunk.DeserializeChunk(data)
 	if err != nil {
-		return nil, fmt.Errorf("failed to deserialize chunk %v: %w", pos, err)
+		return nil, fmt.Errorf("LoadChunk: deserialize chunk %v: %w", pos, err)
 	}
 	return c, nil
 }
@@ -106,11 +107,11 @@ func (s *Storage) HasChunk(pos mcmath.ChunkPos) bool {
 func (s *Storage) SaveLevel(level LevelData) error {
 	data, err := json.MarshalIndent(level, "", "  ")
 	if err != nil {
-		return fmt.Errorf("failed to marshal level data: %w", err)
+		return fmt.Errorf("SaveLevel: marshal level data: %w", err)
 	}
 	path := filepath.Join(s.savePath, "level.json")
 	if err := os.WriteFile(path, data, 0o644); err != nil {
-		return fmt.Errorf("failed to write level file: %w", err)
+		return fmt.Errorf("SaveLevel: write file: %w", err)
 	}
 	return nil
 }
@@ -120,11 +121,11 @@ func (s *Storage) LoadLevel() (LevelData, error) {
 	path := filepath.Join(s.savePath, "level.json")
 	data, err := os.ReadFile(path)
 	if err != nil {
-		return LevelData{}, fmt.Errorf("failed to read level file: %w", err)
+		return LevelData{}, fmt.Errorf("LoadLevel: read file: %w", err)
 	}
 	var level LevelData
 	if err := json.Unmarshal(data, &level); err != nil {
-		return LevelData{}, fmt.Errorf("failed to unmarshal level data: %w", err)
+		return LevelData{}, fmt.Errorf("LoadLevel: unmarshal data: %w", err)
 	}
 	return level, nil
 }
@@ -133,11 +134,11 @@ func (s *Storage) LoadLevel() (LevelData, error) {
 func (s *Storage) SavePlayer(player PlayerData) error {
 	data, err := json.MarshalIndent(player, "", "  ")
 	if err != nil {
-		return fmt.Errorf("failed to marshal player data: %w", err)
+		return fmt.Errorf("SavePlayer: marshal player data: %w", err)
 	}
 	path := filepath.Join(s.savePath, "player.json")
 	if err := os.WriteFile(path, data, 0o644); err != nil {
-		return fmt.Errorf("failed to write player file: %w", err)
+		return fmt.Errorf("SavePlayer: write file: %w", err)
 	}
 	return nil
 }
@@ -147,22 +148,26 @@ func (s *Storage) LoadPlayer() (PlayerData, error) {
 	path := filepath.Join(s.savePath, "player.json")
 	data, err := os.ReadFile(path)
 	if err != nil {
-		return PlayerData{}, fmt.Errorf("failed to read player file: %w", err)
+		return PlayerData{}, fmt.Errorf("LoadPlayer: read file: %w", err)
 	}
 	var player PlayerData
 	if err := json.Unmarshal(data, &player); err != nil {
-		return PlayerData{}, fmt.Errorf("failed to unmarshal player data: %w", err)
+		return PlayerData{}, fmt.Errorf("LoadPlayer: unmarshal data: %w", err)
 	}
 	return player, nil
 }
 
 // ListChunks returns the positions of all chunk files in the save directory.
+// Files that do not match the expected naming pattern are skipped, and a
+// combined error describing all skipped entries is returned alongside any
+// successfully parsed positions.
 func (s *Storage) ListChunks() ([]mcmath.ChunkPos, error) {
 	entries, err := os.ReadDir(s.chunksDir)
 	if err != nil {
-		return nil, fmt.Errorf("failed to read chunks directory: %w", err)
+		return nil, fmt.Errorf("ListChunks: read directory: %w", err)
 	}
 	var positions []mcmath.ChunkPos
+	var parseErrs []error
 	for _, entry := range entries {
 		if entry.IsDir() {
 			continue
@@ -170,11 +175,12 @@ func (s *Storage) ListChunks() ([]mcmath.ChunkPos, error) {
 		var x, z int32
 		name := entry.Name()
 		if _, err := fmt.Sscanf(name, "%d_%d.bin", &x, &z); err != nil {
+			parseErrs = append(parseErrs, fmt.Errorf("ListChunks: parse filename %q: %w", name, err))
 			continue
 		}
 		positions = append(positions, mcmath.ChunkPos{X: x, Z: z})
 	}
-	return positions, nil
+	return positions, errors.Join(parseErrs...)
 }
 
 // HasSave reports whether a save directory with a level.json exists.

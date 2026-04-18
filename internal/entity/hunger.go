@@ -7,33 +7,52 @@ import (
 
 // Difficulty constants control starvation behaviour.
 const (
+	// DifficultyPeaceful disables starvation damage entirely.
 	DifficultyPeaceful uint8 = 0
-	DifficultyEasy     uint8 = 1
-	DifficultyNormal   uint8 = 2
-	DifficultyHard     uint8 = 3
+	// DifficultyEasy stops starvation damage at 10 HP.
+	DifficultyEasy uint8 = 1
+	// DifficultyNormal stops starvation damage at 1 HP.
+	DifficultyNormal uint8 = 2
+	// DifficultyHard allows starvation to kill the player.
+	DifficultyHard uint8 = 3
 )
 
 // Hunger defaults.
 const (
-	DefaultFoodLevel  = 20
+	// DefaultFoodLevel is the starting food level for a new player.
+	DefaultFoodLevel = 20
+	// DefaultSaturation is the starting saturation for a new player.
 	DefaultSaturation = 5.0
-	MaxFoodLevel      = 20
-	MaxSaturation     = 20.0
+	// MaxFoodLevel is the upper bound for food level.
+	MaxFoodLevel = 20
+	// MaxSaturation is the upper bound for saturation.
+	MaxSaturation = 20.0
 )
 
 // Exhaustion thresholds and rates.
 const (
-	ExhaustionThreshold    = 4.0
-	ExhaustionSprint       = 0.1  // per metre
-	ExhaustionJump         = 0.05 // per jump
-	ExhaustionAttack       = 0.1  // per attack
-	HealthRegenFoodMin     = 18   // minimum food level to regenerate HP
-	HealthRegenRate        = 1.0  // HP per second when food >= 18 and saturation > 0
-	HealthRegenExhaustion  = 6.0  // exhaustion cost per HP regenerated
-	StarvationDamage       = 1.0  // HP per tick at 0 food on Normal
-	StarvationInterval     = 4.0  // seconds between starvation damage ticks
-	StarvationMinHealthEasy   float32 = 10.0 // easy: stop starving at 10 HP
-	StarvationMinHealthNormal float32 = 1.0  // normal: stop starving at 1 HP
+	// ExhaustionThreshold is the exhaustion level that triggers saturation or food drain.
+	ExhaustionThreshold = 4.0
+	// ExhaustionSprint is the exhaustion added per metre of sprinting.
+	ExhaustionSprint = 0.1
+	// ExhaustionJump is the exhaustion added per jump.
+	ExhaustionJump = 0.05
+	// ExhaustionAttack is the exhaustion added per attack.
+	ExhaustionAttack = 0.1
+	// HealthRegenFoodMin is the minimum food level required to regenerate HP.
+	HealthRegenFoodMin = 18
+	// HealthRegenRate is the HP regenerated per second when food >= 18 and saturation > 0.
+	HealthRegenRate = 1.0
+	// HealthRegenExhaustion is the exhaustion cost per HP regenerated.
+	HealthRegenExhaustion = 6.0
+	// StarvationDamage is the HP lost per starvation tick on Normal difficulty.
+	StarvationDamage = 1.0
+	// StarvationInterval is the number of seconds between starvation damage ticks.
+	StarvationInterval = 4.0
+	// StarvationMinHealthEasy is the HP floor below which starvation stops on Easy.
+	StarvationMinHealthEasy float32 = 10.0
+	// StarvationMinHealthNormal is the HP floor below which starvation stops on Normal.
+	StarvationMinHealthNormal float32 = 1.0
 )
 
 // Hunger is an ECS component tracking the player's food, saturation,

@@ -22,6 +22,7 @@ const (
 // the six cardinal directions (0=North, 1=South, 2=East, 3=West, 4=Up, 5=Down).
 type Orientation uint8
 
+// Orientation values for each cardinal direction.
 const (
 	OrientNorth Orientation = 0
 	OrientSouth Orientation = 1

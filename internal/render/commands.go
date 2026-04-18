@@ -32,7 +32,7 @@ func NewCommandPool(ctx *VulkanContext) (*CommandPool, error) {
 
 	var pool vk.CommandPool
 	if res := vk.CreateCommandPool(ctx.Device, poolInfo, nil, &pool); res != vk.Success {
-		return nil, fmt.Errorf("failed to create command pool: %d", res)
+		return nil, fmt.Errorf("create command pool: vulkan result %d", res)
 	}
 
 	cp := &CommandPool{
@@ -65,7 +65,7 @@ func (cp *CommandPool) allocateCommandBuffers() error {
 	}
 
 	if res := vk.AllocateCommandBuffers(cp.ctx.Device, allocInfo, cp.CommandBuffers); res != vk.Success {
-		return fmt.Errorf("failed to allocate command buffers: %d", res)
+		return fmt.Errorf("allocate command buffers: vulkan result %d", res)
 	}
 	return nil
 }
@@ -86,13 +86,13 @@ func (cp *CommandPool) createSyncObjects() error {
 
 	for i := 0; i < maxFramesInFlight; i++ {
 		if res := vk.CreateSemaphore(cp.ctx.Device, semaphoreInfo, nil, &cp.ImageAvailable[i]); res != vk.Success {
-			return fmt.Errorf("failed to create image available semaphore: %d", res)
+			return fmt.Errorf("create image available semaphore %d: vulkan result %d", i, res)
 		}
 		if res := vk.CreateSemaphore(cp.ctx.Device, semaphoreInfo, nil, &cp.RenderFinished[i]); res != vk.Success {
-			return fmt.Errorf("failed to create render finished semaphore: %d", res)
+			return fmt.Errorf("create render finished semaphore %d: vulkan result %d", i, res)
 		}
 		if res := vk.CreateFence(cp.ctx.Device, fenceInfo, nil, &cp.InFlight[i]); res != vk.Success {
-			return fmt.Errorf("failed to create in-flight fence: %d", res)
+			return fmt.Errorf("create in-flight fence %d: vulkan result %d", i, res)
 		}
 	}
 
@@ -105,7 +105,9 @@ func (cp *CommandPool) BeginFrame(swapchain *Swapchain) (uint32, vk.CommandBuffe
 	frame := cp.CurrentFrame
 
 	fences := []vk.Fence{cp.InFlight[frame]}
-	vk.WaitForFences(cp.ctx.Device, 1, fences, vk.True, vk.MaxUint64)
+	if res := vk.WaitForFences(cp.ctx.Device, 1, fences, vk.True, vk.MaxUint64); res != vk.Success {
+		return 0, nil, fmt.Errorf("wait for fence: vulkan result %d", res)
+	}
 
 	var imageIndex uint32
 	res := vk.AcquireNextImage(
@@ -116,19 +118,23 @@ func (cp *CommandPool) BeginFrame(swapchain *Swapchain) (uint32, vk.CommandBuffe
 		return 0, nil, fmt.Errorf("swapchain out of date")
 	}
 	if res != vk.Success && res != vk.Suboptimal {
-		return 0, nil, fmt.Errorf("failed to acquire swapchain image: %d", res)
+		return 0, nil, fmt.Errorf("acquire swapchain image: vulkan result %d", res)
 	}
 
-	vk.ResetFences(cp.ctx.Device, 1, fences)
+	if res := vk.ResetFences(cp.ctx.Device, 1, fences); res != vk.Success {
+		return 0, nil, fmt.Errorf("reset fence: vulkan result %d", res)
+	}
 
 	cmdBuf := cp.CommandBuffers[frame]
-	vk.ResetCommandBuffer(cmdBuf, 0)
+	if res := vk.ResetCommandBuffer(cmdBuf, 0); res != vk.Success {
+		return 0, nil, fmt.Errorf("reset command buffer: vulkan result %d", res)
+	}
 
 	beginInfo := &vk.CommandBufferBeginInfo{
 		SType: vk.StructureTypeCommandBufferBeginInfo,
 	}
 	if res := vk.BeginCommandBuffer(cmdBuf, beginInfo); res != vk.Success {
-		return 0, nil, fmt.Errorf("failed to begin command buffer: %d", res)
+		return 0, nil, fmt.Errorf("begin command buffer: vulkan result %d", res)
 	}
 
 	return imageIndex, cmdBuf, nil
@@ -164,7 +170,7 @@ func (cp *CommandPool) EndFrame(swapchain *Swapchain, imageIndex uint32) error {
 	vk.CmdEndRenderPass(cmdBuf)
 
 	if res := vk.EndCommandBuffer(cmdBuf); res != vk.Success {
-		return fmt.Errorf("failed to end command buffer: %d", res)
+		return fmt.Errorf("end command buffer: vulkan result %d", res)
 	}
 
 	waitSemaphores := []vk.Semaphore{cp.ImageAvailable[frame]}
@@ -185,7 +191,7 @@ func (cp *CommandPool) EndFrame(swapchain *Swapchain, imageIndex uint32) error {
 	}
 
 	if res := vk.QueueSubmit(cp.ctx.GraphicsQueue, 1, []vk.SubmitInfo{*submitInfo}, cp.InFlight[frame]); res != vk.Success {
-		return fmt.Errorf("failed to submit draw command buffer: %d", res)
+		return fmt.Errorf("submit draw command buffer: vulkan result %d", res)
 	}
 
 	swapchains := []vk.Swapchain{swapchain.Handle}
@@ -205,7 +211,7 @@ func (cp *CommandPool) EndFrame(swapchain *Swapchain, imageIndex uint32) error {
 		return fmt.Errorf("swapchain out of date")
 	}
 	if res != vk.Success {
-		return fmt.Errorf("failed to present swapchain image: %d", res)
+		return fmt.Errorf("present swapchain image: vulkan result %d", res)
 	}
 
 	cp.CurrentFrame = (cp.CurrentFrame + 1) % maxFramesInFlight
@@ -318,7 +324,7 @@ func (cp *CommandPool) beginSingleTimeCommands() (vk.CommandBuffer, error) {
 
 	cmdBuffers := make([]vk.CommandBuffer, 1)
 	if res := vk.AllocateCommandBuffers(cp.ctx.Device, allocInfo, cmdBuffers); res != vk.Success {
-		return nil, fmt.Errorf("failed to allocate single-time command buffer: %d", res)
+		return nil, fmt.Errorf("allocate single-time command buffer: vulkan result %d", res)
 	}
 
 	beginInfo := &vk.CommandBufferBeginInfo{
@@ -328,7 +334,7 @@ func (cp *CommandPool) beginSingleTimeCommands() (vk.CommandBuffer, error) {
 
 	if res := vk.BeginCommandBuffer(cmdBuffers[0], beginInfo); res != vk.Success {
 		vk.FreeCommandBuffers(cp.ctx.Device, cp.Pool, 1, cmdBuffers)
-		return nil, fmt.Errorf("begin command buffer: %d", res)
+		return nil, fmt.Errorf("begin single-time command buffer: vulkan result %d", res)
 	}
 
 	return cmdBuffers[0], nil
@@ -340,7 +346,7 @@ func (cp *CommandPool) endSingleTimeCommands(cmdBuf vk.CommandBuffer) error {
 	defer vk.FreeCommandBuffers(cp.ctx.Device, cp.Pool, 1, []vk.CommandBuffer{cmdBuf})
 
 	if res := vk.EndCommandBuffer(cmdBuf); res != vk.Success {
-		return fmt.Errorf("end command buffer: %d", res)
+		return fmt.Errorf("end single-time command buffer: vulkan result %d", res)
 	}
 
 	submitInfo := &vk.SubmitInfo{
@@ -350,11 +356,11 @@ func (cp *CommandPool) endSingleTimeCommands(cmdBuf vk.CommandBuffer) error {
 	}
 
 	if res := vk.QueueSubmit(cp.ctx.GraphicsQueue, 1, []vk.SubmitInfo{*submitInfo}, nil); res != vk.Success {
-		return fmt.Errorf("queue submit: %d", res)
+		return fmt.Errorf("submit single-time command buffer: vulkan result %d", res)
 	}
 
 	if res := vk.QueueWaitIdle(cp.ctx.GraphicsQueue); res != vk.Success {
-		return fmt.Errorf("queue wait idle: %d", res)
+		return fmt.Errorf("wait for queue idle: vulkan result %d", res)
 	}
 
 	return nil

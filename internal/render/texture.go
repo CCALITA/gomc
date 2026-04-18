@@ -38,12 +38,12 @@ func CreateTexture(ctx *VulkanContext, cmdPool *CommandPool, imageData []byte, w
 		vk.MemoryPropertyFlags(vk.MemoryPropertyHostVisibleBit|vk.MemoryPropertyHostCoherentBit),
 	)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create texture staging buffer: %w", err)
+		return nil, fmt.Errorf("create texture staging buffer: %w", err)
 	}
 	defer staging.Cleanup()
 
 	if err := mapAndCopy(ctx.Device, staging.Memory, imageSize, unsafe.Pointer(&imageData[0])); err != nil {
-		return nil, fmt.Errorf("failed to copy texture data to staging: %w", err)
+		return nil, fmt.Errorf("copy texture data to staging: %w", err)
 	}
 
 	tex := &Texture{
@@ -71,7 +71,7 @@ func CreateTexture(ctx *VulkanContext, cmdPool *CommandPool, imageData []byte, w
 
 	var image vk.Image
 	if res := vk.CreateImage(ctx.Device, imageInfo, nil, &image); res != vk.Success {
-		return nil, fmt.Errorf("failed to create texture image: %d", res)
+		return nil, fmt.Errorf("create texture image: vulkan result %d", res)
 	}
 	tex.Image = image
 
@@ -86,7 +86,7 @@ func CreateTexture(ctx *VulkanContext, cmdPool *CommandPool, imageData []byte, w
 		vk.MemoryPropertyFlags(vk.MemoryPropertyDeviceLocalBit),
 	)
 	if err != nil {
-		return nil, fmt.Errorf("failed to find texture memory type: %w", err)
+		return nil, fmt.Errorf("find texture memory type: %w", err)
 	}
 
 	allocInfo := &vk.MemoryAllocateInfo{
@@ -97,22 +97,24 @@ func CreateTexture(ctx *VulkanContext, cmdPool *CommandPool, imageData []byte, w
 
 	var memory vk.DeviceMemory
 	if res := vk.AllocateMemory(ctx.Device, allocInfo, nil, &memory); res != vk.Success {
-		return nil, fmt.Errorf("failed to allocate texture memory: %d", res)
+		return nil, fmt.Errorf("allocate texture memory: vulkan result %d", res)
 	}
 	tex.Memory = memory
-	vk.BindImageMemory(ctx.Device, tex.Image, tex.Memory, 0)
+	if res := vk.BindImageMemory(ctx.Device, tex.Image, tex.Memory, 0); res != vk.Success {
+		return nil, fmt.Errorf("bind texture image memory: vulkan result %d", res)
+	}
 
 	// Transition layout and copy
 	if err := cmdPool.TransitionImageLayout(tex.Image, vk.ImageLayoutUndefined, vk.ImageLayoutTransferDstOptimal); err != nil {
-		return nil, fmt.Errorf("failed to transition image for copy: %w", err)
+		return nil, fmt.Errorf("transition image for copy: %w", err)
 	}
 
 	if err := cmdPool.CopyBufferToImage(staging.Handle, tex.Image, tex.Width, tex.Height); err != nil {
-		return nil, fmt.Errorf("failed to copy buffer to image: %w", err)
+		return nil, fmt.Errorf("copy buffer to image: %w", err)
 	}
 
 	if err := cmdPool.TransitionImageLayout(tex.Image, vk.ImageLayoutTransferDstOptimal, vk.ImageLayoutShaderReadOnlyOptimal); err != nil {
-		return nil, fmt.Errorf("failed to transition image for shader read: %w", err)
+		return nil, fmt.Errorf("transition image for shader read: %w", err)
 	}
 
 	// Create image view
@@ -132,7 +134,7 @@ func CreateTexture(ctx *VulkanContext, cmdPool *CommandPool, imageData []byte, w
 
 	var imageView vk.ImageView
 	if res := vk.CreateImageView(ctx.Device, viewInfo, nil, &imageView); res != vk.Success {
-		return nil, fmt.Errorf("failed to create texture image view: %d", res)
+		return nil, fmt.Errorf("create texture image view: vulkan result %d", res)
 	}
 	tex.ImageView = imageView
 
@@ -156,7 +158,7 @@ func CreateTexture(ctx *VulkanContext, cmdPool *CommandPool, imageData []byte, w
 
 	var sampler vk.Sampler
 	if res := vk.CreateSampler(ctx.Device, samplerInfo, nil, &sampler); res != vk.Success {
-		return nil, fmt.Errorf("failed to create texture sampler: %d", res)
+		return nil, fmt.Errorf("create texture sampler: vulkan result %d", res)
 	}
 	tex.Sampler = sampler
 
@@ -200,7 +202,7 @@ func NewTextureAtlas(
 ) (*TextureAtlas, error) {
 	tex, err := CreateTexture(ctx, cmdPool, imageData, atlasWidth, atlasHeight)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create texture atlas: %w", err)
+		return nil, fmt.Errorf("create texture atlas: %w", err)
 	}
 
 	cols := atlasWidth / tileWidth

@@ -59,7 +59,10 @@ func (s *Swapchain) Recreate(width, height uint32, renderPass vk.RenderPass) err
 
 // createSwapchain builds the actual VkSwapchain object.
 func (s *Swapchain) createSwapchain(width, height uint32) error {
-	details := querySwapchainSupport(s.ctx.PhysicalDevice, s.ctx.Surface)
+	details, err := querySwapchainSupport(s.ctx.PhysicalDevice, s.ctx.Surface)
+	if err != nil {
+		return fmt.Errorf("query swapchain support: %w", err)
+	}
 
 	surfaceFormat := chooseSwapSurfaceFormat(details.Formats)
 	presentMode := chooseSwapPresentMode(details.PresentModes)
@@ -96,16 +99,20 @@ func (s *Swapchain) createSwapchain(width, height uint32) error {
 
 	var swapchain vk.Swapchain
 	if res := vk.CreateSwapchain(s.ctx.Device, createInfo, nil, &swapchain); res != vk.Success {
-		return fmt.Errorf("failed to create swapchain: %d", res)
+		return fmt.Errorf("create swapchain: vulkan result %d", res)
 	}
 	s.Handle = swapchain
 	s.ImageFormat = surfaceFormat.Format
 	s.Extent = extent
 
 	var count uint32
-	vk.GetSwapchainImages(s.ctx.Device, s.Handle, &count, nil)
+	if res := vk.GetSwapchainImages(s.ctx.Device, s.Handle, &count, nil); res != vk.Success {
+		return fmt.Errorf("get swapchain image count: vulkan result %d", res)
+	}
 	s.Images = make([]vk.Image, count)
-	vk.GetSwapchainImages(s.ctx.Device, s.Handle, &count, s.Images)
+	if res := vk.GetSwapchainImages(s.ctx.Device, s.Handle, &count, s.Images); res != vk.Success {
+		return fmt.Errorf("get swapchain images: vulkan result %d", res)
+	}
 
 	return nil
 }
@@ -137,7 +144,7 @@ func (s *Swapchain) createImageViews() error {
 
 		var imageView vk.ImageView
 		if res := vk.CreateImageView(s.ctx.Device, createInfo, nil, &imageView); res != vk.Success {
-			return fmt.Errorf("failed to create image view %d: %d", i, res)
+			return fmt.Errorf("create image view %d: vulkan result %d", i, res)
 		}
 		s.ImageViews[i] = imageView
 	}
@@ -166,7 +173,7 @@ func (s *Swapchain) createDepthResources() error {
 
 	var depthImage vk.Image
 	if res := vk.CreateImage(s.ctx.Device, imageInfo, nil, &depthImage); res != vk.Success {
-		return fmt.Errorf("failed to create depth image: %d", res)
+		return fmt.Errorf("create depth image: vulkan result %d", res)
 	}
 	s.DepthImage = depthImage
 
@@ -180,7 +187,7 @@ func (s *Swapchain) createDepthResources() error {
 		vk.MemoryPropertyFlags(vk.MemoryPropertyDeviceLocalBit),
 	)
 	if err != nil {
-		return fmt.Errorf("failed to find depth image memory type: %w", err)
+		return fmt.Errorf("find depth image memory type: %w", err)
 	}
 
 	allocInfo := &vk.MemoryAllocateInfo{
@@ -191,11 +198,13 @@ func (s *Swapchain) createDepthResources() error {
 
 	var memory vk.DeviceMemory
 	if res := vk.AllocateMemory(s.ctx.Device, allocInfo, nil, &memory); res != vk.Success {
-		return fmt.Errorf("failed to allocate depth image memory: %d", res)
+		return fmt.Errorf("allocate depth image memory: vulkan result %d", res)
 	}
 	s.DepthImageMemory = memory
 
-	vk.BindImageMemory(s.ctx.Device, s.DepthImage, s.DepthImageMemory, 0)
+	if res := vk.BindImageMemory(s.ctx.Device, s.DepthImage, s.DepthImageMemory, 0); res != vk.Success {
+		return fmt.Errorf("bind depth image memory: vulkan result %d", res)
+	}
 
 	viewInfo := &vk.ImageViewCreateInfo{
 		SType:    vk.StructureTypeImageViewCreateInfo,
@@ -213,7 +222,7 @@ func (s *Swapchain) createDepthResources() error {
 
 	var depthImageView vk.ImageView
 	if res := vk.CreateImageView(s.ctx.Device, viewInfo, nil, &depthImageView); res != vk.Success {
-		return fmt.Errorf("failed to create depth image view: %d", res)
+		return fmt.Errorf("create depth image view: vulkan result %d", res)
 	}
 	s.DepthImageView = depthImageView
 
@@ -239,7 +248,7 @@ func (s *Swapchain) createFramebuffers(renderPass vk.RenderPass) error {
 
 		var framebuffer vk.Framebuffer
 		if res := vk.CreateFramebuffer(s.ctx.Device, fbInfo, nil, &framebuffer); res != vk.Success {
-			return fmt.Errorf("failed to create framebuffer %d: %d", i, res)
+			return fmt.Errorf("create framebuffer %d: vulkan result %d", i, res)
 		}
 		s.Framebuffers[i] = framebuffer
 	}

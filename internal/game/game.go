@@ -89,10 +89,10 @@ func (g *Game) Init(cfg *config.Config) error {
 	g.UI = ui.NewUIManager()
 	g.setupUI()
 
-	g.State.OnEnter(StatePlaying, func() {
+	g.State.OnEnter(GameStatePlaying, func() {
 		g.Renderer.Window.SetInputMode(glfw.CursorMode, glfw.CursorDisabled)
 	})
-	g.State.OnExit(StatePlaying, func() {
+	g.State.OnExit(GameStatePlaying, func() {
 		g.Renderer.Window.SetInputMode(glfw.CursorMode, glfw.CursorNormal)
 	})
 
@@ -167,20 +167,20 @@ func (g *Game) handleGlobalInput() {
 	pauseKey := g.KeyMap.GetKey(input.Pause)
 	if g.Input.IsKeyJustPressed(pauseKey) {
 		switch g.State.CurrentState() {
-		case StatePlaying:
-			g.State.SetState(StatePaused)
+		case GameStatePlaying:
+			g.State.SetState(GameStatePaused)
 			g.UI.PushScreen(ui.NewPauseMenu(
 				func() {
 					g.UI.PopScreen()
-					g.State.SetState(StatePlaying)
+					g.State.SetState(GameStatePlaying)
 				},
 				func() {
 					g.Running = false
 				},
 			))
-		case StatePaused:
+		case GameStatePaused:
 			g.UI.PopScreen()
-			g.State.SetState(StatePlaying)
+			g.State.SetState(GameStatePlaying)
 		}
 	}
 }
@@ -188,7 +188,7 @@ func (g *Game) handleGlobalInput() {
 func (g *Game) tick(dt float64) {
 	g.UI.Update(g.Input, dt)
 
-	if g.State.CurrentState() != StatePlaying {
+	if g.State.CurrentState() != GameStatePlaying {
 		return
 	}
 
@@ -245,7 +245,7 @@ func (g *Game) checkPlayerDeath() {
 		return
 	}
 
-	g.State.SetState(StateDead)
+	g.State.SetState(GameStateDead)
 	g.UI.PushScreen(ui.NewDeathScreen(func() {
 		g.respawnPlayer()
 	}))
@@ -276,11 +276,11 @@ func (g *Game) respawnPlayer() {
 	ecs.GetStore[entity.Damage](g.ECSWorld).Remove(g.Player.Entity)
 
 	// Sync camera position.
-	g.Player.Camera.Position = g.SpawnPoint.Add(mcmath.Vec3{Y: player.EyeOffset})
+	g.Player.Camera.SetPosition(g.SpawnPoint.Add(mcmath.Vec3{Y: player.EyeOffset}))
 
 	// Pop death screen and return to playing.
 	g.UI.PopScreen()
-	g.State.SetState(StatePlaying)
+	g.State.SetState(GameStatePlaying)
 }
 
 func (g *Game) render() {
@@ -289,8 +289,10 @@ func (g *Game) render() {
 		return
 	}
 
-	if g.State.CurrentState() == StatePlaying && g.Player != nil {
-		g.Renderer.DrawChunks(cmdBuf, g.Player.Camera)
+	if g.State.CurrentState() == GameStatePlaying && g.Player != nil {
+		if cam, ok := g.Player.Camera.(*render.Camera); ok {
+			g.Renderer.DrawChunks(cmdBuf, cam)
+		}
 	}
 
 	if err := g.Renderer.EndFrame(imageIndex); err != nil {
@@ -334,7 +336,7 @@ func (g *Game) StartSingleplayer() {
 		}
 	}
 
-	g.State.SetState(StatePlaying)
+	g.State.SetState(GameStatePlaying)
 }
 
 // loadExistingSave restores the world and player from an existing save.
@@ -386,8 +388,10 @@ func (g *Game) loadExistingSave(storage *world.Storage) {
 
 	// Restore player orientation.
 	if playerErr == nil {
-		g.Player.Camera.Yaw = playerData.Yaw
-		g.Player.Camera.Pitch = playerData.Pitch
+		if cam, ok := g.Player.Camera.(*render.Camera); ok {
+			cam.Yaw = playerData.Yaw
+			cam.Pitch = playerData.Pitch
+		}
 	}
 }
 
@@ -504,8 +508,10 @@ func (g *Game) buildPlayerData() world.PlayerData {
 		pd.Z = t.Position.Z
 	}
 
-	pd.Yaw = g.Player.Camera.Yaw
-	pd.Pitch = g.Player.Camera.Pitch
+	if cam, ok := g.Player.Camera.(*render.Camera); ok {
+		pd.Yaw = cam.Yaw
+		pd.Pitch = cam.Pitch
+	}
 
 	health := ecs.GetStore[entity.Health](g.ECSWorld)
 	if h, ok := health.Get(g.Player.Entity); ok {

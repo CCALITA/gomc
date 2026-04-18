@@ -124,6 +124,16 @@ func (c *Camera) Rotate(deltaYaw, deltaPitch float32) {
 	}
 }
 
+// GetPosition returns the current camera position.
+func (c *Camera) GetPosition() mcmath.Vec3 {
+	return c.Position
+}
+
+// SetPosition sets the camera position to the given value.
+func (c *Camera) SetPosition(pos mcmath.Vec3) {
+	c.Position = pos
+}
+
 // MoveForward moves the camera forward (positive) or backward (negative)
 // by the given distance along the horizontal forward direction.
 func (c *Camera) MoveForward(distance float32) {

@@ -11,7 +11,6 @@ import (
 	"github.com/fanxiyao/gomc/internal/inventory"
 	"github.com/fanxiyao/gomc/internal/mcmath"
 	"github.com/fanxiyao/gomc/internal/physics"
-	"github.com/fanxiyao/gomc/internal/render"
 )
 
 // ModeChecker abstracts game-mode capability queries so that the player
@@ -51,7 +50,7 @@ const (
 type Controller struct {
 	Entity        ecs.Entity
 	ECSWorld      *ecs.World
-	Camera        *render.Camera
+	Camera        PlayerCamera
 	KeyMap        *input.KeyMap
 	Mode          ModeChecker
 	WalkSpeed     float32
@@ -78,7 +77,7 @@ type Controller struct {
 
 // NewController creates a Controller for the given player entity with default
 // speeds, reach, and sensitivity.
-func NewController(e ecs.Entity, ecsWorld *ecs.World, camera *render.Camera, keyMap *input.KeyMap) *Controller {
+func NewController(e ecs.Entity, ecsWorld *ecs.World, camera PlayerCamera, keyMap *input.KeyMap) *Controller {
 	return &Controller{
 		Entity:       e,
 		ECSWorld:     ecsWorld,
@@ -274,7 +273,7 @@ func (c *Controller) syncCameraPosition() {
 	if transform == nil {
 		return
 	}
-	c.Camera.Position = transform.Position.Add(mcmath.Vec3{X: 0, Y: EyeOffset, Z: 0})
+	c.Camera.SetPosition(transform.Position.Add(mcmath.Vec3{X: 0, Y: EyeOffset, Z: 0}))
 }
 
 // getPhysicsBody returns a pointer to the entity's PhysicsBody component,

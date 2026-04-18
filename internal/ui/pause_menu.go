@@ -11,19 +11,19 @@ const (
 )
 
 // ButtonAction identifies what a pause menu button does when clicked.
-type ButtonAction int
+type buttonAction int
 
 const (
-	// ButtonResume closes the pause menu and returns to gameplay.
-	ButtonResume ButtonAction = iota
-	// ButtonOptions opens the options screen (placeholder).
-	ButtonOptions
-	// ButtonQuit exits the game.
-	ButtonQuit
+	// buttonResume closes the pause menu and returns to gameplay.
+	buttonResume buttonAction = iota
+	// buttonOptions opens the options screen (placeholder).
+	buttonOptions
+	// buttonQuit exits the game.
+	buttonQuit
 )
 
 // PauseButton represents a clickable button in the pause menu.
-type PauseButton struct {
+type pauseButton struct {
 	Label  string
 	Action ButtonAction
 }
@@ -31,7 +31,7 @@ type PauseButton struct {
 // PauseMenu is displayed when the player presses Escape during gameplay.
 // It provides Resume, Options, and Quit buttons.
 type PauseMenu struct {
-	Buttons []PauseButton
+	Buttons []pauseButton
 
 	// mouseX, mouseY track the cursor for hover highlighting.
 	mouseX, mouseY float64
@@ -55,10 +55,10 @@ type PauseMenu struct {
 // NewPauseMenu creates a pause menu with the standard buttons.
 func NewPauseMenu(onClose func(), onQuit func()) *PauseMenu {
 	return &PauseMenu{
-		Buttons: []PauseButton{
-			{Label: "Resume", Action: ButtonResume},
-			{Label: "Options", Action: ButtonOptions},
-			{Label: "Quit", Action: ButtonQuit},
+		Buttons: []pauseButton{
+			{Label: "Resume", Action: buttonResume},
+			{Label: "Options", Action: buttonOptions},
+			{Label: "Quit", Action: buttonQuit},
 		},
 		onClose:      onClose,
 		onQuit:       onQuit,
@@ -162,11 +162,11 @@ func (m *PauseMenu) executeButton(index int) {
 		return
 	}
 	switch m.Buttons[index].Action {
-	case ButtonResume:
+	case buttonResume:
 		m.Close()
-	case ButtonOptions:
+	case buttonOptions:
 		// Options screen is a placeholder for now.
-	case ButtonQuit:
+	case buttonQuit:
 		if m.onQuit != nil {
 			m.onQuit()
 		}

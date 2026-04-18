@@ -55,7 +55,7 @@ func (ctx *VulkanContext) Init(window *glfw.Window) error {
 	vk.SetGetInstanceProcAddr(glfw.GetVulkanGetInstanceProcAddress())
 
 	if err := vk.Init(); err != nil {
-		return fmt.Errorf("failed to initialise vulkan loader: %w", err)
+		return fmt.Errorf("initialise vulkan loader: %w", err)
 	}
 
 	// --- Create instance ---
@@ -84,7 +84,7 @@ func (ctx *VulkanContext) Init(window *glfw.Window) error {
 
 	var instance vk.Instance
 	if res := vk.CreateInstance(createInfo, nil, &instance); res != vk.Success {
-		return fmt.Errorf("failed to create vulkan instance: %d", res)
+		return fmt.Errorf("create vulkan instance: vulkan result %d", res)
 	}
 	ctx.Instance = instance
 	vk.InitInstance(instance)
@@ -92,18 +92,18 @@ func (ctx *VulkanContext) Init(window *glfw.Window) error {
 	// --- Create surface ---
 	surfacePtr, err := window.CreateWindowSurface(instance, nil)
 	if err != nil {
-		return fmt.Errorf("failed to create window surface: %w", err)
+		return fmt.Errorf("create window surface: %w", err)
 	}
 	ctx.Surface = vk.SurfaceFromPointer(surfacePtr)
 
 	// --- Pick physical device ---
 	if err := ctx.pickPhysicalDevice(); err != nil {
-		return fmt.Errorf("failed to pick physical device: %w", err)
+		return fmt.Errorf("pick physical device: %w", err)
 	}
 
 	// --- Create logical device ---
 	if err := ctx.createLogicalDevice(); err != nil {
-		return fmt.Errorf("failed to create logical device: %w", err)
+		return fmt.Errorf("create logical device: %w", err)
 	}
 
 	return nil
@@ -113,14 +113,16 @@ func (ctx *VulkanContext) Init(window *glfw.Window) error {
 func (ctx *VulkanContext) pickPhysicalDevice() error {
 	var deviceCount uint32
 	if res := vk.EnumeratePhysicalDevices(ctx.Instance, &deviceCount, nil); res != vk.Success {
-		return fmt.Errorf("failed to enumerate physical devices: %d", res)
+		return fmt.Errorf("enumerate physical devices count: vulkan result %d", res)
 	}
 	if deviceCount == 0 {
 		return fmt.Errorf("no GPUs with Vulkan support found")
 	}
 
 	devices := make([]vk.PhysicalDevice, deviceCount)
-	vk.EnumeratePhysicalDevices(ctx.Instance, &deviceCount, devices)
+	if res := vk.EnumeratePhysicalDevices(ctx.Instance, &deviceCount, devices); res != vk.Success {
+		return fmt.Errorf("enumerate physical devices: vulkan result %d", res)
+	}
 
 	for _, device := range devices {
 		if ctx.isDeviceSuitable(device) {
@@ -144,7 +146,10 @@ func (ctx *VulkanContext) isDeviceSuitable(device vk.PhysicalDevice) bool {
 		return false
 	}
 
-	details := querySwapchainSupport(device, ctx.Surface)
+	details, err := querySwapchainSupport(device, ctx.Surface)
+	if err != nil {
+		return false
+	}
 	return len(details.Formats) > 0 && len(details.PresentModes) > 0
 }
 
@@ -168,7 +173,9 @@ func (ctx *VulkanContext) findQueueFamilies(device vk.PhysicalDevice) QueueFamil
 		}
 
 		var presentSupport vk.Bool32
-		vk.GetPhysicalDeviceSurfaceSupport(device, uint32(i), ctx.Surface, &presentSupport)
+		if res := vk.GetPhysicalDeviceSurfaceSupport(device, uint32(i), ctx.Surface, &presentSupport); res != vk.Success {
+			continue
+		}
 		if presentSupport != 0 {
 			indices.PresentFamily = uint32(i)
 			indices.HasPresent = true
@@ -220,7 +227,7 @@ func (ctx *VulkanContext) createLogicalDevice() error {
 
 	var device vk.Device
 	if res := vk.CreateDevice(ctx.PhysicalDevice, createInfo, nil, &device); res != vk.Success {
-		return fmt.Errorf("failed to create logical device: %d", res)
+		return fmt.Errorf("create logical device: vulkan result %d", res)
 	}
 	ctx.Device = device
 
@@ -239,10 +246,14 @@ func (ctx *VulkanContext) createLogicalDevice() error {
 // required extensions.
 func checkDeviceExtensionSupport(device vk.PhysicalDevice) bool {
 	var extensionCount uint32
-	vk.EnumerateDeviceExtensionProperties(device, "", &extensionCount, nil)
+	if res := vk.EnumerateDeviceExtensionProperties(device, "", &extensionCount, nil); res != vk.Success {
+		return false
+	}
 
 	available := make([]vk.ExtensionProperties, extensionCount)
-	vk.EnumerateDeviceExtensionProperties(device, "", &extensionCount, available)
+	if res := vk.EnumerateDeviceExtensionProperties(device, "", &extensionCount, available); res != vk.Success {
+		return false
+	}
 
 	requiredSet := make(map[string]bool)
 	for _, ext := range deviceExtensions {
@@ -268,30 +279,40 @@ type SwapchainSupportDetails struct {
 
 // querySwapchainSupport queries the swapchain support details for the
 // given physical device and surface.
-func querySwapchainSupport(device vk.PhysicalDevice, surface vk.Surface) SwapchainSupportDetails {
+func querySwapchainSupport(device vk.PhysicalDevice, surface vk.Surface) (SwapchainSupportDetails, error) {
 	var details SwapchainSupportDetails
 
-	vk.GetPhysicalDeviceSurfaceCapabilities(device, surface, &details.Capabilities)
+	if res := vk.GetPhysicalDeviceSurfaceCapabilities(device, surface, &details.Capabilities); res != vk.Success {
+		return details, fmt.Errorf("get surface capabilities: vulkan result %d", res)
+	}
 	details.Capabilities.Deref()
 
 	var formatCount uint32
-	vk.GetPhysicalDeviceSurfaceFormats(device, surface, &formatCount, nil)
+	if res := vk.GetPhysicalDeviceSurfaceFormats(device, surface, &formatCount, nil); res != vk.Success {
+		return details, fmt.Errorf("get surface format count: vulkan result %d", res)
+	}
 	if formatCount > 0 {
 		details.Formats = make([]vk.SurfaceFormat, formatCount)
-		vk.GetPhysicalDeviceSurfaceFormats(device, surface, &formatCount, details.Formats)
+		if res := vk.GetPhysicalDeviceSurfaceFormats(device, surface, &formatCount, details.Formats); res != vk.Success {
+			return details, fmt.Errorf("get surface formats: vulkan result %d", res)
+		}
 		for i := range details.Formats {
 			details.Formats[i].Deref()
 		}
 	}
 
 	var presentModeCount uint32
-	vk.GetPhysicalDeviceSurfacePresentModes(device, surface, &presentModeCount, nil)
+	if res := vk.GetPhysicalDeviceSurfacePresentModes(device, surface, &presentModeCount, nil); res != vk.Success {
+		return details, fmt.Errorf("get present mode count: vulkan result %d", res)
+	}
 	if presentModeCount > 0 {
 		details.PresentModes = make([]vk.PresentMode, presentModeCount)
-		vk.GetPhysicalDeviceSurfacePresentModes(device, surface, &presentModeCount, details.PresentModes)
+		if res := vk.GetPhysicalDeviceSurfacePresentModes(device, surface, &presentModeCount, details.PresentModes); res != vk.Success {
+			return details, fmt.Errorf("get present modes: vulkan result %d", res)
+		}
 	}
 
-	return details
+	return details, nil
 }
 
 // findMemoryType finds a memory type index on the physical device that
@@ -309,7 +330,7 @@ func findMemoryType(physDevice vk.PhysicalDevice, typeFilter uint32, properties 
 		}
 	}
 
-	return 0, fmt.Errorf("failed to find suitable memory type")
+	return 0, fmt.Errorf("find suitable memory type: no match for filter %d with properties %d", typeFilter, properties)
 }
 
 // Cleanup destroys the Vulkan context resources in reverse order.

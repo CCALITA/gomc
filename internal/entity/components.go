@@ -8,24 +8,39 @@ import (
 
 // EntityType constants identify the kind of entity.
 const (
-	TypePlayer   uint8 = 1
-	TypeZombie   uint8 = 2
+	// TypePlayer identifies a player-controlled entity.
+	TypePlayer uint8 = 1
+	// TypeZombie identifies a zombie hostile mob.
+	TypeZombie uint8 = 2
+	// TypeSkeleton identifies a skeleton hostile mob.
 	TypeSkeleton uint8 = 3
-	TypeCreeper  uint8 = 4
-	TypeItem     uint8 = 5
-	TypeArrow    uint8 = 6
-	TypeCow      uint8 = 7
-	TypePig      uint8 = 8
-	TypeSheep    uint8 = 9
-	TypeChicken  uint8 = 10
+	// TypeCreeper identifies a creeper hostile mob.
+	TypeCreeper uint8 = 4
+	// TypeItem identifies a dropped item entity.
+	TypeItem uint8 = 5
+	// TypeArrow identifies an arrow projectile.
+	TypeArrow uint8 = 6
+	// TypeCow identifies a cow passive mob.
+	TypeCow uint8 = 7
+	// TypePig identifies a pig passive mob.
+	TypePig uint8 = 8
+	// TypeSheep identifies a sheep passive mob.
+	TypeSheep uint8 = 9
+	// TypeChicken identifies a chicken passive mob.
+	TypeChicken uint8 = 10
 )
 
-// AI state constants.
+// AI state constants define the mob behaviour state machine states.
 const (
-	AIIdle   uint8 = 0
+	// AIIdle means the mob is standing still.
+	AIIdle uint8 = 0
+	// AIWander means the mob is moving randomly.
 	AIWander uint8 = 1
-	AIChase  uint8 = 2
-	AIFlee   uint8 = 3
+	// AIChase means the mob is pursuing a target.
+	AIChase uint8 = 2
+	// AIFlee means the mob is running away from a threat.
+	AIFlee uint8 = 3
+	// AIAttack means the mob is attacking its target.
 	AIAttack uint8 = 4
 )
 

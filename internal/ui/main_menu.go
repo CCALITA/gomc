@@ -11,21 +11,21 @@ const (
 )
 
 // MainMenuAction identifies what a main menu button does when clicked.
-type MainMenuAction int
+type mainMenuAction int
 
 const (
-	// MainMenuSingleplayer starts a singleplayer world.
-	MainMenuSingleplayer MainMenuAction = iota
-	// MainMenuMultiplayer opens the multiplayer browser (placeholder).
-	MainMenuMultiplayer
-	// MainMenuOptions opens the options screen (placeholder).
-	MainMenuOptions
-	// MainMenuQuit exits the game.
-	MainMenuQuit
+	// mainMenuSingleplayer starts a singleplayer world.
+	mainMenuSingleplayer mainMenuAction = iota
+	// mainMenuMultiplayer opens the multiplayer browser (placeholder).
+	mainMenuMultiplayer
+	// mainMenuOptions opens the options screen (placeholder).
+	mainMenuOptions
+	// mainMenuQuit exits the game.
+	mainMenuQuit
 )
 
 // MainMenuButton represents a clickable button on the main menu.
-type MainMenuButton struct {
+type mainMenuButton struct {
 	Label  string
 	Action MainMenuAction
 }
@@ -33,7 +33,7 @@ type MainMenuButton struct {
 // MainMenu is the first screen shown when the game starts. It provides
 // Singleplayer, Multiplayer, Options, and Quit buttons.
 type MainMenu struct {
-	Buttons []MainMenuButton
+	Buttons []mainMenuButton
 
 	// Title text shown at the top.
 	Title string
@@ -45,21 +45,21 @@ type MainMenu struct {
 	hoveredIndex int
 
 	// onAction is called when a button is clicked with its action.
-	onAction func(MainMenuAction)
+	onAction func(mainMenuAction)
 
 	// screenWidth, screenHeight for hit testing.
 	screenWidth, screenHeight float32
 }
 
 // NewMainMenu creates the main menu with standard buttons.
-func NewMainMenu(onAction func(MainMenuAction)) *MainMenu {
+func NewMainMenu(onAction func(mainMenuAction)) *MainMenu {
 	return &MainMenu{
 		Title: "GoMC",
-		Buttons: []MainMenuButton{
-			{Label: "Singleplayer", Action: MainMenuSingleplayer},
-			{Label: "Multiplayer", Action: MainMenuMultiplayer},
-			{Label: "Options", Action: MainMenuOptions},
-			{Label: "Quit", Action: MainMenuQuit},
+		Buttons: []mainMenuButton{
+			{Label: "Singleplayer", Action: mainMenuSingleplayer},
+			{Label: "Multiplayer", Action: mainMenuMultiplayer},
+			{Label: "Options", Action: mainMenuOptions},
+			{Label: "Quit", Action: mainMenuQuit},
 		},
 		onAction:     onAction,
 		hoveredIndex: -1,

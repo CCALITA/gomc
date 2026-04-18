@@ -149,7 +149,7 @@ func (c *Controller) getSelectedHotbarItem() item.ItemStack {
 // GetTargetBlock performs a raycast from the camera along the forward
 // direction up to Reach distance and returns the first solid block hit.
 func (c *Controller) GetTargetBlock(w BlockWorld) (hit bool, pos mcmath.BlockPos, face mcmath.Direction) {
-	origin := c.Camera.Position
+	origin := c.Camera.GetPosition()
 	direction := c.Camera.Forward()
 
 	isSolid := func(bp mcmath.BlockPos) bool {
@@ -193,7 +193,7 @@ func (c *Controller) UpdateCombat(inp *input.Manager, ecsWorld *ecs.World, _ flo
 		return
 	}
 
-	origin := c.Camera.Position
+	origin := c.Camera.GetPosition()
 	direction := c.Camera.Forward()
 
 	// Find the nearest entity whose world AABB intersects the ray.

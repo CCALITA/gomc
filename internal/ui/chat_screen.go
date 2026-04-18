@@ -20,7 +20,7 @@ const (
 const keyBackspace = 259
 
 // ChatMessage represents a single message in the chat log.
-type ChatMessage struct {
+type chatMessage struct {
 	Sender string
 	Text   string
 	Time   time.Time
@@ -28,25 +28,25 @@ type ChatMessage struct {
 
 // String returns a formatted "[Sender] Text" representation, or just
 // the Text when there is no sender (system messages).
-func (m ChatMessage) String() string {
+func (m chatMessage) String() string {
 	if m.Sender == "" {
 		return m.Text
 	}
 	return fmt.Sprintf("[%s] %s", m.Sender, m.Text)
 }
 
-// OnSendFunc is called when the player submits a line in the chat.
+// onSendFunc is called when the player submits a line in the chat.
 // The line may be a plain message or a slash command.
-type OnSendFunc func(text string)
+type onSendFunc func(text string)
 
 // ChatScreen implements the Screen interface for an in-game chat
 // overlay. It collects keyboard input into a text buffer, displays
 // recent messages, and invokes OnSend when the player presses Enter.
 type ChatScreen struct {
-	Messages []ChatMessage
+	Messages []chatMessage
 	InputBuf []rune
 
-	onSend  OnSendFunc
+	onSend  onSendFunc
 	onClose func()
 	closed  bool
 }
@@ -54,9 +54,9 @@ type ChatScreen struct {
 // NewChatScreen creates a ChatScreen ready to receive input.
 // onSend is called with the input text when Enter is pressed.
 // onClose is called when the chat is dismissed (Escape or after send).
-func NewChatScreen(onSend OnSendFunc, onClose func()) *ChatScreen {
+func NewChatScreen(onSend onSendFunc, onClose func()) *ChatScreen {
 	return &ChatScreen{
-		Messages: make([]ChatMessage, 0, chatMaxMessages),
+		Messages: make([]chatMessage, 0, chatMaxMessages),
 		InputBuf: make([]rune, 0, 128),
 		onSend:   onSend,
 		onClose:  onClose,
@@ -66,14 +66,14 @@ func NewChatScreen(onSend OnSendFunc, onClose func()) *ChatScreen {
 // AddMessage appends a message to the chat log, evicting the oldest
 // message when the log exceeds chatMaxMessages.
 func (c *ChatScreen) AddMessage(sender, text string) {
-	msg := ChatMessage{
+	msg := chatMessage{
 		Sender: sender,
 		Text:   text,
 		Time:   time.Now(),
 	}
 	if len(c.Messages) >= chatMaxMessages {
 		// Drop oldest by creating a new slice (immutable style).
-		trimmed := make([]ChatMessage, len(c.Messages)-1, chatMaxMessages)
+		trimmed := make([]chatMessage, len(c.Messages)-1, chatMaxMessages)
 		copy(trimmed, c.Messages[1:])
 		c.Messages = append(trimmed, msg)
 	} else {

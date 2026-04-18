@@ -45,6 +45,10 @@ var hostileMobTypes = []mobSpawnEntry{
 }
 
 // Spawner controls periodic mob spawning around the player.
+//
+// Thread safety: Spawner is NOT safe for concurrent use. SpawnCycle must only
+// be called from the main game tick goroutine, which is single-threaded with
+// respect to ECS world access. This is enforced by the game loop in Game.tick.
 type Spawner struct {
 	Rand  *rand.Rand
 	timer float64

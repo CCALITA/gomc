@@ -4,10 +4,14 @@ package entity
 type ArmorSlot int
 
 const (
-	SlotHelmet     ArmorSlot = 0
+	// SlotHelmet is the head armor slot.
+	SlotHelmet ArmorSlot = 0
+	// SlotChestplate is the chest armor slot.
 	SlotChestplate ArmorSlot = 1
-	SlotLeggings   ArmorSlot = 2
-	SlotBoots      ArmorSlot = 3
+	// SlotLeggings is the leg armor slot.
+	SlotLeggings ArmorSlot = 2
+	// SlotBoots is the foot armor slot.
+	SlotBoots ArmorSlot = 3
 )
 
 // armorSlotCount is the number of armor slots.

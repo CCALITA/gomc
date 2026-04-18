@@ -1,12 +1,12 @@
 package game
 
-type State int
+type GameState int
 
 const (
-	StateMainMenu State = iota
-	StatePlaying
-	StatePaused
-	StateDead
+	GameStateMainMenu GameState = iota
+	GameStatePlaying
+	GameStatePaused
+	GameStateDead
 )
 
 type stateCallbacks struct {
@@ -15,22 +15,22 @@ type stateCallbacks struct {
 }
 
 type StateManager struct {
-	current   State
-	callbacks map[State]stateCallbacks
+	current   GameState
+	callbacks map[GameState]stateCallbacks
 }
 
 func NewStateManager() *StateManager {
 	return &StateManager{
-		current:   StateMainMenu,
-		callbacks: make(map[State]stateCallbacks),
+		current:   GameStateMainMenu,
+		callbacks: make(map[GameState]stateCallbacks),
 	}
 }
 
-func (sm *StateManager) CurrentState() State {
+func (sm *StateManager) CurrentState() GameState {
 	return sm.current
 }
 
-func (sm *StateManager) SetState(s State) {
+func (sm *StateManager) SetState(s GameState) {
 	if sm.current == s {
 		return
 	}
@@ -43,13 +43,13 @@ func (sm *StateManager) SetState(s State) {
 	}
 }
 
-func (sm *StateManager) OnEnter(s State, fn func()) {
+func (sm *StateManager) OnEnter(s GameState, fn func()) {
 	cb := sm.callbacks[s]
 	cb.onEnter = fn
 	sm.callbacks[s] = cb
 }
 
-func (sm *StateManager) OnExit(s State, fn func()) {
+func (sm *StateManager) OnExit(s GameState, fn func()) {
 	cb := sm.callbacks[s]
 	cb.onExit = fn
 	sm.callbacks[s] = cb

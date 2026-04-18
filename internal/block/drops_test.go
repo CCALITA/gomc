@@ -20,12 +20,31 @@ func TestGetDrops_StoneDropsCobblestone(t *testing.T) {
 	assert.Equal(t, 1.0, drops[0].Chance)
 }
 
+func TestGetDrops_StoneWithBareHand(t *testing.T) {
+	drops := GetDrops(Stone, item.ToolNone, item.LevelHand)
+	require.Len(t, drops, 1)
+	assert.Equal(t, item.Cobblestone, drops[0].ItemID)
+	assert.Equal(t, 1, drops[0].Count)
+}
+
 func TestGetDrops_CoalOreDropsCoal(t *testing.T) {
 	drops := GetDrops(CoalOre, item.ToolPickaxe, item.LevelWood)
 	require.Len(t, drops, 1)
 	assert.Equal(t, item.Coal, drops[0].ItemID)
 	assert.Equal(t, 1, drops[0].Count)
 	assert.Equal(t, 1.0, drops[0].Chance)
+}
+
+func TestGetDrops_CoalOreWithBareHand(t *testing.T) {
+	drops := GetDrops(CoalOre, item.ToolNone, item.LevelHand)
+	require.Len(t, drops, 1)
+	assert.Equal(t, item.Coal, drops[0].ItemID)
+}
+
+func TestGetDrops_CoalOreWithAxe(t *testing.T) {
+	drops := GetDrops(CoalOre, item.ToolAxe, item.LevelDiamond)
+	require.Len(t, drops, 1)
+	assert.Equal(t, item.Coal, drops[0].ItemID)
 }
 
 func TestGetDrops_DiamondOreWithIronPickaxe(t *testing.T) {
@@ -36,47 +55,12 @@ func TestGetDrops_DiamondOreWithIronPickaxe(t *testing.T) {
 	assert.Equal(t, 1.0, drops[0].Chance)
 }
 
-func TestGetDrops_DiamondOreWithDiamondPickaxe(t *testing.T) {
-	drops := GetDrops(DiamondOre, item.ToolPickaxe, item.LevelDiamond)
-	require.Len(t, drops, 1)
-	assert.Equal(t, item.Diamond, drops[0].ItemID)
-}
-
-func TestGetDrops_DiamondOreWithStonePickaxeDropsNothing(t *testing.T) {
-	drops := GetDrops(DiamondOre, item.ToolPickaxe, item.LevelStone)
-	assert.Empty(t, drops)
-}
-
-func TestGetDrops_DiamondOreWithWoodPickaxeDropsNothing(t *testing.T) {
-	drops := GetDrops(DiamondOre, item.ToolPickaxe, item.LevelWood)
-	assert.Empty(t, drops)
-}
-
-func TestGetDrops_DiamondOreWithHandDropsNothing(t *testing.T) {
-	drops := GetDrops(DiamondOre, item.ToolNone, item.LevelHand)
-	assert.Empty(t, drops)
-}
-
-func TestGetDrops_DiamondOreWithWrongToolDropsNothing(t *testing.T) {
-	drops := GetDrops(DiamondOre, item.ToolAxe, item.LevelDiamond)
-	assert.Empty(t, drops)
-}
-
 func TestGetDrops_IronOreWithStonePickaxe(t *testing.T) {
 	drops := GetDrops(IronOre, item.ToolPickaxe, item.LevelStone)
 	require.Len(t, drops, 1)
 	assert.Equal(t, item.IronOre, drops[0].ItemID)
 	assert.Equal(t, 1, drops[0].Count)
-}
-
-func TestGetDrops_IronOreWithWoodPickaxeDropsNothing(t *testing.T) {
-	drops := GetDrops(IronOre, item.ToolPickaxe, item.LevelWood)
-	assert.Empty(t, drops)
-}
-
-func TestGetDrops_IronOreWithHandDropsNothing(t *testing.T) {
-	drops := GetDrops(IronOre, item.ToolNone, item.LevelHand)
-	assert.Empty(t, drops)
+	assert.Equal(t, 1.0, drops[0].Chance)
 }
 
 func TestGetDrops_GoldOreWithStonePickaxe(t *testing.T) {
@@ -84,11 +68,7 @@ func TestGetDrops_GoldOreWithStonePickaxe(t *testing.T) {
 	require.Len(t, drops, 1)
 	assert.Equal(t, item.GoldOre, drops[0].ItemID)
 	assert.Equal(t, 1, drops[0].Count)
-}
-
-func TestGetDrops_GoldOreWithWoodPickaxeDropsNothing(t *testing.T) {
-	drops := GetDrops(GoldOre, item.ToolPickaxe, item.LevelWood)
-	assert.Empty(t, drops)
+	assert.Equal(t, 1.0, drops[0].Chance)
 }
 
 func TestGetDrops_GrassDropsDirt(t *testing.T) {
@@ -99,6 +79,12 @@ func TestGetDrops_GrassDropsDirt(t *testing.T) {
 	assert.Equal(t, 1.0, drops[0].Chance)
 }
 
+func TestGetDrops_GrassWithShovel(t *testing.T) {
+	drops := GetDrops(Grass, item.ToolShovel, item.LevelWood)
+	require.Len(t, drops, 1)
+	assert.Equal(t, item.Dirt, drops[0].ItemID)
+}
+
 func TestGetDrops_OakLeavesDropsSapling(t *testing.T) {
 	drops := GetDrops(OakLeaves, item.ToolNone, item.LevelHand)
 	require.Len(t, drops, 1)
@@ -107,28 +93,42 @@ func TestGetDrops_OakLeavesDropsSapling(t *testing.T) {
 	assert.InDelta(t, 0.1, drops[0].Chance, 1e-9)
 }
 
-func TestGetDrops_GlassDropsNothing(t *testing.T) {
-	drops := GetDrops(Glass, item.ToolNone, item.LevelHand)
-	assert.Empty(t, drops)
+func TestGetDrops_OakLeavesChanceBelowOne(t *testing.T) {
+	drops := GetDrops(OakLeaves, item.ToolAxe, item.LevelWood)
+	require.Len(t, drops, 1)
+	assert.Less(t, drops[0].Chance, 1.0, "oak leaves drop chance should be less than 1.0")
+	assert.Greater(t, drops[0].Chance, 0.0, "oak leaves drop chance should be greater than 0.0")
 }
 
-func TestGetDrops_AirDropsNothing(t *testing.T) {
-	drops := GetDrops(Air, item.ToolNone, item.LevelHand)
-	assert.Empty(t, drops)
+// ---------------------------------------------------------------------------
+// GetDrops – blocks that drop nothing
+// ---------------------------------------------------------------------------
+
+func TestGetDrops_NoDropBlocks(t *testing.T) {
+	tests := []struct {
+		name    string
+		blockID uint16
+	}{
+		{"Air", Air},
+		{"Bedrock", Bedrock},
+		{"Water", Water},
+		{"Lava", Lava},
+		{"FlowingWater", FlowingWater},
+		{"FlowingLava", FlowingLava},
+		{"Glass", Glass},
+		{"Glass with pickaxe", Glass},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			drops := GetDrops(tc.blockID, item.ToolNone, item.LevelHand)
+			assert.Empty(t, drops)
+		})
+	}
 }
 
-func TestGetDrops_BedrockDropsNothing(t *testing.T) {
-	drops := GetDrops(Bedrock, item.ToolNone, item.LevelHand)
-	assert.Empty(t, drops)
-}
-
-func TestGetDrops_WaterDropsNothing(t *testing.T) {
-	drops := GetDrops(Water, item.ToolNone, item.LevelHand)
-	assert.Empty(t, drops)
-}
-
-func TestGetDrops_LavaDropsNothing(t *testing.T) {
-	drops := GetDrops(Lava, item.ToolNone, item.LevelHand)
+func TestGetDrops_GlassWithPickaxeStillDropsNothing(t *testing.T) {
+	drops := GetDrops(Glass, item.ToolPickaxe, item.LevelDiamond)
 	assert.Empty(t, drops)
 }
 
@@ -170,6 +170,94 @@ func TestGetDrops_DefaultDropsSelf(t *testing.T) {
 func TestGetDrops_UnknownBlockDropsNothing(t *testing.T) {
 	drops := GetDrops(255, item.ToolNone, item.LevelHand)
 	assert.Empty(t, drops)
+}
+
+// ---------------------------------------------------------------------------
+// Mining level requirements – insufficient level yields no drops
+// ---------------------------------------------------------------------------
+
+func TestMiningLevel_DiamondOreRequiresIronPickaxe(t *testing.T) {
+	tests := []struct {
+		name      string
+		toolType  string
+		toolLevel int
+		wantDrops bool
+	}{
+		{"bare hand", item.ToolNone, item.LevelHand, false},
+		{"wood pickaxe", item.ToolPickaxe, item.LevelWood, false},
+		{"stone pickaxe", item.ToolPickaxe, item.LevelStone, false},
+		{"iron pickaxe", item.ToolPickaxe, item.LevelIron, true},
+		{"diamond pickaxe", item.ToolPickaxe, item.LevelDiamond, true},
+		{"diamond axe (wrong type)", item.ToolAxe, item.LevelDiamond, false},
+		{"diamond shovel (wrong type)", item.ToolShovel, item.LevelDiamond, false},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			drops := GetDrops(DiamondOre, tc.toolType, tc.toolLevel)
+			if tc.wantDrops {
+				require.Len(t, drops, 1)
+				assert.Equal(t, item.Diamond, drops[0].ItemID)
+			} else {
+				assert.Empty(t, drops)
+			}
+		})
+	}
+}
+
+func TestMiningLevel_IronOreRequiresStonePickaxe(t *testing.T) {
+	tests := []struct {
+		name      string
+		toolType  string
+		toolLevel int
+		wantDrops bool
+	}{
+		{"bare hand", item.ToolNone, item.LevelHand, false},
+		{"wood pickaxe", item.ToolPickaxe, item.LevelWood, false},
+		{"stone pickaxe", item.ToolPickaxe, item.LevelStone, true},
+		{"iron pickaxe", item.ToolPickaxe, item.LevelIron, true},
+		{"diamond pickaxe", item.ToolPickaxe, item.LevelDiamond, true},
+		{"diamond axe (wrong type)", item.ToolAxe, item.LevelDiamond, false},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			drops := GetDrops(IronOre, tc.toolType, tc.toolLevel)
+			if tc.wantDrops {
+				require.Len(t, drops, 1)
+				assert.Equal(t, item.IronOre, drops[0].ItemID)
+			} else {
+				assert.Empty(t, drops)
+			}
+		})
+	}
+}
+
+func TestMiningLevel_GoldOreRequiresStonePickaxe(t *testing.T) {
+	tests := []struct {
+		name      string
+		toolType  string
+		toolLevel int
+		wantDrops bool
+	}{
+		{"bare hand", item.ToolNone, item.LevelHand, false},
+		{"wood pickaxe", item.ToolPickaxe, item.LevelWood, false},
+		{"stone pickaxe", item.ToolPickaxe, item.LevelStone, true},
+		{"iron pickaxe", item.ToolPickaxe, item.LevelIron, true},
+		{"diamond shovel (wrong type)", item.ToolShovel, item.LevelDiamond, false},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			drops := GetDrops(GoldOre, tc.toolType, tc.toolLevel)
+			if tc.wantDrops {
+				require.Len(t, drops, 1)
+				assert.Equal(t, item.GoldOre, drops[0].ItemID)
+			} else {
+				assert.Empty(t, drops)
+			}
+		})
+	}
 }
 
 // ---------------------------------------------------------------------------
@@ -232,74 +320,117 @@ func TestGetMinToolLevel(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestCalculateBreakSpeed_BareHand(t *testing.T) {
-	// Stone hardness = 1.5, no tool = multiplier 1.0
-	// breakSpeed = 1.5 / 1.0 = 1.5
 	speed := CalculateBreakSpeed(Stone, item.ToolNone, item.LevelHand)
 	assert.InDelta(t, 1.5, speed, 1e-6)
 }
 
 func TestCalculateBreakSpeed_MatchingTool(t *testing.T) {
-	// Stone hardness = 1.5, pickaxe matches, min level = 0 (hand), wood level = 1
-	// multiplier = 2.0 + (1-0)*0.5 = 2.5
-	// breakSpeed = 1.5 / 2.5 = 0.6
 	speed := CalculateBreakSpeed(Stone, item.ToolPickaxe, item.LevelWood)
 	assert.InDelta(t, 0.6, speed, 1e-6)
 }
 
 func TestCalculateBreakSpeed_HigherLevelBonus(t *testing.T) {
-	// Stone hardness = 1.5, min level = 0 (hand), iron pickaxe = level 3
-	// multiplier = 2.0 + (3-0)*0.5 = 3.5
-	// breakSpeed = 1.5 / 3.5
 	speed := CalculateBreakSpeed(Stone, item.ToolPickaxe, item.LevelIron)
 	assert.InDelta(t, 1.5/3.5, speed, 1e-6)
 }
 
 func TestCalculateBreakSpeed_WrongTool(t *testing.T) {
-	// Stone hardness = 1.5, axe on stone = no match = multiplier 1.0
 	speed := CalculateBreakSpeed(Stone, item.ToolAxe, item.LevelDiamond)
 	assert.InDelta(t, 1.5, speed, 1e-6)
 }
 
 func TestCalculateBreakSpeed_ShovelOnDirt(t *testing.T) {
-	// Dirt hardness = 0.5, shovel matches, min level = 0 (hand), wood level = 1
-	// multiplier = 2.0 + (1-0)*0.5 = 2.5
-	// breakSpeed = 0.5 / 2.5 = 0.2
 	speed := CalculateBreakSpeed(Dirt, item.ToolShovel, item.LevelWood)
 	assert.InDelta(t, 0.2, speed, 1e-6)
 }
 
 func TestCalculateBreakSpeed_AxeOnWood(t *testing.T) {
-	// OakLog hardness = 2.0, axe matches, min level = 0 (hand), wood level = 1
-	// multiplier = 2.0 + (1-0)*0.5 = 2.5
-	// breakSpeed = 2.0 / 2.5 = 0.8
 	speed := CalculateBreakSpeed(OakLog, item.ToolAxe, item.LevelWood)
 	assert.InDelta(t, 0.8, speed, 1e-6)
 }
 
 func TestCalculateBreakSpeed_UnbreakableBlock(t *testing.T) {
-	// Bedrock hardness = -1
 	speed := CalculateBreakSpeed(Bedrock, item.ToolPickaxe, item.LevelDiamond)
 	assert.Equal(t, float32(0), speed)
 }
 
 func TestCalculateBreakSpeed_ZeroHardness(t *testing.T) {
-	// Torch hardness = 0
 	speed := CalculateBreakSpeed(Torch, item.ToolNone, item.LevelHand)
 	assert.Equal(t, float32(0), speed)
 }
 
 func TestCalculateBreakSpeed_DiamondOreWithIronPickaxe(t *testing.T) {
-	// DiamondOre hardness = 3.0, pickaxe matches, min level = 3 (iron)
-	// multiplier = 2.0 + (3-3)*0.5 = 2.0
-	// breakSpeed = 3.0 / 2.0 = 1.5
 	speed := CalculateBreakSpeed(DiamondOre, item.ToolPickaxe, item.LevelIron)
 	assert.InDelta(t, 1.5, speed, 1e-6)
 }
 
 func TestCalculateBreakSpeed_DiamondOreWithDiamondPickaxe(t *testing.T) {
-	// DiamondOre hardness = 3.0, pickaxe matches, min level = 3 (iron)
-	// diamond level = 4, multiplier = 2.0 + (4-3)*0.5 = 2.5
-	// breakSpeed = 3.0 / 2.5 = 1.2
 	speed := CalculateBreakSpeed(DiamondOre, item.ToolPickaxe, item.LevelDiamond)
 	assert.InDelta(t, 1.2, speed, 1e-6)
+}
+
+func TestCalculateBreakSpeed_ExactMinLevel(t *testing.T) {
+	speed := CalculateBreakSpeed(IronOre, item.ToolPickaxe, item.LevelStone)
+	assert.InDelta(t, 1.5, speed, 1e-6)
+}
+
+func TestCalculateBreakSpeed_MatchingToolAtHandLevel(t *testing.T) {
+	speed := CalculateBreakSpeed(Dirt, item.ToolShovel, item.LevelHand)
+	assert.InDelta(t, 0.25, speed, 1e-6)
+}
+
+func TestCalculateBreakSpeed_AirBlock(t *testing.T) {
+	speed := CalculateBreakSpeed(Air, item.ToolNone, item.LevelHand)
+	assert.Equal(t, float32(0), speed)
+}
+
+func TestCalculateBreakSpeed_GlassBlock(t *testing.T) {
+	speed := CalculateBreakSpeed(Glass, item.ToolNone, item.LevelHand)
+	assert.InDelta(t, 0.3, speed, 1e-6)
+}
+
+func TestCalculateBreakSpeed_ObsidianWithDiamondPickaxe(t *testing.T) {
+	speed := CalculateBreakSpeed(Obsidian, item.ToolPickaxe, item.LevelDiamond)
+	assert.InDelta(t, 12.5, speed, 1e-6)
+}
+
+// ---------------------------------------------------------------------------
+// Tool effectiveness – correct tool breaks faster than bare hand
+// ---------------------------------------------------------------------------
+
+func TestToolEffectiveness_CorrectToolFasterThanHand(t *testing.T) {
+	tests := []struct {
+		name     string
+		blockID  uint16
+		toolType string
+	}{
+		{"pickaxe on stone", Stone, item.ToolPickaxe},
+		{"axe on wood", OakLog, item.ToolAxe},
+		{"shovel on dirt", Dirt, item.ToolShovel},
+		{"shovel on sand", Sand, item.ToolShovel},
+		{"shovel on gravel", Gravel, item.ToolShovel},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			bareHand := CalculateBreakSpeed(tc.blockID, item.ToolNone, item.LevelHand)
+			withTool := CalculateBreakSpeed(tc.blockID, tc.toolType, item.LevelWood)
+			assert.Less(t, withTool, bareHand,
+				"matching tool should break block faster (lower time) than bare hand")
+		})
+	}
+}
+
+func TestToolEffectiveness_WrongToolNotFasterThanHand(t *testing.T) {
+	bareHand := CalculateBreakSpeed(Stone, item.ToolNone, item.LevelHand)
+	wrongTool := CalculateBreakSpeed(Stone, item.ToolShovel, item.LevelDiamond)
+	assert.InDelta(t, bareHand, wrongTool, 1e-6,
+		"wrong tool type should be same speed as bare hand")
+}
+
+func TestToolEffectiveness_HigherLevelPickaxeFasterThanLower(t *testing.T) {
+	woodPickaxe := CalculateBreakSpeed(Stone, item.ToolPickaxe, item.LevelWood)
+	ironPickaxe := CalculateBreakSpeed(Stone, item.ToolPickaxe, item.LevelIron)
+	assert.Less(t, ironPickaxe, woodPickaxe,
+		"iron pickaxe should break stone faster than wood pickaxe")
 }

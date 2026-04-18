@@ -285,7 +285,7 @@ func (h *HUD) SetPlayerPos(x, y, z float32) {
 func (h *HUD) SetPlayerRotation(yaw, pitch float32) {
 	h.PlayerYaw = yaw
 	h.PlayerPitch = pitch
-	h.FacingDirection = FacingDirectionFromYaw(yaw)
+	h.FacingDirection = facingDirectionFromYaw(yaw)
 }
 
 // SetChunkPos updates the chunk coordinates on the debug overlay.
@@ -309,14 +309,14 @@ func (h *HUD) SetMemoryMB(mb float64) {
 	h.MemoryMB = mb
 }
 
-// FacingDirectionFromYaw returns a cardinal direction string for the given
+// facingDirectionFromYaw returns a cardinal direction string for the given
 // yaw angle in degrees. The mapping follows Minecraft conventions:
 //
 //	-45 to 45   -> South  (toward +Z)
 //	 45 to 135  -> West   (toward -X)
 //	135 to 180 or -180 to -135 -> North (toward -Z)
 //	-135 to -45 -> East   (toward +X)
-func FacingDirectionFromYaw(yaw float32) string {
+func facingDirectionFromYaw(yaw float32) string {
 	// Normalize yaw to [-180, 180).
 	y := normalizeYaw(yaw)
 

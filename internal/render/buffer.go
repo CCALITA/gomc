@@ -33,7 +33,7 @@ func CreateBuffer(
 
 	var buffer vk.Buffer
 	if res := vk.CreateBuffer(ctx.Device, bufferInfo, nil, &buffer); res != vk.Success {
-		return nil, fmt.Errorf("failed to create buffer: %d", res)
+		return nil, fmt.Errorf("create buffer: vulkan result %d", res)
 	}
 
 	var memReqs vk.MemoryRequirements
@@ -43,7 +43,7 @@ func CreateBuffer(
 	memTypeIndex, err := findMemoryType(ctx.PhysicalDevice, memReqs.MemoryTypeBits, properties)
 	if err != nil {
 		vk.DestroyBuffer(ctx.Device, buffer, nil)
-		return nil, fmt.Errorf("failed to find suitable memory type: %w", err)
+		return nil, fmt.Errorf("find buffer memory type: %w", err)
 	}
 
 	allocInfo := &vk.MemoryAllocateInfo{
@@ -55,10 +55,14 @@ func CreateBuffer(
 	var memory vk.DeviceMemory
 	if res := vk.AllocateMemory(ctx.Device, allocInfo, nil, &memory); res != vk.Success {
 		vk.DestroyBuffer(ctx.Device, buffer, nil)
-		return nil, fmt.Errorf("failed to allocate buffer memory: %d", res)
+		return nil, fmt.Errorf("allocate buffer memory: vulkan result %d", res)
 	}
 
-	vk.BindBufferMemory(ctx.Device, buffer, memory, 0)
+	if res := vk.BindBufferMemory(ctx.Device, buffer, memory, 0); res != vk.Success {
+		vk.FreeMemory(ctx.Device, memory, nil)
+		vk.DestroyBuffer(ctx.Device, buffer, nil)
+		return nil, fmt.Errorf("bind buffer memory: vulkan result %d", res)
+	}
 
 	return &Buffer{
 		Handle: buffer,
@@ -94,12 +98,12 @@ func CreateVertexBuffer(ctx *VulkanContext, cmdPool *CommandPool, data []float32
 		vk.MemoryPropertyFlags(vk.MemoryPropertyHostVisibleBit|vk.MemoryPropertyHostCoherentBit),
 	)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create staging buffer: %w", err)
+		return nil, fmt.Errorf("create staging buffer: %w", err)
 	}
 	defer staging.Cleanup()
 
 	if err := mapAndCopy(ctx.Device, staging.Memory, bufferSize, unsafe.Pointer(&data[0])); err != nil {
-		return nil, fmt.Errorf("failed to map staging buffer: %w", err)
+		return nil, fmt.Errorf("map staging buffer: %w", err)
 	}
 
 	vertexBuffer, err := CreateBuffer(
@@ -109,12 +113,12 @@ func CreateVertexBuffer(ctx *VulkanContext, cmdPool *CommandPool, data []float32
 		vk.MemoryPropertyFlags(vk.MemoryPropertyDeviceLocalBit),
 	)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create vertex buffer: %w", err)
+		return nil, fmt.Errorf("create vertex buffer: %w", err)
 	}
 
 	if err := cmdPool.CopyBuffer(staging.Handle, vertexBuffer.Handle, bufferSize); err != nil {
 		vertexBuffer.Cleanup()
-		return nil, fmt.Errorf("failed to copy to vertex buffer: %w", err)
+		return nil, fmt.Errorf("copy to vertex buffer: %w", err)
 	}
 
 	return vertexBuffer, nil
@@ -136,12 +140,12 @@ func CreateIndexBuffer(ctx *VulkanContext, cmdPool *CommandPool, data []uint32) 
 		vk.MemoryPropertyFlags(vk.MemoryPropertyHostVisibleBit|vk.MemoryPropertyHostCoherentBit),
 	)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create staging buffer: %w", err)
+		return nil, fmt.Errorf("create index staging buffer: %w", err)
 	}
 	defer staging.Cleanup()
 
 	if err := mapAndCopy(ctx.Device, staging.Memory, bufferSize, unsafe.Pointer(&data[0])); err != nil {
-		return nil, fmt.Errorf("failed to map staging buffer: %w", err)
+		return nil, fmt.Errorf("map index staging buffer: %w", err)
 	}
 
 	indexBuffer, err := CreateBuffer(
@@ -151,12 +155,12 @@ func CreateIndexBuffer(ctx *VulkanContext, cmdPool *CommandPool, data []uint32) 
 		vk.MemoryPropertyFlags(vk.MemoryPropertyDeviceLocalBit),
 	)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create index buffer: %w", err)
+		return nil, fmt.Errorf("create index buffer: %w", err)
 	}
 
 	if err := cmdPool.CopyBuffer(staging.Handle, indexBuffer.Handle, bufferSize); err != nil {
 		indexBuffer.Cleanup()
-		return nil, fmt.Errorf("failed to copy to index buffer: %w", err)
+		return nil, fmt.Errorf("copy to index buffer: %w", err)
 	}
 
 	return indexBuffer, nil
@@ -182,7 +186,7 @@ func (b *Buffer) UpdateUniformBuffer(data unsafe.Pointer, size vk.DeviceSize) er
 func mapAndCopy(device vk.Device, memory vk.DeviceMemory, size vk.DeviceSize, src unsafe.Pointer) error {
 	var mapped unsafe.Pointer
 	if res := vk.MapMemory(device, memory, 0, size, 0, &mapped); res != vk.Success {
-		return fmt.Errorf("failed to map memory: %d", res)
+		return fmt.Errorf("map memory: vulkan result %d", res)
 	}
 
 	// Convert source pointer to a byte slice for vk.Memcopy.
