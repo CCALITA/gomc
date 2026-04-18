@@ -101,18 +101,10 @@ func (cl *ChunkLoader) Update(centerChunkPos mcmath.ChunkPos) {
 	}
 
 	// Unload chunks outside radius + padding.
-	cl.world.mu.RLock()
-	var toUnload []mcmath.ChunkPos
-	for key := range cl.world.chunks {
-		cp := mcmath.ChunkPos{X: key[0], Z: key[1]}
+	for _, cp := range cl.world.LoadedChunkPositions() {
 		if centerChunkPos.Distance(cp) > float64(unloadRadius) {
-			toUnload = append(toUnload, cp)
+			cl.world.UnloadChunk(cp)
 		}
-	}
-	cl.world.mu.RUnlock()
-
-	for _, cp := range toUnload {
-		cl.world.UnloadChunk(cp)
 	}
 }
 
