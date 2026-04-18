@@ -10,7 +10,7 @@ const (
 	mainBtnSpacing = 14.0
 )
 
-// MainMenuAction identifies what a main menu button does when clicked.
+// mainMenuAction identifies what a main menu button does when clicked.
 type mainMenuAction int
 
 const (
@@ -27,7 +27,7 @@ const (
 // MainMenuButton represents a clickable button on the main menu.
 type mainMenuButton struct {
 	Label  string
-	Action MainMenuAction
+	Action mainMenuAction
 }
 
 // MainMenu is the first screen shown when the game starts. It provides

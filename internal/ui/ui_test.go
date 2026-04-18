@@ -367,7 +367,7 @@ func TestHUD_HungerBar_HalfDrumstick(t *testing.T) {
 
 // ---------- Debug overlay tests ----------
 
-func TestfacingDirectionFromYaw(t *testing.T) {
+func Test_facingDirectionFromYaw(t *testing.T) {
 	tests := []struct {
 		name     string
 		yaw      float32

@@ -10,7 +10,7 @@ const (
 	pauseBtnSpacing = 12.0
 )
 
-// ButtonAction identifies what a pause menu button does when clicked.
+// buttonAction identifies what a pause menu button does when clicked.
 type buttonAction int
 
 const (
@@ -25,7 +25,7 @@ const (
 // PauseButton represents a clickable button in the pause menu.
 type pauseButton struct {
 	Label  string
-	Action ButtonAction
+	Action buttonAction
 }
 
 // PauseMenu is displayed when the player presses Escape during gameplay.
