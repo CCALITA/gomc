@@ -40,6 +40,23 @@ func TestDefault(t *testing.T) {
 	assert.False(t, cfg.Debug.ShowFPS)
 	assert.False(t, cfg.Debug.ShowChunkBorders)
 	assert.False(t, cfg.Debug.Wireframe)
+
+	// Gameplay defaults
+	assert.InDelta(t, 20.0, cfg.Gameplay.TickRate, 0.001)
+	assert.Equal(t, 6000, cfg.Gameplay.AutoSaveIntervalTicks)
+	assert.InDelta(t, float32(16.0), cfg.Gameplay.AIChaseRange, 0.001)
+	assert.InDelta(t, float32(2.0), cfg.Gameplay.AIAttackRange, 0.001)
+	assert.Equal(t, 8, cfg.Gameplay.HostileSpawnCap)
+	assert.Equal(t, 10, cfg.Gameplay.PassiveSpawnCap)
+	assert.InDelta(t, float32(24.0), cfg.Gameplay.SpawnRadius, 0.001)
+
+	// Player defaults
+	assert.InDelta(t, float32(4.317), cfg.Player.WalkSpeed, 0.001)
+	assert.InDelta(t, float32(5.612), cfg.Player.SprintSpeed, 0.001)
+	assert.InDelta(t, float32(1.31), cfg.Player.SneakSpeed, 0.001)
+	assert.InDelta(t, float32(10.92), cfg.Player.FlySpeed, 0.001)
+	assert.InDelta(t, float32(8.0), cfg.Player.JumpVelocity, 0.001)
+	assert.InDelta(t, float32(5.0), cfg.Player.Reach, 0.001)
 }
 
 func TestLoadMissingFile(t *testing.T) {
@@ -139,6 +156,22 @@ func TestValidateCatchesBadValues(t *testing.T) {
 		{"port too high", func(cfg *Config) { cfg.Server.Port = 65536 }},
 		{"sensitivity too low", func(cfg *Config) { cfg.Controls.MouseSensitivity = 0.001 }},
 		{"sensitivity too high", func(cfg *Config) { cfg.Controls.MouseSensitivity = 11.0 }},
+		// Gameplay validation
+		{"tick rate zero", func(cfg *Config) { cfg.Gameplay.TickRate = 0 }},
+		{"tick rate negative", func(cfg *Config) { cfg.Gameplay.TickRate = -1 }},
+		{"auto save zero", func(cfg *Config) { cfg.Gameplay.AutoSaveIntervalTicks = 0 }},
+		{"ai chase range zero", func(cfg *Config) { cfg.Gameplay.AIChaseRange = 0 }},
+		{"ai attack range negative", func(cfg *Config) { cfg.Gameplay.AIAttackRange = -1 }},
+		{"hostile spawn cap negative", func(cfg *Config) { cfg.Gameplay.HostileSpawnCap = -1 }},
+		{"passive spawn cap negative", func(cfg *Config) { cfg.Gameplay.PassiveSpawnCap = -1 }},
+		{"spawn radius zero", func(cfg *Config) { cfg.Gameplay.SpawnRadius = 0 }},
+		// Player validation
+		{"walk speed zero", func(cfg *Config) { cfg.Player.WalkSpeed = 0 }},
+		{"sprint speed negative", func(cfg *Config) { cfg.Player.SprintSpeed = -1 }},
+		{"sneak speed zero", func(cfg *Config) { cfg.Player.SneakSpeed = 0 }},
+		{"fly speed zero", func(cfg *Config) { cfg.Player.FlySpeed = 0 }},
+		{"jump velocity zero", func(cfg *Config) { cfg.Player.JumpVelocity = 0 }},
+		{"reach zero", func(cfg *Config) { cfg.Player.Reach = 0 }},
 	}
 
 	for _, tt := range tests {

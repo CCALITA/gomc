@@ -50,8 +50,11 @@ var hostileMobTypes = []mobSpawnEntry{
 // be called from the main game tick goroutine, which is single-threaded with
 // respect to ECS world access. This is enforced by the game loop in Game.tick.
 type Spawner struct {
-	Rand  *rand.Rand
-	timer float64
+	Rand            *rand.Rand
+	timer           float64
+	HostileSpawnCap int
+	PassiveSpawnCap int
+	SpawnRadius     float32
 }
 
 // NewSpawner creates a Spawner with the given random source.
@@ -72,10 +75,10 @@ func (s *Spawner) SpawnCycle(w *ecs.World, dt float64, playerPos mcmath.Vec3) {
 
 	passiveCount, hostileCount := s.countMobs(w)
 
-	if passiveCount < maxPassiveMobs {
+	if passiveCount < s.passiveSpawnCap() {
 		s.spawnRandom(w, playerPos, passiveMobTypes)
 	}
-	if hostileCount < maxHostileMobs {
+	if hostileCount < s.hostileSpawnCap() {
 		s.spawnRandom(w, playerPos, hostileMobTypes)
 	}
 }
@@ -110,13 +113,38 @@ func (s *Spawner) spawnRandom(w *ecs.World, playerPos mcmath.Vec3, types []mobSp
 // (between spawnMinDistance and spawnRadius) around the player.
 func (s *Spawner) randomSpawnPos(center mcmath.Vec3) mcmath.Vec3 {
 	angle := s.float64() * 2 * math.Pi
-	dist := spawnMinDistance + float32(s.float64())*float32(spawnRadius-spawnMinDistance)
+	radius := s.effectiveSpawnRadius()
+	dist := spawnMinDistance + float32(s.float64())*float32(radius-spawnMinDistance)
 
 	return mcmath.Vec3{
 		X: center.X + dist*float32(math.Cos(angle)),
 		Y: center.Y,
 		Z: center.Z + dist*float32(math.Sin(angle)),
 	}
+}
+
+// hostileSpawnCap returns the effective hostile mob cap.
+func (s *Spawner) hostileSpawnCap() int {
+	if s.HostileSpawnCap > 0 {
+		return s.HostileSpawnCap
+	}
+	return maxHostileMobs
+}
+
+// passiveSpawnCap returns the effective passive mob cap.
+func (s *Spawner) passiveSpawnCap() int {
+	if s.PassiveSpawnCap > 0 {
+		return s.PassiveSpawnCap
+	}
+	return maxPassiveMobs
+}
+
+// effectiveSpawnRadius returns the effective spawn radius.
+func (s *Spawner) effectiveSpawnRadius() float32 {
+	if s.SpawnRadius > 0 {
+		return s.SpawnRadius
+	}
+	return spawnRadius
 }
 
 func (s *Spawner) intn(n int) int {

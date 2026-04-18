@@ -36,5 +36,48 @@ func Validate(cfg *Config) error {
 		return fmt.Errorf("controls.mouse_sensitivity must be 0.01-10.0, got %v", cfg.Controls.MouseSensitivity)
 	}
 
+	// Gameplay validation
+	if cfg.Gameplay.TickRate <= 0 {
+		return fmt.Errorf("gameplay.tick_rate must be > 0, got %v", cfg.Gameplay.TickRate)
+	}
+	if cfg.Gameplay.AutoSaveIntervalTicks <= 0 {
+		return fmt.Errorf("gameplay.auto_save_interval_ticks must be > 0, got %d", cfg.Gameplay.AutoSaveIntervalTicks)
+	}
+	if cfg.Gameplay.AIChaseRange <= 0 {
+		return fmt.Errorf("gameplay.ai_chase_range must be > 0, got %v", cfg.Gameplay.AIChaseRange)
+	}
+	if cfg.Gameplay.AIAttackRange <= 0 {
+		return fmt.Errorf("gameplay.ai_attack_range must be > 0, got %v", cfg.Gameplay.AIAttackRange)
+	}
+	if cfg.Gameplay.HostileSpawnCap < 0 {
+		return fmt.Errorf("gameplay.hostile_spawn_cap must be >= 0, got %d", cfg.Gameplay.HostileSpawnCap)
+	}
+	if cfg.Gameplay.PassiveSpawnCap < 0 {
+		return fmt.Errorf("gameplay.passive_spawn_cap must be >= 0, got %d", cfg.Gameplay.PassiveSpawnCap)
+	}
+	if cfg.Gameplay.SpawnRadius <= 0 {
+		return fmt.Errorf("gameplay.spawn_radius must be > 0, got %v", cfg.Gameplay.SpawnRadius)
+	}
+
+	// Player validation
+	if cfg.Player.WalkSpeed <= 0 {
+		return fmt.Errorf("player.walk_speed must be > 0, got %v", cfg.Player.WalkSpeed)
+	}
+	if cfg.Player.SprintSpeed <= 0 {
+		return fmt.Errorf("player.sprint_speed must be > 0, got %v", cfg.Player.SprintSpeed)
+	}
+	if cfg.Player.SneakSpeed <= 0 {
+		return fmt.Errorf("player.sneak_speed must be > 0, got %v", cfg.Player.SneakSpeed)
+	}
+	if cfg.Player.FlySpeed <= 0 {
+		return fmt.Errorf("player.fly_speed must be > 0, got %v", cfg.Player.FlySpeed)
+	}
+	if cfg.Player.JumpVelocity <= 0 {
+		return fmt.Errorf("player.jump_velocity must be > 0, got %v", cfg.Player.JumpVelocity)
+	}
+	if cfg.Player.Reach <= 0 {
+		return fmt.Errorf("player.reach must be > 0, got %v", cfg.Player.Reach)
+	}
+
 	return nil
 }
