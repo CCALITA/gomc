@@ -3,6 +3,7 @@ package render
 import (
 	"fmt"
 
+	"github.com/fanxiyao/gomc/internal/texgen"
 	"github.com/go-gl/glfw/v3.3/glfw"
 	vk "github.com/vulkan-go/vulkan"
 )
@@ -17,6 +18,7 @@ type Renderer struct {
 	Pipeline      *Pipeline
 	CmdPool       *CommandPool
 	ChunkRenderer *ChunkRenderer
+	Atlas         *TextureAtlas
 
 	width  uint32
 	height uint32
@@ -80,6 +82,19 @@ func (r *Renderer) Init(windowWidth, windowHeight int, title string) error {
 		return fmt.Errorf("failed to create command pool: %w", err)
 	}
 	r.CmdPool = cmdPool
+
+	// Generate block texture atlas
+	atlasImg := texgen.GenerateAtlas()
+	atlasData := texgen.AtlasToRGBA(atlasImg)
+	atlas, err := NewTextureAtlas(
+		&r.Context, r.CmdPool, atlasData,
+		texgen.AtlasSize, texgen.AtlasSize,
+		texgen.TileSize, texgen.TileSize,
+	)
+	if err != nil {
+		return fmt.Errorf("failed to create block texture atlas: %w", err)
+	}
+	r.Atlas = atlas
 
 	// Chunk renderer
 	chunkRenderer, err := NewChunkRenderer(&r.Context, r.CmdPool, r.Pipeline)
@@ -185,6 +200,9 @@ func (r *Renderer) Cleanup() {
 
 	if r.ChunkRenderer != nil {
 		r.ChunkRenderer.Cleanup()
+	}
+	if r.Atlas != nil {
+		r.Atlas.Cleanup()
 	}
 	if r.CmdPool != nil {
 		r.CmdPool.Cleanup()
