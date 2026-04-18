@@ -191,9 +191,9 @@ func TestFindPath(t *testing.T) {
 
 			// Verify path continuity: each step should be adjacent.
 			for i := 1; i < len(path); i++ {
-				dx := abs(int(path[i].X) - int(path[i-1].X))
-				dy := abs(int(path[i].Y) - int(path[i-1].Y))
-				dz := abs(int(path[i].Z) - int(path[i-1].Z))
+				dx := mcmath.Abs(int(path[i].X) - int(path[i-1].X))
+				dy := mcmath.Abs(int(path[i].Y) - int(path[i-1].Y))
+				dz := mcmath.Abs(int(path[i].Z) - int(path[i-1].Z))
 				dist := dx + dy + dz
 				assert.LessOrEqual(t, dist, 2, "path step %d->%d too far: %v -> %v", i-1, i, path[i-1], path[i])
 			}

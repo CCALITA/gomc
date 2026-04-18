@@ -52,6 +52,18 @@ func MeshChunk(
 	return m
 }
 
+// faceDir describes one of the six face directions for greedy meshing.
+type faceDir struct {
+	ax             axis
+	sign           int // +1 or -1
+	nx, ny, nz     float32
+}
+
+// mergedQuad represents a rectangle found by greedy merging.
+type mergedQuad struct {
+	u, v, w, h int
+}
+
 // meshSection performs greedy meshing for a single 16x16x16 section.
 func meshSection(
 	m *ChunkMesh,
@@ -61,47 +73,10 @@ func meshSection(
 	isSolid func(uint16) bool,
 	isTransparent func(uint16) bool,
 ) {
-	const N = mcmath.ChunkSize // 16
+	const N = mcmath.ChunkSize
 
-	// getBlock fetches a block, crossing into neighbor chunks when needed.
-	getBlock := func(x, y, z int) uint16 {
-		if x >= 0 && x < N && z >= 0 && z < N && y >= 0 && y < mcmath.ChunkHeight {
-			return chunk.GetBlock(x, y, z)
-		}
-		// Determine neighbor.
-		if z < 0 { // North
-			if neighbors[0] != nil {
-				return neighbors[0].GetBlock(x, y, z+N)
-			}
-			return 0
-		}
-		if z >= N { // South
-			if neighbors[1] != nil {
-				return neighbors[1].GetBlock(x, y, z-N)
-			}
-			return 0
-		}
-		if x >= N { // East
-			if neighbors[2] != nil {
-				return neighbors[2].GetBlock(x-N, y, z)
-			}
-			return 0
-		}
-		if x < 0 { // West
-			if neighbors[3] != nil {
-				return neighbors[3].GetBlock(x+N, y, z)
-			}
-			return 0
-		}
-		return 0
-	}
+	getBlock := makeGetBlock(chunk, neighbors)
 
-	// For each of the 6 face directions we iterate through 2D slices.
-	type faceDir struct {
-		ax   axis
-		sign int // +1 or -1
-		nx, ny, nz float32
-	}
 	dirs := [6]faceDir{
 		{axisX, 1, 1, 0, 0},   // East  (+X)
 		{axisX, -1, -1, 0, 0}, // West  (-X)
@@ -111,85 +86,139 @@ func meshSection(
 		{axisZ, -1, 0, 0, -1}, // North (-Z)
 	}
 
-	var mask [N * N]uint16 // reusable 2D mask for greedy merge
+	var mask [N * N]uint16
 
 	for _, d := range dirs {
 		for layer := 0; layer < N; layer++ {
-			// Build the 2D mask of exposed faces for this slice.
-			for v := 0; v < N; v++ {
-				for u := 0; u < N; u++ {
-					// Map (layer, u, v) to world-local (x, y, z) depending on axis.
-					var bx, by, bz int // block position
-					var nx, ny, nz int // neighbor offset
-					switch d.ax {
-					case axisX:
-						bx, by, bz = layer, baseY+v, u
-						nx, ny, nz = d.sign, 0, 0
-					case axisY:
-						bx, by, bz = u, baseY+layer, v
-						nx, ny, nz = 0, d.sign, 0
-					case axisZ:
-						bx, by, bz = u, baseY+v, layer
-						nx, ny, nz = 0, 0, d.sign
-					}
-
-					blockID := chunk.GetBlock(bx, by, bz)
-					if blockID == 0 || !isSolid(blockID) {
-						mask[v*N+u] = 0
-						continue
-					}
-					// Check neighbor.
-					neighborID := getBlock(bx+nx, by+ny, bz+nz)
-					if isTransparent(neighborID) {
-						mask[v*N+u] = blockID
-					} else {
-						mask[v*N+u] = 0
-					}
-				}
-			}
-
-			// Greedy merge.
-			var done [N * N]bool
-			for v := 0; v < N; v++ {
-				for u := 0; u < N; u++ {
-					idx := v*N + u
-					if mask[idx] == 0 || done[idx] {
-						continue
-					}
-					bid := mask[idx]
-
-					// Expand width.
-					w := 1
-					for u+w < N && mask[v*N+u+w] == bid && !done[v*N+u+w] {
-						w++
-					}
-					// Expand height.
-					h := 1
-					outer:
-					for v+h < N {
-						for du := 0; du < w; du++ {
-							ni := (v+h)*N + u + du
-							if mask[ni] != bid || done[ni] {
-								break outer
-							}
-						}
-						h++
-					}
-
-					// Mark merged cells as done.
-					for dv := 0; dv < h; dv++ {
-						for du := 0; du < w; du++ {
-							done[(v+dv)*N+u+du] = true
-						}
-					}
-
-					// Emit quad.
-					emitQuad(m, chunk, neighbors, d.ax, d.sign, layer, u, v, w, h, baseY,
-						d.nx, d.ny, d.nz, getBlock, isSolid)
-				}
+			buildFaceMask(&mask, chunk, getBlock, d, layer, baseY, isSolid, isTransparent)
+			quads := greedyMerge(&mask)
+			for _, q := range quads {
+				emitQuad(m, chunk, neighbors, d.ax, d.sign, layer, q.u, q.v, q.w, q.h, baseY,
+					d.nx, d.ny, d.nz, getBlock, isSolid)
 			}
 		}
 	}
+}
+
+// makeGetBlock returns a block-fetching closure that crosses into neighbor chunks.
+func makeGetBlock(c *Chunk, neighbors [4]*Chunk) func(int, int, int) uint16 {
+	const N = mcmath.ChunkSize
+	return func(x, y, z int) uint16 {
+		if x >= 0 && x < N && z >= 0 && z < N && y >= 0 && y < mcmath.ChunkHeight {
+			return c.GetBlock(x, y, z)
+		}
+		if z < 0 {
+			if neighbors[0] != nil {
+				return neighbors[0].GetBlock(x, y, z+N)
+			}
+			return 0
+		}
+		if z >= N {
+			if neighbors[1] != nil {
+				return neighbors[1].GetBlock(x, y, z-N)
+			}
+			return 0
+		}
+		if x >= N {
+			if neighbors[2] != nil {
+				return neighbors[2].GetBlock(x-N, y, z)
+			}
+			return 0
+		}
+		if x < 0 {
+			if neighbors[3] != nil {
+				return neighbors[3].GetBlock(x+N, y, z)
+			}
+			return 0
+		}
+		return 0
+	}
+}
+
+// buildFaceMask populates the 2D mask of exposed faces for one slice/layer.
+func buildFaceMask(
+	mask *[mcmath.ChunkSize * mcmath.ChunkSize]uint16,
+	c *Chunk,
+	getBlock func(int, int, int) uint16,
+	d faceDir,
+	layer, baseY int,
+	isSolid func(uint16) bool,
+	isTransparent func(uint16) bool,
+) {
+	const N = mcmath.ChunkSize
+	for v := 0; v < N; v++ {
+		for u := 0; u < N; u++ {
+			var bx, by, bz int
+			var nx, ny, nz int
+			switch d.ax {
+			case axisX:
+				bx, by, bz = layer, baseY+v, u
+				nx, ny, nz = d.sign, 0, 0
+			case axisY:
+				bx, by, bz = u, baseY+layer, v
+				nx, ny, nz = 0, d.sign, 0
+			case axisZ:
+				bx, by, bz = u, baseY+v, layer
+				nx, ny, nz = 0, 0, d.sign
+			}
+
+			blockID := c.GetBlock(bx, by, bz)
+			if blockID == 0 || !isSolid(blockID) {
+				mask[v*N+u] = 0
+				continue
+			}
+			neighborID := getBlock(bx+nx, by+ny, bz+nz)
+			if isTransparent(neighborID) {
+				mask[v*N+u] = blockID
+			} else {
+				mask[v*N+u] = 0
+			}
+		}
+	}
+}
+
+// greedyMerge runs greedy rectangle merging on a 16x16 mask and returns the
+// merged quads.
+func greedyMerge(mask *[mcmath.ChunkSize * mcmath.ChunkSize]uint16) []mergedQuad {
+	const N = mcmath.ChunkSize
+	var done [N * N]bool
+	var quads []mergedQuad
+
+	for v := 0; v < N; v++ {
+		for u := 0; u < N; u++ {
+			idx := v*N + u
+			if mask[idx] == 0 || done[idx] {
+				continue
+			}
+			bid := mask[idx]
+
+			w := 1
+			for u+w < N && mask[v*N+u+w] == bid && !done[v*N+u+w] {
+				w++
+			}
+			h := 1
+		outer:
+			for v+h < N {
+				for du := 0; du < w; du++ {
+					ni := (v+h)*N + u + du
+					if mask[ni] != bid || done[ni] {
+						break outer
+					}
+				}
+				h++
+			}
+
+			for dv := 0; dv < h; dv++ {
+				for du := 0; du < w; du++ {
+					done[(v+dv)*N+u+du] = true
+				}
+			}
+
+			quads = append(quads, mergedQuad{u: u, v: v, w: w, h: h})
+		}
+	}
+
+	return quads
 }
 
 // vertex3 is a simple 3D position used during mesh generation.

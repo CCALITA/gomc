@@ -78,13 +78,22 @@ const (
 	mobKnockbackUpward float32 = 4.0
 )
 
+// playerEntry holds a player entity and its position for AI target detection.
+type playerEntry struct {
+	entity ecs.Entity
+	pos    mcmath.Vec3
+}
+
+// nearestInfo holds the result of a nearest-player search.
+type nearestInfo struct {
+	dist   float32
+	pos    mcmath.Vec3
+	entity ecs.Entity
+}
+
 // Update processes AI state transitions for every AI entity.
 func (s *AISystem) Update(w *ecs.World, dt float64) {
 	// Collect player positions so mobs can detect them.
-	type playerEntry struct {
-		entity ecs.Entity
-		pos    mcmath.Vec3
-	}
 	var players []playerEntry
 
 	ecs.Query2[Transform, EntityTypeComp](w, func(e ecs.Entity, t *Transform, et *EntityTypeComp) {
@@ -96,103 +105,114 @@ func (s *AISystem) Update(w *ecs.World, dt float64) {
 	ecs.Query2[AI, Transform](w, func(e ecs.Entity, ai *AI, t *Transform) {
 		ai.Timer -= dt
 
-		// Passive mobs only idle and wander — skip player detection.
 		if ai.Passive {
-			switch ai.State {
-			case AIIdle:
-				if ai.Timer <= 0 {
-					ai.State = AIWander
-					ai.Timer = s.randomWanderTime()
-				}
-			case AIWander:
-				if ai.Timer <= 0 {
-					ai.State = AIIdle
-					ai.Timer = s.randomIdleTime()
-				}
-			default:
-				// Reset unexpected states to idle.
-				ai.State = AIIdle
-				ai.Timer = s.randomIdleTime()
-			}
+			s.handlePassive(ai)
 			return
 		}
 
-		// Find nearest player.
-		var nearestDist float32 = math.MaxFloat32
-		var nearestPos mcmath.Vec3
-		var nearestEntity ecs.Entity
-		for _, p := range players {
-			d := t.Position.Distance(p.pos)
-			if d < nearestDist {
-				nearestDist = d
-				nearestPos = p.pos
-				nearestEntity = p.entity
-			}
-		}
+		nearest := findNearestPlayer(t.Position, players)
 
 		switch ai.State {
 		case AIIdle:
-			// Transition to chase if a player is within range.
-			if nearestDist <= float32(aiChaseRange) {
-				ai.State = AIChase
-				ai.Target = nearestEntity
-				return
-			}
-			// Random chance to wander.
-			if ai.Timer <= 0 {
-				ai.State = AIWander
-				ai.Timer = s.randomWanderTime()
-			}
-
+			s.handleIdleOrWander(ai, nearest, AIWander, s.randomWanderTime)
 		case AIWander:
-			if nearestDist <= float32(aiChaseRange) {
-				ai.State = AIChase
-				ai.Target = nearestEntity
-				return
-			}
-			if ai.Timer <= 0 {
-				ai.State = AIIdle
-				ai.Timer = s.randomIdleTime()
-			}
-
+			s.handleIdleOrWander(ai, nearest, AIIdle, s.randomIdleTime)
 		case AIChase:
-			ai.Target = nearestEntity
-			if nearestDist > float32(aiChaseRange) {
-				ai.State = AIIdle
-				ai.Timer = s.randomIdleTime()
-				return
-			}
-			if nearestDist <= float32(aiAttackRange) {
-				ai.State = AIAttack
-				return
-			}
-			// Move towards player.
-			dir := nearestPos.Sub(t.Position).Normalize()
-			speed := float32(4.0) // blocks per second
-			t.Position = t.Position.Add(dir.Scale(speed * float32(dt)))
-
+			s.handleChase(ai, t, nearest, dt)
 		case AIAttack:
-			if nearestDist > float32(aiAttackRange) {
-				ai.State = AIChase
-				ai.Target = nearestEntity
-				return
-			}
-			// Deal damage when the cooldown timer has elapsed.
-			if ai.Timer <= 0 {
-				ai.Timer = aiAttackCooldown
-				dmgAmount := mobDamageForEntity(w, e)
-				if dmgAmount > 0 {
-					applyMobDamage(w, nearestEntity, t.Position, dmgAmount)
-				}
-			}
-
+			s.handleAttack(w, e, ai, t, nearest)
 		case AIFlee:
-			if nearestDist > float32(aiChaseRange) {
-				ai.State = AIIdle
-				ai.Timer = s.randomIdleTime()
-			}
+			s.handleFlee(ai, nearest)
 		}
 	})
+}
+
+// handlePassive handles AI state transitions for passive mobs (idle/wander only).
+func (s *AISystem) handlePassive(ai *AI) {
+	switch ai.State {
+	case AIIdle:
+		if ai.Timer <= 0 {
+			ai.State = AIWander
+			ai.Timer = s.randomWanderTime()
+		}
+	case AIWander:
+		if ai.Timer <= 0 {
+			ai.State = AIIdle
+			ai.Timer = s.randomIdleTime()
+		}
+	default:
+		ai.State = AIIdle
+		ai.Timer = s.randomIdleTime()
+	}
+}
+
+// findNearestPlayer returns the nearest player to the given position.
+func findNearestPlayer(pos mcmath.Vec3, players []playerEntry) nearestInfo {
+	info := nearestInfo{dist: math.MaxFloat32}
+	for _, p := range players {
+		d := pos.Distance(p.pos)
+		if d < info.dist {
+			info.dist = d
+			info.pos = p.pos
+			info.entity = p.entity
+		}
+	}
+	return info
+}
+
+// handleIdleOrWander handles the shared idle/wander logic: transition to chase
+// if a player is in range, otherwise switch to fallbackState when the timer expires.
+func (s *AISystem) handleIdleOrWander(ai *AI, nearest nearestInfo, fallbackState uint8, timerFn func() float64) {
+	if nearest.dist <= float32(aiChaseRange) {
+		ai.State = AIChase
+		ai.Target = nearest.entity
+		return
+	}
+	if ai.Timer <= 0 {
+		ai.State = fallbackState
+		ai.Timer = timerFn()
+	}
+}
+
+// handleChase moves the mob toward the nearest player, switching to attack or idle.
+func (s *AISystem) handleChase(ai *AI, t *Transform, nearest nearestInfo, dt float64) {
+	ai.Target = nearest.entity
+	if nearest.dist > float32(aiChaseRange) {
+		ai.State = AIIdle
+		ai.Timer = s.randomIdleTime()
+		return
+	}
+	if nearest.dist <= float32(aiAttackRange) {
+		ai.State = AIAttack
+		return
+	}
+	dir := nearest.pos.Sub(t.Position).Normalize()
+	speed := float32(4.0)
+	t.Position = t.Position.Add(dir.Scale(speed * float32(dt)))
+}
+
+// handleAttack deals damage on cooldown or transitions back to chase.
+func (s *AISystem) handleAttack(w *ecs.World, e ecs.Entity, ai *AI, t *Transform, nearest nearestInfo) {
+	if nearest.dist > float32(aiAttackRange) {
+		ai.State = AIChase
+		ai.Target = nearest.entity
+		return
+	}
+	if ai.Timer <= 0 {
+		ai.Timer = aiAttackCooldown
+		dmgAmount := mobDamageForEntity(w, e)
+		if dmgAmount > 0 {
+			applyMobDamage(w, nearest.entity, t.Position, dmgAmount)
+		}
+	}
+}
+
+// handleFlee transitions back to idle when the player is far enough away.
+func (s *AISystem) handleFlee(ai *AI, nearest nearestInfo) {
+	if nearest.dist > float32(aiChaseRange) {
+		ai.State = AIIdle
+		ai.Timer = s.randomIdleTime()
+	}
 }
 
 func (s *AISystem) randomWanderTime() float64 {

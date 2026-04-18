@@ -106,7 +106,19 @@ func (tg *TerrainGenerator) GenerateChunk(pos mcmath.ChunkPos) *chunk.Chunk {
 		}
 	}
 
-	// Pass 1: base terrain with biome-specific surface and subsurface blocks.
+	fillBaseTerrain(c, &cols, rng)
+	fillWaterAndShorelines(c, &cols)
+	applySnowLayer(c, &cols)
+	tg.carveCaves(c, pos, &cols)
+	tg.placeOres(c, pos)
+	tg.generateTrees(c, pos, cols, rng)
+
+	return c
+}
+
+// fillBaseTerrain fills the chunk with bedrock, stone, and biome-specific
+// surface/subsurface blocks (Pass 1).
+func fillBaseTerrain(c *chunk.Chunk, cols *[mcmath.ChunkSize][mcmath.ChunkSize]colInfo, rng *rand.Rand) {
 	for lx := 0; lx < mcmath.ChunkSize; lx++ {
 		for lz := 0; lz < mcmath.ChunkSize; lz++ {
 			ci := cols[lx][lz]
@@ -133,8 +145,11 @@ func (tg *TerrainGenerator) GenerateChunk(pos mcmath.ChunkPos) *chunk.Chunk {
 			}
 		}
 	}
+}
 
-	// Pass 2: water at sea level and sand at shorelines.
+// fillWaterAndShorelines places water at sea level and converts shoreline
+// blocks to sand (Pass 2).
+func fillWaterAndShorelines(c *chunk.Chunk, cols *[mcmath.ChunkSize][mcmath.ChunkSize]colInfo) {
 	for lx := 0; lx < mcmath.ChunkSize; lx++ {
 		for lz := 0; lz < mcmath.ChunkSize; lz++ {
 			ci := cols[lx][lz]
@@ -156,8 +171,10 @@ func (tg *TerrainGenerator) GenerateChunk(pos mcmath.ChunkPos) *chunk.Chunk {
 			}
 		}
 	}
+}
 
-	// Pass 2.5: snow layer on Taiga surface blocks.
+// applySnowLayer places snow on Taiga surface blocks above sea level (Pass 2.5).
+func applySnowLayer(c *chunk.Chunk, cols *[mcmath.ChunkSize][mcmath.ChunkSize]colInfo) {
 	for lx := 0; lx < mcmath.ChunkSize; lx++ {
 		for lz := 0; lz < mcmath.ChunkSize; lz++ {
 			ci := cols[lx][lz]
@@ -170,8 +187,10 @@ func (tg *TerrainGenerator) GenerateChunk(pos mcmath.ChunkPos) *chunk.Chunk {
 			}
 		}
 	}
+}
 
-	// Pass 3: caves.
+// carveCaves removes blocks using 3D noise to form cave systems (Pass 3).
+func (tg *TerrainGenerator) carveCaves(c *chunk.Chunk, pos mcmath.ChunkPos, cols *[mcmath.ChunkSize][mcmath.ChunkSize]colInfo) {
 	for lx := 0; lx < mcmath.ChunkSize; lx++ {
 		for lz := 0; lz < mcmath.ChunkSize; lz++ {
 			h := cols[lx][lz].height
@@ -185,8 +204,11 @@ func (tg *TerrainGenerator) GenerateChunk(pos mcmath.ChunkPos) *chunk.Chunk {
 			}
 		}
 	}
+}
 
-	// Pass 4: ores.
+// placeOres replaces stone blocks with ore where 3D noise exceeds the ore
+// threshold (Pass 4).
+func (tg *TerrainGenerator) placeOres(c *chunk.Chunk, pos mcmath.ChunkPos) {
 	for lx := 0; lx < mcmath.ChunkSize; lx++ {
 		for lz := 0; lz < mcmath.ChunkSize; lz++ {
 			wx := float64(int(pos.WorldBlockX()) + lx)
@@ -204,11 +226,6 @@ func (tg *TerrainGenerator) GenerateChunk(pos mcmath.ChunkPos) *chunk.Chunk {
 			}
 		}
 	}
-
-	// Pass 5: trees with biome-specific density.
-	tg.generateTrees(c, pos, cols, rng)
-
-	return c
 }
 
 // generateTrees places trees on suitable surface blocks using biome-specific
@@ -283,7 +300,7 @@ func (tg *TerrainGenerator) placeTree(c *chunk.Chunk, lx, baseY, lz int, tt biom
 				if ny >= mcmath.ChunkHeight {
 					continue
 				}
-				if dy == 2 && mcmath.Abs(dx) == 2 && mcmath.Abs(dz) == 2 {
+				if dy == 2 && abs(dx) == 2 && abs(dz) == 2 {
 					continue
 				}
 				if c.GetBlock(nx, ny, nz) == logID {
@@ -293,4 +310,11 @@ func (tg *TerrainGenerator) placeTree(c *chunk.Chunk, lx, baseY, lz int, tt biom
 			}
 		}
 	}
+}
+
+func abs(x int) int {
+	if x < 0 {
+		return -x
+	}
+	return x
 }
