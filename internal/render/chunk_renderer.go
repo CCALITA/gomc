@@ -140,7 +140,8 @@ func (cr *ChunkRenderer) RemoveMesh(chunkPos mcmath.ChunkPos) {
 
 // DrawAll records draw commands for all uploaded chunk meshes.
 // It updates the view-projection uniform buffer and issues indexed draw
-// calls with per-chunk push constants.
+// calls with per-chunk push constants. Chunks whose AABBs fall entirely
+// outside the camera frustum are skipped (frustum culling).
 func (cr *ChunkRenderer) DrawAll(cmdBuf vk.CommandBuffer, camera *Camera, aspect float32, frameIndex uint32) {
 	// Update the uniform buffer for this frame.
 	vp := camera.ViewProjectionMatrix(aspect)
@@ -151,11 +152,19 @@ func (cr *ChunkRenderer) DrawAll(cmdBuf vk.CommandBuffer, camera *Camera, aspect
 
 	vk.CmdBindPipeline(cmdBuf, vk.PipelineBindPointGraphics, cr.pipe.GraphicsPipeline)
 
+	frustum := camera.Frustum()
+
 	cr.mu.RLock()
 	defer cr.mu.RUnlock()
 
 	for key, mesh := range cr.meshes {
 		if mesh.IndexCount == 0 {
+			continue
+		}
+
+		// Frustum culling: compute the chunk AABB and skip if outside.
+		chunkAABB := chunkAABBFromKey(key)
+		if !frustum.IntersectsAABB(chunkAABB) {
 			continue
 		}
 
@@ -180,6 +189,21 @@ func (cr *ChunkRenderer) DrawAll(cmdBuf vk.CommandBuffer, camera *Camera, aspect
 		)
 
 		vk.CmdDrawIndexed(cmdBuf, mesh.IndexCount, 1, 0, 0, 0)
+	}
+}
+
+// chunkAABBFromKey computes the world-space axis-aligned bounding box for a
+// chunk identified by its [chunkX, chunkZ] map key.
+func chunkAABBFromKey(key [2]int32) mcmath.AABB {
+	minX := float32(key[0]) * float32(mcmath.ChunkSize)
+	minZ := float32(key[1]) * float32(mcmath.ChunkSize)
+	return mcmath.AABB{
+		Min: mcmath.Vec3{X: minX, Y: 0, Z: minZ},
+		Max: mcmath.Vec3{
+			X: minX + float32(mcmath.ChunkSize),
+			Y: float32(mcmath.ChunkHeight),
+			Z: minZ + float32(mcmath.ChunkSize),
+		},
 	}
 }
 
