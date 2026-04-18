@@ -2,6 +2,8 @@ package player
 
 import (
 	"github.com/fanxiyao/gomc/internal/block"
+	"github.com/fanxiyao/gomc/internal/ecs"
+	"github.com/fanxiyao/gomc/internal/entity"
 	"github.com/fanxiyao/gomc/internal/input"
 	"github.com/fanxiyao/gomc/internal/inventory"
 	"github.com/fanxiyao/gomc/internal/item"
@@ -210,4 +212,72 @@ func (c *Controller) resetBreaking() {
 	c.BreakProgress = 0
 	c.BreakingBlock = nil
 	c.interaction.breakingBlockID = block.Air
+}
+
+const (
+	// combatReach is the maximum distance for melee attacks against entities.
+	combatReach float32 = 5.0
+	// handDamage is the damage dealt by an empty-hand melee attack.
+	handDamage float32 = 1.0
+	// knockbackStrength is the horizontal knockback speed applied on hit.
+	knockbackStrength float32 = 8.0
+	// knockbackUpward is the upward velocity component of knockback.
+	knockbackUpward float32 = 4.0
+)
+
+// UpdateCombat checks for a melee attack on the current frame. When the
+// attack button is just pressed, it raycasts from the camera forward and
+// finds the nearest entity within combatReach whose WorldAABB intersects the
+// ray. On hit, a Damage component is applied to the target entity.
+func (c *Controller) UpdateCombat(inp *input.Manager, ecsWorld *ecs.World, _ float32) {
+	attackBtn := c.KeyMap.GetKey(input.Attack)
+	if !inp.IsMouseJustPressed(attackBtn) {
+		return
+	}
+
+	origin := c.Camera.Position
+	direction := c.Camera.Forward()
+
+	// Find the nearest entity whose world AABB intersects the ray.
+	type hitResult struct {
+		entity ecs.Entity
+		dist   float32
+		pos    mcmath.Vec3
+	}
+
+	var nearest *hitResult
+
+	ecs.Query2[entity.Transform, entity.PhysicsBody](ecsWorld, func(e ecs.Entity, t *entity.Transform, pb *entity.PhysicsBody) {
+		// Skip self.
+		if e == c.Entity {
+			return
+		}
+
+		aabb := pb.Body.WorldAABB()
+		hit, dist := aabb.RayIntersects(origin, direction, combatReach)
+		if !hit {
+			return
+		}
+
+		if nearest == nil || dist < nearest.dist {
+			nearest = &hitResult{entity: e, dist: dist, pos: t.Position}
+		}
+	})
+
+	if nearest == nil {
+		return
+	}
+
+	// Compute knockback direction away from the player.
+	playerTransform := c.getTransform()
+	if playerTransform == nil {
+		return
+	}
+
+	kb := entity.KnockbackFromTo(playerTransform.Position, nearest.pos, knockbackStrength, knockbackUpward)
+
+	ecs.GetStore[entity.Damage](ecsWorld).Set(nearest.entity, entity.Damage{
+		Amount:    handDamage,
+		Knockback: kb,
+	})
 }

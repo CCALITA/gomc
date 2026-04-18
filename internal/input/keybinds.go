@@ -53,6 +53,7 @@ const (
 	Key7           = 55
 	Key8           = 56
 	Key9           = 57
+	KeyEnter       = 257
 )
 
 // GLFW mouse button constants.
