@@ -84,6 +84,11 @@ func (e *Engine) SoundBank() *SoundBank {
 	return e.soundBank
 }
 
+// SampleRate returns the engine's sample rate as an integer.
+func (e *Engine) SampleRate() int {
+	return int(e.sampleRate)
+}
+
 // IsInitialized reports whether the audio engine has been initialized.
 func (e *Engine) IsInitialized() bool {
 	e.mu.RLock()

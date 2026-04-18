@@ -27,11 +27,16 @@ func (sb *SoundBank) LoadWAV(name, path string) error {
 		return fmt.Errorf("audio: failed to load WAV %q from %q: %w", name, path, err)
 	}
 
+	sb.Store(name, data)
+	return nil
+}
+
+// Store saves raw audio bytes under the given name.
+func (sb *SoundBank) Store(name string, data []byte) {
 	sb.mu.Lock()
 	defer sb.mu.Unlock()
 
 	sb.sounds[name] = data
-	return nil
 }
 
 // Get returns the raw audio bytes for the named sound and whether it exists.
