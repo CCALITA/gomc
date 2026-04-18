@@ -22,6 +22,28 @@ type ViewProjectionUBO struct {
 	ViewProjection [16]float32
 }
 
+// TODO(day-night): Add a TimeOfDayUBO struct and per-frame uniform buffers
+// for the fragment shader's TimeOfDay uniform block (set=0, binding=1).
+// The struct should match the GLSL layout in chunk.frag:
+//
+//   type TimeOfDayUBO struct {
+//       SunDir       [3]float32
+//       _pad0        float32
+//       AmbientColor [3]float32
+//       _pad1        float32
+//       SkyColor     [3]float32
+//       AmbientLevel float32
+//   }
+//
+// Wire it up by:
+// 1. Adding a second descriptor set layout binding in Pipeline.CreateGraphicsPipeline
+//    for (set=0, binding=1, UniformBuffer, FragmentBit).
+// 2. Creating per-frame TimeOfDay uniform buffers in NewChunkRenderer.
+// 3. Updating the descriptor sets to include the TimeOfDay buffer.
+// 4. In DrawAll, accept a *game.TimeKeeper parameter, populate TimeOfDayUBO
+//    from its SunDirection/AmbientLevel/SkyColor methods, and upload it.
+// See internal/game/timekeeper.go for the TimeKeeper API.
+
 // ChunkPushConstants is the push constant block for per-chunk data.
 // It carries the chunk's world-space origin.
 type ChunkPushConstants struct {
