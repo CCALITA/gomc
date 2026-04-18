@@ -20,6 +20,8 @@ import (
 //     Palette      [PaletteLen]uint16
 //     Wide         uint8    (1 if indices are uint16, 0 for uint8)
 //     Indices      [4096]uint8 or [4096]uint16
+//     BlockLight   [4096]uint8
+//     SkyLight     [4096]uint8
 //
 //   HeightMap:
 //     [256]int32
@@ -96,6 +98,14 @@ func serializeSection(buf *bytes.Buffer, sec *Section) error {
 		}
 	}
 
+	// Light data.
+	if _, err := buf.Write(sec.BlockLight[:]); err != nil {
+		return fmt.Errorf("failed to write block light: %w", err)
+	}
+	if _, err := buf.Write(sec.SkyLight[:]); err != nil {
+		return fmt.Errorf("failed to write sky light: %w", err)
+	}
+
 	return nil
 }
 
@@ -169,6 +179,14 @@ func deserializeSection(r *bytes.Reader) (*Section, error) {
 		if _, err := r.Read(sec.indices8[:]); err != nil {
 			return nil, fmt.Errorf("failed to read indices: %w", err)
 		}
+	}
+
+	// Light data.
+	if _, err := r.Read(sec.BlockLight[:]); err != nil {
+		return nil, fmt.Errorf("failed to read block light: %w", err)
+	}
+	if _, err := r.Read(sec.SkyLight[:]); err != nil {
+		return nil, fmt.Errorf("failed to read sky light: %w", err)
 	}
 
 	// Recompute count from data.

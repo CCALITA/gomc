@@ -8,11 +8,15 @@ const sectionVolume = mcmath.ChunkSize * mcmath.ChunkSize * mcmath.SectionHeight
 // The palette maps compact indices to real block IDs, and each voxel stores
 // only the compact index, keeping memory usage low for sections with few
 // distinct block types.
+//
+// BlockLight and SkyLight store per-voxel light levels (0-15).
 type Section struct {
-	palette  []uint16
-	indices8 [sectionVolume]uint8  // compact indices when len(palette) <= 256
-	wide     []uint16              // compact indices when len(palette) > 256 (lazy-allocated)
-	count    int                   // number of non-air (non-zero) blocks
+	palette    []uint16
+	indices8   [sectionVolume]uint8 // compact indices when len(palette) <= 256
+	wide       []uint16             // compact indices when len(palette) > 256 (lazy-allocated)
+	count      int                  // number of non-air (non-zero) blocks
+	BlockLight [sectionVolume]uint8
+	SkyLight   [sectionVolume]uint8
 }
 
 // blockIndex converts local (x, y, z) coordinates into a flat array index.
@@ -93,4 +97,44 @@ func (s *Section) IsEmpty() bool {
 // PaletteSize returns the number of distinct block types tracked by this section.
 func (s *Section) PaletteSize() int {
 	return len(s.palette)
+}
+
+// GetBlockLight returns the block light level at local coordinates (x, y, z).
+// Coordinates must be in [0, 16).
+func (s *Section) GetBlockLight(x, y, z int) uint8 {
+	return s.BlockLight[blockIndex(x, y, z)]
+}
+
+// SetBlockLight sets the block light level at local coordinates (x, y, z).
+// Coordinates must be in [0, 16). Level is clamped to [0, 15].
+func (s *Section) SetBlockLight(x, y, z int, level uint8) {
+	if level > 15 {
+		level = 15
+	}
+	s.BlockLight[blockIndex(x, y, z)] = level
+}
+
+// GetSkyLight returns the sky light level at local coordinates (x, y, z).
+// Coordinates must be in [0, 16).
+func (s *Section) GetSkyLight(x, y, z int) uint8 {
+	return s.SkyLight[blockIndex(x, y, z)]
+}
+
+// SetSkyLight sets the sky light level at local coordinates (x, y, z).
+// Coordinates must be in [0, 16). Level is clamped to [0, 15].
+func (s *Section) SetSkyLight(x, y, z int, level uint8) {
+	if level > 15 {
+		level = 15
+	}
+	s.SkyLight[blockIndex(x, y, z)] = level
+}
+
+// ClearBlockLight zeroes all block light values in this section.
+func (s *Section) ClearBlockLight() {
+	s.BlockLight = [sectionVolume]uint8{}
+}
+
+// ClearSkyLight zeroes all sky light values in this section.
+func (s *Section) ClearSkyLight() {
+	s.SkyLight = [sectionVolume]uint8{}
 }
