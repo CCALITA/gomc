@@ -38,6 +38,7 @@ func SpawnPlayer(w *ecs.World, name string, pos mcmath.Vec3) ecs.Entity {
 	ecs.GetStore[Name](w).Set(e, Name{Value: name})
 	ecs.GetStore[EntityTypeComp](w).Set(e, EntityTypeComp{Type: TypePlayer})
 	ecs.GetStore[Inventory](w).Set(e, Inventory{})
+	ecs.GetStore[Hunger](w).Set(e, NewHunger())
 
 	return e
 }
