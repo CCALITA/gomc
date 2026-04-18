@@ -134,7 +134,10 @@ func (c *Controller) updatePlacement(inp *input.Manager, w *world.World) {
 // getSelectedHotbarItem returns the item stack in the currently selected
 // hotbar slot. Returns an empty stack if no inventory is available.
 func (c *Controller) getSelectedHotbarItem() item.ItemStack {
-	return item.ItemStack{}
+	if c.Inventory == nil {
+		return item.ItemStack{}
+	}
+	return c.Inventory.GetSlot(c.SelectedSlot)
 }
 
 // GetSelectedItemFromInventory returns the item in the selected hotbar
