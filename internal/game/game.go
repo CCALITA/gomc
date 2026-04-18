@@ -42,6 +42,7 @@ type Game struct {
 	Scheduler   *ecs.Scheduler
 	State       *StateManager
 	Inventory   *inventory.Inventory
+	Mode        *ModeManager
 	Running     bool
 }
 
@@ -49,6 +50,7 @@ func (g *Game) Init(cfg *config.Config) error {
 	g.Config = cfg
 	g.Running = true
 	g.State = NewStateManager()
+	g.Mode = NewModeManager()
 
 	block.InitRegistry()
 
@@ -233,6 +235,7 @@ func (g *Game) StartSingleplayer() {
 
 	playerEntity := entity.SpawnPlayer(g.ECSWorld, "Player", spawnPos)
 	g.Player = player.NewController(playerEntity, g.ECSWorld, cam, g.KeyMap)
+	g.Player.Mode = g.Mode
 
 	g.State.SetState(StatePlaying)
 }

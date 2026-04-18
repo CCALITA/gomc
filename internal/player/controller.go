@@ -9,9 +9,20 @@ import (
 	"github.com/fanxiyao/gomc/internal/entity"
 	"github.com/fanxiyao/gomc/internal/input"
 	"github.com/fanxiyao/gomc/internal/mcmath"
+	"github.com/fanxiyao/gomc/internal/physics"
 	"github.com/fanxiyao/gomc/internal/render"
 	"github.com/fanxiyao/gomc/internal/world"
 )
+
+// ModeChecker abstracts game-mode capability queries so that the player
+// package does not depend on the game package (avoiding a circular import).
+type ModeChecker interface {
+	CanFly() bool
+	CanBreakInstantly() bool
+	HasInfiniteItems() bool
+	CanTakeDamage() bool
+	IsNoClip() bool
+}
 
 const (
 	// DefaultWalkSpeed is the player walking speed in blocks per second.
@@ -20,6 +31,8 @@ const (
 	DefaultSprintSpeed float32 = 5.612
 	// DefaultSneakSpeed is the player sneaking speed in blocks per second.
 	DefaultSneakSpeed float32 = 1.31
+	// DefaultFlySpeed is the player flying speed in blocks per second.
+	DefaultFlySpeed float32 = 10.92
 	// DefaultJumpVelocity is the initial upward velocity applied when jumping.
 	DefaultJumpVelocity float32 = 8.0
 	// DefaultReach is the maximum distance the player can interact with blocks.
@@ -28,6 +41,9 @@ const (
 	DefaultSensitivity float32 = 0.003
 	// EyeOffset is the vertical offset from the entity position to the camera.
 	EyeOffset float32 = 1.62
+	// DoubleTapWindow is the maximum interval (in seconds) between two jump
+	// presses to toggle flying.
+	DoubleTapWindow float32 = 0.3
 )
 
 // Controller manages the player entity, camera, and all player-specific
@@ -37,18 +53,25 @@ type Controller struct {
 	ECSWorld      *ecs.World
 	Camera        *render.Camera
 	KeyMap        *input.KeyMap
+	Mode          ModeChecker
 	WalkSpeed     float32
 	SprintSpeed   float32
 	SneakSpeed    float32
+	FlySpeed      float32
 	JumpVelocity  float32
 	Reach         float32
 	Sensitivity   float32
 	BreakProgress float32
 	BreakingBlock *mcmath.BlockPos
 	SelectedSlot  int
+	Flying        bool
 
 	// interaction holds block interaction state.
 	interaction interactionState
+
+	// lastJumpTime tracks elapsed time since last jump press for double-tap
+	// fly toggle detection. A negative value means no recent press.
+	lastJumpTime float32
 }
 
 // NewController creates a Controller for the given player entity with default
@@ -62,22 +85,38 @@ func NewController(e ecs.Entity, ecsWorld *ecs.World, camera *render.Camera, key
 		WalkSpeed:    DefaultWalkSpeed,
 		SprintSpeed:  DefaultSprintSpeed,
 		SneakSpeed:   DefaultSneakSpeed,
+		FlySpeed:     DefaultFlySpeed,
 		JumpVelocity: DefaultJumpVelocity,
 		Reach:        DefaultReach,
 		Sensitivity:  DefaultSensitivity,
 		SelectedSlot: 0,
+		lastJumpTime: -1,
 	}
 }
 
 // Update processes input and advances the player state by dt seconds.
 // It handles camera rotation, movement direction, speed selection,
-// jumping, and camera synchronisation from the entity transform.
+// jumping, flying, and camera synchronisation from the entity transform.
 func (c *Controller) Update(inp *input.Manager, w *world.World, dt float32) {
 	c.updateCamera(inp)
 	c.updateMovement(inp, dt)
+	c.updateNoClip()
 	c.syncCameraPosition()
 	c.updateHotbar(inp)
 	c.UpdateInteraction(inp, w, dt)
+}
+
+// updateNoClip synchronises the physics body NoClip flag with the current
+// game mode (spectator mode enables noclip).
+func (c *Controller) updateNoClip() {
+	if c.Mode == nil {
+		return
+	}
+	body := c.getPhysicsBody()
+	if body == nil {
+		return
+	}
+	body.Body.NoClip = c.Mode.IsNoClip()
 }
 
 // updateCamera reads mouse delta and rotates the camera.
@@ -89,17 +128,86 @@ func (c *Controller) updateCamera(inp *input.Manager) {
 }
 
 // updateMovement reads WASD input, applies the correct speed modifier,
-// and sets the entity physics body velocity.
+// and sets the entity physics body velocity. In fly-capable modes a
+// double-tap of the jump key toggles flying; while flying, jump ascends,
+// sneak descends, and gravity is disabled.
 func (c *Controller) updateMovement(inp *input.Manager, dt float32) {
-	_ = dt // speed is set directly, not multiplied by dt (physics integrates)
-
 	body := c.getPhysicsBody()
 	if body == nil {
 		return
 	}
 
+	c.handleFlyToggle(inp, dt)
+
 	moveDir := c.calculateMoveDirection(inp)
 
+	if c.Flying {
+		c.updateFlyingMovement(inp, body, moveDir)
+	} else {
+		c.updateWalkingMovement(inp, body, moveDir)
+	}
+}
+
+// handleFlyToggle detects a double-tap of the jump key and toggles
+// flying when the current mode allows it.
+func (c *Controller) handleFlyToggle(inp *input.Manager, dt float32) {
+	if c.Mode == nil || !c.Mode.CanFly() {
+		c.Flying = false
+		c.lastJumpTime = -1
+		return
+	}
+
+	jumpKey := c.KeyMap.GetKey(input.Jump)
+
+	// Advance the timer; negative means "no recent press".
+	if c.lastJumpTime >= 0 {
+		c.lastJumpTime += dt
+	}
+
+	if inp.IsKeyJustPressed(jumpKey) {
+		if c.lastJumpTime >= 0 && c.lastJumpTime <= DoubleTapWindow {
+			c.Flying = !c.Flying
+			c.lastJumpTime = -1
+
+			// Disable/enable gravity on the physics body.
+			body := c.getPhysicsBody()
+			if body != nil {
+				if c.Flying {
+					body.Body.Gravity = 0
+					body.Body.Velocity.Y = 0
+				} else {
+					body.Body.Gravity = physics.DefaultGravity
+				}
+			}
+		} else {
+			c.lastJumpTime = 0
+		}
+	}
+}
+
+// updateFlyingMovement applies horizontal and vertical movement while
+// the player is flying. Jump goes up, sneak goes down, no gravity.
+func (c *Controller) updateFlyingMovement(inp *input.Manager, body *entity.PhysicsBody, moveDir mcmath.Vec3) {
+	speed := c.FlySpeed
+
+	body.Body.Velocity.X = moveDir.X * speed
+	body.Body.Velocity.Z = moveDir.Z * speed
+
+	jumpKey := c.KeyMap.GetKey(input.Jump)
+	sneakKey := c.KeyMap.GetKey(input.Sneak)
+
+	var verticalVel float32
+	if inp.IsKeyDown(jumpKey) {
+		verticalVel = speed
+	}
+	if inp.IsKeyDown(sneakKey) {
+		verticalVel = -speed
+	}
+	body.Body.Velocity.Y = verticalVel
+}
+
+// updateWalkingMovement applies normal ground-based movement.
+func (c *Controller) updateWalkingMovement(inp *input.Manager, body *entity.PhysicsBody, moveDir mcmath.Vec3) {
 	speed := c.currentSpeed(inp)
 	body.Body.Velocity.X = moveDir.X * speed
 	body.Body.Velocity.Z = moveDir.Z * speed
