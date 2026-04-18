@@ -1,6 +1,7 @@
 package world
 
 import (
+	"fmt"
 	"math"
 	"sync"
 
@@ -163,4 +164,54 @@ func (w *World) Tick(currentTick int64) {
 // schedule block ticks.
 func (w *World) Ticker() *tick.Ticker {
 	return w.ticker
+}
+
+// Seed returns the world seed used for terrain generation.
+func (w *World) Seed() int64 {
+	return w.generator.seed
+}
+
+// SaveAll serializes every loaded chunk and writes it via the given Storage.
+func (w *World) SaveAll(storage *Storage) error {
+	w.mu.RLock()
+	// Snapshot the chunk map to avoid holding the lock during I/O.
+	snapshot := make(map[[2]int32]*chunk.Chunk, len(w.chunks))
+	for k, c := range w.chunks {
+		snapshot[k] = c
+	}
+	w.mu.RUnlock()
+
+	var firstErr error
+	for key, c := range snapshot {
+		pos := mcmath.ChunkPos{X: key[0], Z: key[1]}
+		if err := storage.SaveChunk(pos, c); err != nil {
+			if firstErr == nil {
+				firstErr = fmt.Errorf("failed to save chunk %v: %w", pos, err)
+			}
+		}
+	}
+	return firstErr
+}
+
+// LoadAll reads all saved chunks from Storage and loads them into the world.
+func (w *World) LoadAll(storage *Storage) error {
+	entries, err := storage.ListChunks()
+	if err != nil {
+		return fmt.Errorf("failed to list saved chunks: %w", err)
+	}
+
+	var firstErr error
+	for _, pos := range entries {
+		c, err := storage.LoadChunk(pos)
+		if err != nil {
+			if firstErr == nil {
+				firstErr = fmt.Errorf("failed to load chunk %v: %w", pos, err)
+			}
+			continue
+		}
+		w.mu.Lock()
+		w.chunks[pos.Key()] = c
+		w.mu.Unlock()
+	}
+	return firstErr
 }
