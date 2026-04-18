@@ -116,6 +116,92 @@ func registerRecipes() {
 		},
 		Result: item.NewItemStack(item.Torch, 4),
 	})
+
+	// -- Hoes: 2 material + 2 sticks (T-shape: top row 2 material, then sticks below)
+	registerHoe(item.OakPlanks, item.WoodenHoe)
+	registerHoe(item.Cobblestone, item.StoneHoe)
+	registerHoe(item.IronIngot, item.IronHoe)
+	registerHoe(item.Diamond, item.DiamondHoe)
+
+	// -- Bucket: 3 iron ingots V-shape
+	RegisterRecipe(Recipe{
+		Pattern: [3][3]uint16{
+			{item.IronIngot, 0, item.IronIngot},
+			{0, item.IronIngot, 0},
+			{0, 0, 0},
+		},
+		Result: item.NewItemStack(item.Bucket, 1),
+	})
+
+	// -- Ladder: sticks in H-pattern -> 3 ladders
+	RegisterRecipe(Recipe{
+		Pattern: [3][3]uint16{
+			{item.Stick, 0, item.Stick},
+			{item.Stick, item.Stick, item.Stick},
+			{item.Stick, 0, item.Stick},
+		},
+		Result: item.NewItemStack(item.Ladder, 3),
+	})
+
+	// -- Oak Door: 6 planks in 2x3 -> 3 doors
+	RegisterRecipe(Recipe{
+		Pattern: [3][3]uint16{
+			{item.OakPlanks, item.OakPlanks, 0},
+			{item.OakPlanks, item.OakPlanks, 0},
+			{item.OakPlanks, item.OakPlanks, 0},
+		},
+		Result: item.NewItemStack(item.OakDoor, 3),
+	})
+
+	// -- Oak Fence: 2 rows of [plank, stick, plank] -> 3 fences
+	RegisterRecipe(Recipe{
+		Pattern: [3][3]uint16{
+			{item.OakPlanks, item.Stick, item.OakPlanks},
+			{item.OakPlanks, item.Stick, item.OakPlanks},
+			{0, 0, 0},
+		},
+		Result: item.NewItemStack(item.OakFence, 3),
+	})
+
+	// -- Oak Fence Gate: 2 rows of [stick, plank, stick]
+	RegisterRecipe(Recipe{
+		Pattern: [3][3]uint16{
+			{item.Stick, item.OakPlanks, item.Stick},
+			{item.Stick, item.OakPlanks, item.Stick},
+			{0, 0, 0},
+		},
+		Result: item.NewItemStack(item.OakFenceGate, 1),
+	})
+
+	// -- Shears: 2 iron ingots diagonal
+	RegisterRecipe(Recipe{
+		Pattern: [3][3]uint16{
+			{0, item.IronIngot, 0},
+			{item.IronIngot, 0, 0},
+			{0, 0, 0},
+		},
+		Result: item.NewItemStack(item.Shears, 1),
+	})
+
+	// -- Boat: 5 planks U-shape
+	RegisterRecipe(Recipe{
+		Pattern: [3][3]uint16{
+			{item.OakPlanks, 0, item.OakPlanks},
+			{item.OakPlanks, item.OakPlanks, item.OakPlanks},
+			{0, 0, 0},
+		},
+		Result: item.NewItemStack(item.Boat, 1),
+	})
+
+	// -- Mineral Blocks: 9 material in 3x3 -> 1 block
+	registerFilledBlock(item.IronIngot, item.IronBlock)
+	registerFilledBlock(item.GoldIngot, item.GoldBlock)
+	registerFilledBlock(item.Diamond, item.DiamondBlock)
+
+	// -- Block -> Material decomposition (shapeless)
+	registerBlockDecomposition(item.IronBlock, item.IronIngot)
+	registerBlockDecomposition(item.GoldBlock, item.GoldIngot)
+	registerBlockDecomposition(item.DiamondBlock, item.Diamond)
 }
 
 // registerPickaxe registers a pickaxe recipe: 3 material on top, 2 sticks vertical center.
@@ -163,5 +249,42 @@ func registerSword(material, result uint16) {
 			{item.Stick, 0, 0},
 		},
 		Result: item.NewItemStack(result, 1),
+	})
+}
+
+// registerHoe registers a hoe recipe: 2 material on top row + 2 sticks vertical.
+func registerHoe(material, result uint16) {
+	RegisterRecipe(Recipe{
+		Pattern: [3][3]uint16{
+			{material, material, 0},
+			{0, item.Stick, 0},
+			{0, item.Stick, 0},
+		},
+		Result: item.NewItemStack(result, 1),
+	})
+}
+
+// registerFilledBlock registers a 3x3 filled grid recipe: 9 material -> 1 block.
+func registerFilledBlock(material, result uint16) {
+	RegisterRecipe(Recipe{
+		Pattern: [3][3]uint16{
+			{material, material, material},
+			{material, material, material},
+			{material, material, material},
+		},
+		Result: item.NewItemStack(result, 1),
+	})
+}
+
+// registerBlockDecomposition registers a shapeless recipe: 1 block -> 9 material.
+func registerBlockDecomposition(block, material uint16) {
+	RegisterRecipe(Recipe{
+		Pattern: [3][3]uint16{
+			{block, 0, 0},
+			{0, 0, 0},
+			{0, 0, 0},
+		},
+		Result:    item.NewItemStack(material, 9),
+		Shapeless: true,
 	})
 }

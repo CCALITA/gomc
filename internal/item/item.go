@@ -124,6 +124,20 @@ const (
 	BakedPotato                       // 207
 )
 
+// ----- Utility / building item IDs -----
+
+const (
+	Shears       ItemID = 323
+	OakDoor      ItemID = 330
+	OakFence     ItemID = 331
+	OakFenceGate ItemID = 332
+	Ladder       ItemID = 334
+	Boat         ItemID = 335
+	IronBlock    ItemID = 340
+	GoldBlock    ItemID = 341
+	DiamondBlock ItemID = 342
+)
+
 // ----- Armor item IDs -----
 
 const (

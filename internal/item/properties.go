@@ -100,6 +100,30 @@ func init() {
 	registerMaterial(GoldIngot, "Gold Ingot")
 	registerMaterial(Diamond, "Diamond")
 
+	// ---- shears ----
+	properties[Shears] = ItemProperties{
+		Name:         "Shears",
+		MaxStackSize: 1,
+		Durability:   238,
+		ToolType:     ToolNone,
+	}
+
+	// ---- utility / building blocks ----
+	registerBlock(OakDoor, "Oak Door", OakDoor)
+	registerBlock(OakFence, "Oak Fence", OakFence)
+	registerBlock(OakFenceGate, "Oak Fence Gate", OakFenceGate)
+	registerBlock(Ladder, "Ladder", Ladder)
+	registerBlock(IronBlock, "Iron Block", IronBlock)
+	registerBlock(GoldBlock, "Gold Block", GoldBlock)
+	registerBlock(DiamondBlock, "Diamond Block", DiamondBlock)
+
+	// ---- boat (non-block, non-tool) ----
+	properties[Boat] = ItemProperties{
+		Name:         "Boat",
+		MaxStackSize: 1,
+		ToolType:     ToolNone,
+	}
+
 	// ---- buckets (stack to 16, except empty bucket stacks to 16) ----
 	properties[Bucket] = ItemProperties{
 		Name:         "Bucket",
