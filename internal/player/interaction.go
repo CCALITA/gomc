@@ -5,7 +5,6 @@ import (
 	"github.com/fanxiyao/gomc/internal/ecs"
 	"github.com/fanxiyao/gomc/internal/entity"
 	"github.com/fanxiyao/gomc/internal/input"
-	"github.com/fanxiyao/gomc/internal/inventory"
 	"github.com/fanxiyao/gomc/internal/item"
 	"github.com/fanxiyao/gomc/internal/mcmath"
 	"github.com/fanxiyao/gomc/internal/physics"
@@ -145,57 +144,6 @@ func (c *Controller) getSelectedHotbarItem() item.ItemStack {
 		return item.ItemStack{}
 	}
 	return c.Inventory.GetSlot(c.SelectedSlot)
-}
-
-// GetSelectedItemFromInventory returns the item in the selected hotbar
-// slot from the given inventory.
-func (c *Controller) GetSelectedItemFromInventory(inv *inventory.Inventory) item.ItemStack {
-	return inv.GetSlot(c.SelectedSlot)
-}
-
-// PlaceBlockFromInventory attempts to place a block and decrements the
-// item from the inventory. Returns true if a block was placed.
-func (c *Controller) PlaceBlockFromInventory(inp *input.Manager, w BlockWorld, inv *inventory.Inventory) bool {
-	useBtn := c.KeyMap.GetKey(input.Use)
-
-	if !inp.IsMouseJustPressed(useBtn) {
-		return false
-	}
-
-	hit, pos, face := c.GetTargetBlock(w)
-	if !hit {
-		return false
-	}
-
-	normal := face.Normal()
-	placePos := mcmath.BlockPos{
-		X: pos.X + int32(normal.X),
-		Y: pos.Y + int32(normal.Y),
-		Z: pos.Z + int32(normal.Z),
-	}
-
-	if block.IsSolid(w.GetBlock(placePos)) {
-		return false
-	}
-
-	placeAABB := mcmath.BlockAABB(placePos)
-	playerAABB := c.PlayerAABB()
-	if placeAABB.Intersects(playerAABB) {
-		return false
-	}
-
-	selectedItem := inv.GetSlot(c.SelectedSlot)
-	if selectedItem.IsEmpty() {
-		return false
-	}
-	itemProps := item.GetProperties(selectedItem.ItemID)
-	if !itemProps.IsBlock {
-		return false
-	}
-
-	w.SetBlock(placePos, itemProps.BlockID)
-	inv.RemoveItem(c.SelectedSlot, 1)
-	return true
 }
 
 // GetTargetBlock performs a raycast from the camera along the forward

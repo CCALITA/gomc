@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/go-gl/glfw/v3.3/glfw"
-	vk "github.com/vulkan-go/vulkan"
 
 	"github.com/fanxiyao/gomc/internal/audio"
 	"github.com/fanxiyao/gomc/internal/block"
@@ -293,8 +292,6 @@ func (g *Game) render() {
 	if g.State.CurrentState() == StatePlaying && g.Player != nil {
 		g.Renderer.DrawChunks(cmdBuf, g.Player.Camera)
 	}
-
-	vk.CmdEndRenderPass(cmdBuf)
 
 	if err := g.Renderer.EndFrame(imageIndex); err != nil {
 		log.Printf("end frame error: %v", err)

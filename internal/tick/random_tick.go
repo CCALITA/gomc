@@ -94,9 +94,9 @@ func leafDecayHandler(w BlockAccess, pos mcmath.BlockPos) {
 // within the taxicab diamond are visited.
 func hasNearbyLog(w BlockAccess, center mcmath.BlockPos, maxDist int32) bool {
 	for dx := -maxDist; dx <= maxDist; dx++ {
-		remAfterX := maxDist - abs32(dx)
+		remAfterX := maxDist - mcmath.Abs(dx)
 		for dy := -remAfterX; dy <= remAfterX; dy++ {
-			remAfterXY := remAfterX - abs32(dy)
+			remAfterXY := remAfterX - mcmath.Abs(dy)
 			for dz := -remAfterXY; dz <= remAfterXY; dz++ {
 				if w.GetBlock(center.Offset(dx, dy, dz)) == block.OakLog {
 					return true
@@ -107,10 +107,3 @@ func hasNearbyLog(w BlockAccess, center mcmath.BlockPos, maxDist int32) bool {
 	return false
 }
 
-// abs32 returns the absolute value of an int32.
-func abs32(v int32) int32 {
-	if v < 0 {
-		return -v
-	}
-	return v
-}

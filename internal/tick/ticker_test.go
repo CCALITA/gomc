@@ -353,9 +353,9 @@ func TestRegisterDefaults_RegistersDirtAndLeaves(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestAbs32(t *testing.T) {
-	assert.Equal(t, int32(5), abs32(5))
-	assert.Equal(t, int32(5), abs32(-5))
-	assert.Equal(t, int32(0), abs32(0))
+	assert.Equal(t, int32(5), mcmath.Abs(int32(5)))
+	assert.Equal(t, int32(5), mcmath.Abs(int32(-5)))
+	assert.Equal(t, int32(0), mcmath.Abs(int32(0)))
 }
 
 // ---------------------------------------------------------------------------
