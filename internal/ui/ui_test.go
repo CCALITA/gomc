@@ -286,10 +286,10 @@ func TestHUD_DrawWithFPS(t *testing.T) {
 	r := NewUIRenderer(800, 600)
 	hud.Draw(r)
 
-	// Check that at least one text command contains FPS.
+	// Check that at least one text command contains FPS info.
 	foundFPS := false
 	for _, cmd := range r.Commands() {
-		if cmd.Type == DrawCmdText && cmd.Text == "FPS: 60" {
+		if cmd.Type == DrawCmdText && cmd.Text == "FPS: 60 (16.7ms)" {
 			foundFPS = true
 			break
 		}
@@ -363,6 +363,161 @@ func TestHUD_HungerBar_HalfDrumstick(t *testing.T) {
 	r := NewUIRenderer(800, 600)
 	hud.Draw(r)
 	assert.Greater(t, r.CommandCount(), 0)
+}
+
+// ---------- Debug overlay tests ----------
+
+func TestFacingDirectionFromYaw(t *testing.T) {
+	tests := []struct {
+		name     string
+		yaw      float32
+		expected string
+	}{
+		{"south at 0", 0, "South"},
+		{"south at -44", -44, "South"},
+		{"south at 44", 44, "South"},
+		{"west at 45", 45, "West"},
+		{"west at 90", 90, "West"},
+		{"west at 134", 134, "West"},
+		{"north at 135", 135, "North"},
+		{"north at 180", 180, "North"},
+		{"north at -180", -180, "North"},
+		{"north at -136", -136, "North"},
+		{"east at -135", -135, "East"},
+		{"east at -90", -90, "East"},
+		{"east at -46", -46, "East"},
+		// Wrap-around cases.
+		{"wrap positive 360", 360, "South"},
+		{"wrap positive 450", 450, "West"},
+		{"wrap negative -270", -270, "West"},
+		{"wrap positive 720", 720, "South"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := FacingDirectionFromYaw(tt.yaw)
+			assert.Equal(t, tt.expected, got)
+		})
+	}
+}
+
+func TestHUD_DebugTextLineCount(t *testing.T) {
+	hud := NewHUD(inventory.NewInventory(9))
+	hud.FPS = 60
+	hud.SetPlayerPos(123.4, 64.0, -45.2)
+	hud.SetPlayerRotation(0, 0)
+	hud.SetChunkPos(7, -3)
+	hud.SetLoadedChunks(289)
+	hud.SetEntityCount(42)
+	hud.SetMemoryMB(128)
+
+	lines := hud.debugTextLines()
+	// Expected: 10 lines total (including 2 blank separator lines).
+	assert.Equal(t, 10, len(lines))
+
+	// Verify specific content in certain lines.
+	assert.Equal(t, "GoMC (Vulkan)", lines[0])
+	assert.Contains(t, lines[1], "FPS: 60")
+	assert.Equal(t, "", lines[2])
+	assert.Contains(t, lines[3], "XYZ:")
+	assert.Contains(t, lines[3], "123.4")
+	assert.Contains(t, lines[4], "Chunk: 7 / -3")
+	assert.Contains(t, lines[5], "Facing: South")
+	assert.Equal(t, "", lines[6])
+	assert.Contains(t, lines[7], "Loaded Chunks: 289")
+	assert.Contains(t, lines[8], "Entities: 42")
+	assert.Contains(t, lines[9], "Memory: 128 MB")
+}
+
+func TestHUD_DebugOverlayDrawCommandCount(t *testing.T) {
+	hud := NewHUD(inventory.NewInventory(9))
+	hud.ShowFPS = true
+	hud.FPS = 60
+	hud.SetPlayerPos(10, 20, 30)
+	hud.SetPlayerRotation(90, 0)
+	hud.SetLoadedChunks(100)
+	hud.SetEntityCount(5)
+	hud.SetMemoryMB(64)
+
+	r := NewUIRenderer(800, 600)
+	hud.Draw(r)
+
+	// Count text commands from the debug overlay.
+	textCount := 0
+	rectCount := 0
+	for _, cmd := range r.Commands() {
+		switch cmd.Type {
+		case DrawCmdText:
+			textCount++
+		case DrawCmdRect:
+			rectCount++
+		}
+	}
+
+	// 8 non-blank text lines from the debug overlay, plus other HUD elements.
+	assert.GreaterOrEqual(t, textCount, 8, "Should draw at least 8 text lines in debug overlay")
+	// Background panel rect (1) plus other HUD rects.
+	assert.GreaterOrEqual(t, rectCount, 1, "Should draw at least the debug panel background")
+}
+
+func TestHUD_SetPlayerPos(t *testing.T) {
+	hud := NewHUD(inventory.NewInventory(9))
+	hud.SetPlayerPos(1.5, 64.0, -30.2)
+	assert.Equal(t, float32(1.5), hud.PlayerX)
+	assert.Equal(t, float32(64.0), hud.PlayerY)
+	assert.Equal(t, float32(-30.2), hud.PlayerZ)
+}
+
+func TestHUD_SetPlayerRotation(t *testing.T) {
+	hud := NewHUD(inventory.NewInventory(9))
+	hud.SetPlayerRotation(90, -15)
+	assert.Equal(t, float32(90), hud.PlayerYaw)
+	assert.Equal(t, float32(-15), hud.PlayerPitch)
+	assert.Equal(t, "West", hud.FacingDirection)
+}
+
+func TestHUD_SetPlayerRotation_UpdatesFacing(t *testing.T) {
+	hud := NewHUD(inventory.NewInventory(9))
+
+	hud.SetPlayerRotation(0, 0)
+	assert.Equal(t, "South", hud.FacingDirection)
+
+	hud.SetPlayerRotation(180, 0)
+	assert.Equal(t, "North", hud.FacingDirection)
+
+	hud.SetPlayerRotation(-90, 0)
+	assert.Equal(t, "East", hud.FacingDirection)
+}
+
+func TestHUD_SetChunkPos(t *testing.T) {
+	hud := NewHUD(inventory.NewInventory(9))
+	hud.SetChunkPos(7, -3)
+	assert.Equal(t, int32(7), hud.ChunkX)
+	assert.Equal(t, int32(-3), hud.ChunkZ)
+}
+
+func TestHUD_SetLoadedChunks(t *testing.T) {
+	hud := NewHUD(inventory.NewInventory(9))
+	hud.SetLoadedChunks(289)
+	assert.Equal(t, 289, hud.LoadedChunks)
+}
+
+func TestHUD_SetEntityCount(t *testing.T) {
+	hud := NewHUD(inventory.NewInventory(9))
+	hud.SetEntityCount(42)
+	assert.Equal(t, 42, hud.EntityCount)
+}
+
+func TestHUD_SetMemoryMB(t *testing.T) {
+	hud := NewHUD(inventory.NewInventory(9))
+	hud.SetMemoryMB(128.5)
+	assert.Equal(t, 128.5, hud.MemoryMB)
+}
+
+func TestHUD_DebugOverlay_ZeroFPS(t *testing.T) {
+	hud := NewHUD(inventory.NewInventory(9))
+	hud.FPS = 0
+	lines := hud.debugTextLines()
+	assert.Contains(t, lines[1], "FPS: 0 (0.0ms)")
 }
 
 // ---------- InventoryScreen tests ----------

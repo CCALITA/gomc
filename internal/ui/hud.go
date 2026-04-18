@@ -2,6 +2,7 @@ package ui
 
 import (
 	"fmt"
+	"math"
 
 	"github.com/fanxiyao/gomc/internal/input"
 	"github.com/fanxiyao/gomc/internal/inventory"
@@ -22,7 +23,7 @@ const (
 )
 
 // HUD is the always-visible heads-up display: crosshair, hotbar, health
-// and hunger bars, and an optional FPS counter.
+// and hunger bars, and an optional debug overlay (F3).
 type HUD struct {
 	// Hotbar references the player's hotbar inventory (9 slots).
 	Hotbar *inventory.Inventory
@@ -42,11 +43,32 @@ type HUD struct {
 	// MaxHunger is the maximum hunger value.
 	MaxHunger int
 
-	// ShowFPS toggles the FPS counter in the top-left corner.
+	// ShowFPS toggles the debug overlay in the top-left corner.
 	ShowFPS bool
 
 	// FPS is the current frames-per-second value for display.
 	FPS int
+
+	// PlayerX, PlayerY, PlayerZ hold the player's world position.
+	PlayerX, PlayerY, PlayerZ float32
+
+	// PlayerYaw and PlayerPitch hold the player's rotation in degrees.
+	PlayerYaw, PlayerPitch float32
+
+	// ChunkX and ChunkZ are the chunk coordinates the player is in.
+	ChunkX, ChunkZ int32
+
+	// LoadedChunks is the number of currently loaded chunks.
+	LoadedChunks int
+
+	// EntityCount is the total number of active entities.
+	EntityCount int
+
+	// MemoryMB is the current memory usage in megabytes.
+	MemoryMB float64
+
+	// FacingDirection is the cardinal direction computed from PlayerYaw.
+	FacingDirection string
 }
 
 // NewHUD creates a HUD bound to the given hotbar inventory.
@@ -89,7 +111,7 @@ func (h *HUD) Draw(r *UIRenderer) {
 	h.drawHealthBar(r)
 	h.drawHungerBar(r)
 	if h.ShowFPS {
-		h.drawFPS(r)
+		h.drawDebugOverlay(r)
 	}
 }
 
@@ -204,10 +226,117 @@ func (h *HUD) drawHungerBar(r *UIRenderer) {
 	}
 }
 
-// drawFPS renders the FPS counter in the top-left corner.
-func (h *HUD) drawFPS(r *UIRenderer) {
-	text := fmt.Sprintf("FPS: %d", h.FPS)
-	r.DrawText(8, 8, text, 1.0, 1, 1, 1)
+// debugTextLines returns the lines of text displayed in the debug overlay.
+func (h *HUD) debugTextLines() []string {
+	frameTime := float64(0)
+	if h.FPS > 0 {
+		frameTime = 1000.0 / float64(h.FPS)
+	}
+
+	return []string{
+		"GoMC (Vulkan)",
+		fmt.Sprintf("FPS: %d (%.1fms)", h.FPS, frameTime),
+		"",
+		fmt.Sprintf("XYZ: %.1f / %.1f / %.1f", h.PlayerX, h.PlayerY, h.PlayerZ),
+		fmt.Sprintf("Chunk: %d / %d", h.ChunkX, h.ChunkZ),
+		fmt.Sprintf("Facing: %s (Yaw: %.1f, Pitch: %.1f)", h.FacingDirection, h.PlayerYaw, h.PlayerPitch),
+		"",
+		fmt.Sprintf("Loaded Chunks: %d", h.LoadedChunks),
+		fmt.Sprintf("Entities: %d", h.EntityCount),
+		fmt.Sprintf("Memory: %.0f MB", h.MemoryMB),
+	}
+}
+
+// drawDebugOverlay renders the F3 debug panel on the left side of the screen.
+func (h *HUD) drawDebugOverlay(r *UIRenderer) {
+	lines := h.debugTextLines()
+
+	const (
+		lineHeight = 14.0
+		padX       = 8.0
+		padY       = 8.0
+		panelWidth = 260.0
+	)
+
+	panelHeight := padY*2 + float32(len(lines))*lineHeight
+
+	// Semi-transparent dark background panel.
+	r.DrawRect(0, 0, panelWidth, panelHeight, 0, 0, 0, 0.5)
+
+	// Draw each line of debug text.
+	for i, line := range lines {
+		if line == "" {
+			continue
+		}
+		y := padY + float32(i)*lineHeight
+		r.DrawText(padX, y, line, 1.0, 1, 1, 1)
+	}
+}
+
+// SetPlayerPos updates the player's world position on the debug overlay.
+func (h *HUD) SetPlayerPos(x, y, z float32) {
+	h.PlayerX = x
+	h.PlayerY = y
+	h.PlayerZ = z
+}
+
+// SetPlayerRotation updates the player's rotation and recomputes the
+// facing direction from the yaw angle.
+func (h *HUD) SetPlayerRotation(yaw, pitch float32) {
+	h.PlayerYaw = yaw
+	h.PlayerPitch = pitch
+	h.FacingDirection = FacingDirectionFromYaw(yaw)
+}
+
+// SetChunkPos updates the chunk coordinates on the debug overlay.
+func (h *HUD) SetChunkPos(x, z int32) {
+	h.ChunkX = x
+	h.ChunkZ = z
+}
+
+// SetLoadedChunks updates the loaded chunk count on the debug overlay.
+func (h *HUD) SetLoadedChunks(n int) {
+	h.LoadedChunks = n
+}
+
+// SetEntityCount updates the entity count on the debug overlay.
+func (h *HUD) SetEntityCount(n int) {
+	h.EntityCount = n
+}
+
+// SetMemoryMB updates the memory usage on the debug overlay.
+func (h *HUD) SetMemoryMB(mb float64) {
+	h.MemoryMB = mb
+}
+
+// FacingDirectionFromYaw returns a cardinal direction string for the given
+// yaw angle in degrees. The mapping follows Minecraft conventions:
+//
+//	-45 to 45   -> South  (toward +Z)
+//	 45 to 135  -> West   (toward -X)
+//	135 to 180 or -180 to -135 -> North (toward -Z)
+//	-135 to -45 -> East   (toward +X)
+func FacingDirectionFromYaw(yaw float32) string {
+	// Normalize yaw to [-180, 180).
+	y := normalizeYaw(yaw)
+
+	switch {
+	case y >= -45 && y < 45:
+		return "South"
+	case y >= 45 && y < 135:
+		return "West"
+	case y >= -135 && y < -45:
+		return "East"
+	default:
+		// y >= 135 || y < -135
+		return "North"
+	}
+}
+
+// normalizeYaw reduces a yaw angle to the range [-180, 180).
+func normalizeYaw(yaw float32) float32 {
+	r := math.Remainder(float64(yaw), 360)
+	return float32(r)
 }
 
 // GetSelectedItem returns the item stack in the currently selected hotbar slot.
