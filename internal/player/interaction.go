@@ -98,6 +98,14 @@ func (c *Controller) updatePlacement(inp *input.Manager, w *world.World) {
 		return
 	}
 
+	targetBlockID := w.GetBlock(pos)
+	if targetBlockID == block.CraftingTable || targetBlockID == block.Furnace || targetBlockID == block.Chest {
+		if c.OnUseBlock != nil {
+			c.OnUseBlock(targetBlockID, pos)
+		}
+		return
+	}
+
 	// Calculate the adjacent block position using the face normal.
 	normal := face.Normal()
 	placePos := mcmath.BlockPos{

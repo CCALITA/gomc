@@ -47,6 +47,8 @@ type Game struct {
 	Inventory   *inventory.Inventory
 
 	Mode        *ModeManager
+	Spawner     *entity.Spawner
+	Time        *TimeKeeper
 
 	SpawnPoint  mcmath.Vec3
 
@@ -60,6 +62,7 @@ func (g *Game) Init(cfg *config.Config) error {
 	g.Running = true
 	g.State = NewStateManager()
 	g.Mode = NewModeManager()
+	g.Time = NewTimeKeeper()
 
 	block.InitRegistry()
 
@@ -208,6 +211,15 @@ func (g *Game) tick(dt float64) {
 	}
 
 	g.Scheduler.Update(g.ECSWorld, dt)
+
+	g.Time = g.Time.Advance(1)
+
+	if g.Spawner != nil && g.Player != nil {
+		transform := ecs.GetStore[entity.Transform](g.ECSWorld)
+		if t, ok := transform.Get(g.Player.Entity); ok {
+			g.Spawner.SpawnCycle(g.ECSWorld, dt, t.Position)
+		}
+	}
 
 	g.checkPlayerDeath()
 
@@ -373,6 +385,8 @@ func (g *Game) loadExistingSave(storage *world.Storage) {
 	g.Player.Mode = g.Mode
 	g.Player.Inventory = g.Inventory
 
+	g.Spawner = entity.NewSpawner(nil)
+
 	// Restore player orientation.
 	if playerErr == nil {
 		g.Player.Camera.Yaw = playerData.Yaw
@@ -405,6 +419,8 @@ func (g *Game) startNewWorld(storage *world.Storage) {
 	g.Player = player.NewController(playerEntity, g.ECSWorld, cam, g.KeyMap)
 	g.Player.Mode = g.Mode
 	g.Player.Inventory = g.Inventory
+
+	g.Spawner = entity.NewSpawner(nil)
 
 	// Save initial level data.
 	levelData := world.LevelData{

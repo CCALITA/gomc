@@ -66,6 +66,7 @@ type Controller struct {
 	BreakingBlock *mcmath.BlockPos
 	Inventory     *inventory.Inventory
 	SelectedSlot  int
+	OnUseBlock    func(blockID uint16, pos mcmath.BlockPos)
 	Flying        bool
 
 	// interaction holds block interaction state.
