@@ -82,3 +82,17 @@ type Damage struct {
 	Amount    float32
 	Knockback mcmath.Vec3
 }
+
+// KnockbackFromTo computes a knockback vector directed horizontally from
+// the attacker position toward the target position, with the given
+// horizontal strength and upward component.
+func KnockbackFromTo(attackerPos, targetPos mcmath.Vec3, horizontal, upward float32) mcmath.Vec3 {
+	dir := targetPos.Sub(attackerPos)
+	dir.Y = 0
+	dir = dir.Normalize()
+	return mcmath.Vec3{
+		X: dir.X * horizontal,
+		Y: upward,
+		Z: dir.Z * horizontal,
+	}
+}

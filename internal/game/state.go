@@ -6,6 +6,7 @@ const (
 	StateMainMenu State = iota
 	StatePlaying
 	StatePaused
+	StateDead
 )
 
 type stateCallbacks struct {

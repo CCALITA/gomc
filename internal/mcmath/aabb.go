@@ -75,6 +75,87 @@ func (a AABB) String() string {
 	return fmt.Sprintf("AABB(%s, %s)", a.Min, a.Max)
 }
 
+// RayIntersects tests whether a ray with the given origin and direction
+// intersects this AABB within maxDist. It returns true and the distance
+// parameter t if the ray hits, or false otherwise. Uses the slab method.
+func (a AABB) RayIntersects(origin, direction Vec3, maxDist float32) (bool, float32) {
+	var tMin, tMax float32
+
+	if direction.X != 0 {
+		invD := 1.0 / direction.X
+		t0 := (a.Min.X - origin.X) * invD
+		t1 := (a.Max.X - origin.X) * invD
+		if invD < 0 {
+			t0, t1 = t1, t0
+		}
+		tMin = t0
+		tMax = t1
+	} else {
+		if origin.X < a.Min.X || origin.X > a.Max.X {
+			return false, 0
+		}
+		tMin = -1e30
+		tMax = 1e30
+	}
+
+	if direction.Y != 0 {
+		invD := 1.0 / direction.Y
+		t0 := (a.Min.Y - origin.Y) * invD
+		t1 := (a.Max.Y - origin.Y) * invD
+		if invD < 0 {
+			t0, t1 = t1, t0
+		}
+		if t0 > tMin {
+			tMin = t0
+		}
+		if t1 < tMax {
+			tMax = t1
+		}
+	} else {
+		if origin.Y < a.Min.Y || origin.Y > a.Max.Y {
+			return false, 0
+		}
+	}
+
+	if tMin > tMax {
+		return false, 0
+	}
+
+	if direction.Z != 0 {
+		invD := 1.0 / direction.Z
+		t0 := (a.Min.Z - origin.Z) * invD
+		t1 := (a.Max.Z - origin.Z) * invD
+		if invD < 0 {
+			t0, t1 = t1, t0
+		}
+		if t0 > tMin {
+			tMin = t0
+		}
+		if t1 < tMax {
+			tMax = t1
+		}
+	} else {
+		if origin.Z < a.Min.Z || origin.Z > a.Max.Z {
+			return false, 0
+		}
+	}
+
+	if tMin > tMax {
+		return false, 0
+	}
+
+	// The intersection is valid if the nearest hit is within [0, maxDist].
+	t := tMin
+	if t < 0 {
+		t = tMax
+	}
+	if t < 0 || t > maxDist {
+		return false, 0
+	}
+
+	return true, t
+}
+
 // BlockAABB returns a unit AABB for the given block position.
 func BlockAABB(pos BlockPos) AABB {
 	return AABB{

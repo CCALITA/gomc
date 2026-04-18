@@ -63,6 +63,19 @@ func (s *AISystem) rng() *rand.Rand {
 const (
 	aiChaseRange  float32 = 16.0
 	aiAttackRange float32 = 2.0
+
+	// aiAttackCooldown is the minimum time between mob attacks (seconds).
+	aiAttackCooldown float64 = 1.0
+
+	// zombieDamage is the damage dealt per Zombie attack.
+	zombieDamage float32 = 3.0
+	// skeletonDamage is the damage dealt per Skeleton melee attack.
+	skeletonDamage float32 = 2.0
+
+	// mobKnockbackStrength is the horizontal knockback speed applied by mob attacks.
+	mobKnockbackStrength float32 = 6.0
+	// mobKnockbackUpward is the upward velocity component of mob knockback.
+	mobKnockbackUpward float32 = 4.0
 )
 
 // Update processes AI state transitions for every AI entity.
@@ -141,6 +154,15 @@ func (s *AISystem) Update(w *ecs.World, dt float64) {
 			if nearestDist > float32(aiAttackRange) {
 				ai.State = AIChase
 				ai.Target = nearestEntity
+				return
+			}
+			// Deal damage when the cooldown timer has elapsed.
+			if ai.Timer <= 0 {
+				ai.Timer = aiAttackCooldown
+				dmgAmount := mobDamageForEntity(w, e)
+				if dmgAmount > 0 {
+					applyMobDamage(w, nearestEntity, t.Position, dmgAmount)
+				}
 			}
 
 		case AIFlee:
@@ -164,6 +186,39 @@ func (s *AISystem) randomIdleTime() float64 {
 		return 1.0 + s.Rand.Float64()*3.0
 	}
 	return 1.0 + rand.Float64()*3.0
+}
+
+// mobDamageForEntity returns the attack damage for the given mob entity
+// based on its EntityTypeComp. Returns 0 for unknown types.
+func mobDamageForEntity(w *ecs.World, e ecs.Entity) float32 {
+	et, ok := ecs.GetStore[EntityTypeComp](w).Get(e)
+	if !ok {
+		return 0
+	}
+	switch et.Type {
+	case TypeZombie:
+		return zombieDamage
+	case TypeSkeleton:
+		return skeletonDamage
+	default:
+		return 0
+	}
+}
+
+// applyMobDamage applies a Damage component to the target entity with
+// knockback directed away from the attacker position.
+func applyMobDamage(w *ecs.World, target ecs.Entity, attackerPos mcmath.Vec3, amount float32) {
+	targetTransform, ok := ecs.GetStore[Transform](w).Get(target)
+	if !ok {
+		return
+	}
+
+	kb := KnockbackFromTo(attackerPos, targetTransform.Position, mobKnockbackStrength, mobKnockbackUpward)
+
+	ecs.GetStore[Damage](w).Set(target, Damage{
+		Amount:    amount,
+		Knockback: kb,
+	})
 }
 
 // ---------------------------------------------------------------------------
@@ -231,15 +286,21 @@ func (s *DamageSystem) Update(w *ecs.World, dt float64) {
 // ---------------------------------------------------------------------------
 
 // HealthSystem destroys entities whose health has dropped to zero or below.
+// Player entities are skipped because their death is handled by the game layer.
 type HealthSystem struct{}
 
-// Update checks all Health components and destroys dead entities.
+// Update checks all Health components and destroys dead non-player entities.
 func (s *HealthSystem) Update(w *ecs.World, dt float64) {
 	store := ecs.GetStore[Health](w)
+	etStore := ecs.GetStore[EntityTypeComp](w)
 	var toDestroy []ecs.Entity
 
 	store.Each(func(e ecs.Entity, h *Health) {
 		if h.Current <= 0 {
+			// Skip player entities; game layer handles death/respawn.
+			if et, ok := etStore.Get(e); ok && et.Type == TypePlayer {
+				return
+			}
 			toDestroy = append(toDestroy, e)
 		}
 	})

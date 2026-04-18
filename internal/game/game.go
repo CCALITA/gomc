@@ -42,6 +42,7 @@ type Game struct {
 	Scheduler   *ecs.Scheduler
 	State       *StateManager
 	Inventory   *inventory.Inventory
+	SpawnPoint  mcmath.Vec3
 	Running     bool
 }
 
@@ -190,9 +191,68 @@ func (g *Game) tick(dt float64) {
 		}
 
 		g.Player.Update(g.Input, g.World, float32(dt))
+		g.Player.UpdateCombat(g.Input, g.ECSWorld, float32(dt))
 	}
 
 	g.Scheduler.Update(g.ECSWorld, dt)
+
+	g.checkPlayerDeath()
+}
+
+// checkPlayerDeath checks the player's health component. If health is
+// at or below zero, it transitions to the death state and pushes the
+// death screen.
+func (g *Game) checkPlayerDeath() {
+	if g.Player == nil {
+		return
+	}
+
+	healthStore := ecs.GetStore[entity.Health](g.ECSWorld)
+	h, ok := healthStore.Get(g.Player.Entity)
+	if !ok {
+		return
+	}
+
+	if h.Current > 0 {
+		return
+	}
+
+	g.State.SetState(StateDead)
+	g.UI.PushScreen(ui.NewDeathScreen(func() {
+		g.respawnPlayer()
+	}))
+}
+
+// respawnPlayer restores the player to the spawn point with full health,
+// pops the death screen, and returns to the playing state.
+func (g *Game) respawnPlayer() {
+	if g.Player == nil {
+		return
+	}
+
+	// Restore health.
+	healthStore := ecs.GetStore[entity.Health](g.ECSWorld)
+	healthStore.Set(g.Player.Entity, entity.Health{Current: 20, Max: 20})
+
+	// Reset position to spawn point.
+	transformStore := ecs.GetStore[entity.Transform](g.ECSWorld)
+	transformStore.Set(g.Player.Entity, entity.Transform{Position: g.SpawnPoint})
+
+	pbStore := ecs.GetStore[entity.PhysicsBody](g.ECSWorld)
+	if pb, ok := pbStore.Get(g.Player.Entity); ok {
+		pb.Body.Position = g.SpawnPoint
+		pb.Body.Velocity = mcmath.Vec3{}
+	}
+
+	// Remove any pending damage.
+	ecs.GetStore[entity.Damage](g.ECSWorld).Remove(g.Player.Entity)
+
+	// Sync camera position.
+	g.Player.Camera.Position = g.SpawnPoint.Add(mcmath.Vec3{Y: player.EyeOffset})
+
+	// Pop death screen and return to playing.
+	g.UI.PopScreen()
+	g.State.SetState(StatePlaying)
 }
 
 func (g *Game) render() {
@@ -227,6 +287,7 @@ func (g *Game) StartSingleplayer() {
 
 	spawnY := g.World.GetChunk(spawnChunk).HighestBlock(8, 8) + 2
 	spawnPos := mcmath.Vec3{X: 8, Y: float32(spawnY), Z: 8}
+	g.SpawnPoint = spawnPos
 
 	cam := render.NewCamera(spawnPos.Add(mcmath.Vec3{Y: player.EyeOffset}))
 	cam.FOV = g.Config.Render.FOV
