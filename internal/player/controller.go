@@ -12,7 +12,6 @@ import (
 	"github.com/fanxiyao/gomc/internal/mcmath"
 	"github.com/fanxiyao/gomc/internal/physics"
 	"github.com/fanxiyao/gomc/internal/render"
-	"github.com/fanxiyao/gomc/internal/world"
 )
 
 // ModeChecker abstracts game-mode capability queries so that the player
@@ -100,7 +99,7 @@ func NewController(e ecs.Entity, ecsWorld *ecs.World, camera *render.Camera, key
 // Update processes input and advances the player state by dt seconds.
 // It handles camera rotation, movement direction, speed selection,
 // jumping, flying, and camera synchronisation from the entity transform.
-func (c *Controller) Update(inp *input.Manager, w *world.World, dt float32) {
+func (c *Controller) Update(inp *input.Manager, w BlockWorld, dt float32) {
 	c.updateCamera(inp)
 	c.updateMovement(inp, dt)
 	c.updateNoClip()

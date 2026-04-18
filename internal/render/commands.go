@@ -326,7 +326,10 @@ func (cp *CommandPool) beginSingleTimeCommands() (vk.CommandBuffer, error) {
 		Flags: vk.CommandBufferUsageFlags(vk.CommandBufferUsageOneTimeSubmitBit),
 	}
 
-	vk.BeginCommandBuffer(cmdBuffers[0], beginInfo)
+	if res := vk.BeginCommandBuffer(cmdBuffers[0], beginInfo); res != vk.Success {
+		vk.FreeCommandBuffers(cp.ctx.Device, cp.Pool, 1, cmdBuffers)
+		return nil, fmt.Errorf("begin command buffer: %d", res)
+	}
 
 	return cmdBuffers[0], nil
 }
@@ -334,7 +337,11 @@ func (cp *CommandPool) beginSingleTimeCommands() (vk.CommandBuffer, error) {
 // endSingleTimeCommands ends, submits, and waits for the command buffer,
 // then frees it.
 func (cp *CommandPool) endSingleTimeCommands(cmdBuf vk.CommandBuffer) error {
-	vk.EndCommandBuffer(cmdBuf)
+	defer vk.FreeCommandBuffers(cp.ctx.Device, cp.Pool, 1, []vk.CommandBuffer{cmdBuf})
+
+	if res := vk.EndCommandBuffer(cmdBuf); res != vk.Success {
+		return fmt.Errorf("end command buffer: %d", res)
+	}
 
 	submitInfo := &vk.SubmitInfo{
 		SType:              vk.StructureTypeSubmitInfo,
@@ -342,10 +349,13 @@ func (cp *CommandPool) endSingleTimeCommands(cmdBuf vk.CommandBuffer) error {
 		PCommandBuffers:    []vk.CommandBuffer{cmdBuf},
 	}
 
-	vk.QueueSubmit(cp.ctx.GraphicsQueue, 1, []vk.SubmitInfo{*submitInfo}, nil)
-	vk.QueueWaitIdle(cp.ctx.GraphicsQueue)
+	if res := vk.QueueSubmit(cp.ctx.GraphicsQueue, 1, []vk.SubmitInfo{*submitInfo}, nil); res != vk.Success {
+		return fmt.Errorf("queue submit: %d", res)
+	}
 
-	vk.FreeCommandBuffers(cp.ctx.Device, cp.Pool, 1, []vk.CommandBuffer{cmdBuf})
+	if res := vk.QueueWaitIdle(cp.ctx.GraphicsQueue); res != vk.Success {
+		return fmt.Errorf("queue wait idle: %d", res)
+	}
 
 	return nil
 }

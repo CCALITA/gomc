@@ -294,7 +294,7 @@ func (s *InventoryScreen) inventorySlotPos(r *UIRenderer, row, col int) (float32
 
 // hitTestInventory returns the inventory slot index under (mx, my), or -1.
 func (s *InventoryScreen) hitTestInventory(mx, my float32) int {
-	r := s.hitRenderer()
+	r := makeHitRenderer(s.screenWidth, s.screenHeight)
 	for row := 0; row < invRows; row++ {
 		for col := 0; col < invCols; col++ {
 			sx, sy := s.inventorySlotPos(r, row, col)
@@ -312,23 +312,10 @@ func (s *InventoryScreen) SetScreenSize(w, h float32) {
 	s.screenHeight = h
 }
 
-// hitRenderer returns a UIRenderer with the stored screen dimensions for
-// hit-test calculations. Falls back to 800x600 if dimensions are unset.
-func (s *InventoryScreen) hitRenderer() *UIRenderer {
-	w, h := s.screenWidth, s.screenHeight
-	if w == 0 {
-		w = 800
-	}
-	if h == 0 {
-		h = 600
-	}
-	return &UIRenderer{ScreenWidth: w, ScreenHeight: h}
-}
-
 // hitTestCraftGrid returns the crafting grid (row, col) under (mx, my),
 // or (-1, -1) if no slot is hit.
 func (s *InventoryScreen) hitTestCraftGrid(mx, my float32) (int, int) {
-	r := s.hitRenderer()
+	r := makeHitRenderer(s.screenWidth, s.screenHeight)
 	baseX, baseY := s.craftGridOrigin(r)
 	for row := 0; row < craftGridSize; row++ {
 		for col := 0; col < craftGridSize; col++ {
@@ -344,7 +331,7 @@ func (s *InventoryScreen) hitTestCraftGrid(mx, my float32) (int, int) {
 
 // hitTestCraftResult reports whether (mx, my) hits the crafting result slot.
 func (s *InventoryScreen) hitTestCraftResult(mx, my float32) bool {
-	r := s.hitRenderer()
+	r := makeHitRenderer(s.screenWidth, s.screenHeight)
 	baseX, baseY := s.craftGridOrigin(r)
 	arrowX := baseX + float32(craftGridSize)*(invSlotSize+invSlotPadding) + 8
 	resultX := arrowX + 32

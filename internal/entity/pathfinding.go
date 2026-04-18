@@ -114,14 +114,7 @@ func (pf *PathFinder) neighbors(pos mcmath.BlockPos) []mcmath.BlockPos {
 
 // manhattan returns the Manhattan distance between two block positions.
 func manhattan(a, b mcmath.BlockPos) int {
-	return abs(int(a.X)-int(b.X)) + abs(int(a.Y)-int(b.Y)) + abs(int(a.Z)-int(b.Z))
-}
-
-func abs(x int) int {
-	if x < 0 {
-		return -x
-	}
-	return x
+	return mcmath.Abs(int(a.X)-int(b.X)) + mcmath.Abs(int(a.Y)-int(b.Y)) + mcmath.Abs(int(a.Z)-int(b.Z))
 }
 
 // reconstructPath walks back from goal to start via parent pointers and returns

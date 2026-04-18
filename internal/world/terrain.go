@@ -283,7 +283,7 @@ func (tg *TerrainGenerator) placeTree(c *chunk.Chunk, lx, baseY, lz int, tt biom
 				if ny >= mcmath.ChunkHeight {
 					continue
 				}
-				if dy == 2 && abs(dx) == 2 && abs(dz) == 2 {
+				if dy == 2 && mcmath.Abs(dx) == 2 && mcmath.Abs(dz) == 2 {
 					continue
 				}
 				if c.GetBlock(nx, ny, nz) == logID {
@@ -293,11 +293,4 @@ func (tg *TerrainGenerator) placeTree(c *chunk.Chunk, lx, baseY, lz int, tt biom
 			}
 		}
 	}
-}
-
-func abs(x int) int {
-	if x < 0 {
-		return -x
-	}
-	return x
 }

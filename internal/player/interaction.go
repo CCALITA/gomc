@@ -9,7 +9,6 @@ import (
 	"github.com/fanxiyao/gomc/internal/item"
 	"github.com/fanxiyao/gomc/internal/mcmath"
 	"github.com/fanxiyao/gomc/internal/physics"
-	"github.com/fanxiyao/gomc/internal/world"
 )
 
 const (
@@ -24,7 +23,7 @@ type interactionState struct {
 }
 
 // UpdateInteraction handles block breaking and placement each frame.
-func (c *Controller) UpdateInteraction(inp *input.Manager, w *world.World, dt float32) {
+func (c *Controller) UpdateInteraction(inp *input.Manager, w BlockWorld, dt float32) {
 	c.updateBreaking(inp, w, dt)
 	c.updatePlacement(inp, w)
 }
@@ -33,7 +32,7 @@ func (c *Controller) UpdateInteraction(inp *input.Manager, w *world.World, dt fl
 // attack button is held. Break progress accumulates based on block hardness;
 // once it reaches 1.0, the block is removed and progress resets.
 // In Creative mode, all breakable blocks break instantly.
-func (c *Controller) updateBreaking(inp *input.Manager, w *world.World, dt float32) {
+func (c *Controller) updateBreaking(inp *input.Manager, w BlockWorld, dt float32) {
 	attackBtn := c.KeyMap.GetKey(input.Attack)
 
 	if !inp.IsMouseDown(attackBtn) {
@@ -86,7 +85,7 @@ func (c *Controller) updateBreaking(inp *input.Manager, w *world.World, dt float
 }
 
 // updatePlacement handles block placement when the Use button is just pressed.
-func (c *Controller) updatePlacement(inp *input.Manager, w *world.World) {
+func (c *Controller) updatePlacement(inp *input.Manager, w BlockWorld) {
 	useBtn := c.KeyMap.GetKey(input.Use)
 
 	if !inp.IsMouseJustPressed(useBtn) {
@@ -156,7 +155,7 @@ func (c *Controller) GetSelectedItemFromInventory(inv *inventory.Inventory) item
 
 // PlaceBlockFromInventory attempts to place a block and decrements the
 // item from the inventory. Returns true if a block was placed.
-func (c *Controller) PlaceBlockFromInventory(inp *input.Manager, w *world.World, inv *inventory.Inventory) bool {
+func (c *Controller) PlaceBlockFromInventory(inp *input.Manager, w BlockWorld, inv *inventory.Inventory) bool {
 	useBtn := c.KeyMap.GetKey(input.Use)
 
 	if !inp.IsMouseJustPressed(useBtn) {
@@ -201,7 +200,7 @@ func (c *Controller) PlaceBlockFromInventory(inp *input.Manager, w *world.World,
 
 // GetTargetBlock performs a raycast from the camera along the forward
 // direction up to Reach distance and returns the first solid block hit.
-func (c *Controller) GetTargetBlock(w *world.World) (hit bool, pos mcmath.BlockPos, face mcmath.Direction) {
+func (c *Controller) GetTargetBlock(w BlockWorld) (hit bool, pos mcmath.BlockPos, face mcmath.Direction) {
 	origin := c.Camera.Position
 	direction := c.Camera.Forward()
 

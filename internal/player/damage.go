@@ -4,7 +4,6 @@ import (
 	"github.com/fanxiyao/gomc/internal/block"
 	"github.com/fanxiyao/gomc/internal/mcmath"
 	"github.com/fanxiyao/gomc/internal/physics"
-	"github.com/fanxiyao/gomc/internal/world"
 )
 
 // Damage type constants identify the source of environmental damage.
@@ -63,7 +62,7 @@ func NewPlayerDamageTracker() *PlayerDamageTracker {
 // events that occurred. playerPos is the entity's foot-level position.
 func (t *PlayerDamageTracker) Update(
 	body *physics.Body,
-	w *world.World,
+	w BlockWorld,
 	playerPos mcmath.Vec3,
 	dt float32,
 ) []DamageEvent {
@@ -105,7 +104,7 @@ func (t *PlayerDamageTracker) updateFall(
 // updateLava checks whether the player's feet are in lava and applies
 // continuous damage.
 func (t *PlayerDamageTracker) updateLava(
-	w *world.World,
+	w BlockWorld,
 	feetBlock mcmath.BlockPos,
 	dt float32,
 	events []DamageEvent,
@@ -126,7 +125,7 @@ func (t *PlayerDamageTracker) updateLava(
 // updateDrowning checks whether the player's head is submerged in water
 // and starts dealing damage after the breath-hold period expires.
 func (t *PlayerDamageTracker) updateDrowning(
-	w *world.World,
+	w BlockWorld,
 	playerPos mcmath.Vec3,
 	dt float32,
 	events []DamageEvent,
@@ -151,7 +150,7 @@ func (t *PlayerDamageTracker) updateDrowning(
 // updateFire checks whether the player is standing on a fire block and
 // applies continuous damage.
 func (t *PlayerDamageTracker) updateFire(
-	w *world.World,
+	w BlockWorld,
 	feetBlock mcmath.BlockPos,
 	dt float32,
 	events []DamageEvent,

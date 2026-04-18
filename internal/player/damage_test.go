@@ -8,13 +8,31 @@ import (
 	"github.com/fanxiyao/gomc/internal/block"
 	"github.com/fanxiyao/gomc/internal/mcmath"
 	"github.com/fanxiyao/gomc/internal/physics"
-	"github.com/fanxiyao/gomc/internal/world"
 	"github.com/stretchr/testify/assert"
 )
 
-// newTestWorld creates a minimal world with the given seed for testing.
-func newTestWorld(seed int64) *world.World {
-	return world.NewWorld(seed)
+// mockBlockWorld implements BlockWorld backed by a map; defaults to block.Air.
+type mockBlockWorld struct {
+	blocks map[mcmath.BlockPos]uint16
+}
+
+func newMockBlockWorld() *mockBlockWorld {
+	return &mockBlockWorld{blocks: make(map[mcmath.BlockPos]uint16)}
+}
+
+func (m *mockBlockWorld) GetBlock(pos mcmath.BlockPos) uint16 {
+	if id, ok := m.blocks[pos]; ok {
+		return id
+	}
+	return block.Air
+}
+
+func (m *mockBlockWorld) SetBlock(pos mcmath.BlockPos, id uint16) {
+	m.blocks[pos] = id
+}
+
+func (m *mockBlockWorld) GetBlockAABBs(_ mcmath.AABB) []mcmath.AABB {
+	return nil
 }
 
 // newTestBody creates a physics body at the given position.
@@ -49,7 +67,7 @@ func TestNewPlayerDamageTracker(t *testing.T) {
 
 func TestFallDamage_NoDamageBelowThreshold(t *testing.T) {
 	tracker := NewPlayerDamageTracker()
-	w := newTestWorld(42)
+	w := newMockBlockWorld()
 	body := newTestBody(mcmath.Vec3{X: 0, Y: 64, Z: 0})
 	pos := mcmath.Vec3{X: 0, Y: 64, Z: 0}
 
@@ -71,7 +89,7 @@ func TestFallDamage_NoDamageBelowThreshold(t *testing.T) {
 
 func TestFallDamage_SevenDamageFromTenBlockFall(t *testing.T) {
 	tracker := NewPlayerDamageTracker()
-	w := newTestWorld(42)
+	w := newMockBlockWorld()
 	body := newTestBody(mcmath.Vec3{X: 0, Y: 64, Z: 0})
 	pos := mcmath.Vec3{X: 0, Y: 64, Z: 0}
 
@@ -96,7 +114,7 @@ func TestFallDamage_SevenDamageFromTenBlockFall(t *testing.T) {
 
 func TestFallDamage_FallDistanceResetsOnLanding(t *testing.T) {
 	tracker := NewPlayerDamageTracker()
-	w := newTestWorld(42)
+	w := newMockBlockWorld()
 	body := newTestBody(mcmath.Vec3{X: 0, Y: 64, Z: 0})
 	pos := mcmath.Vec3{X: 0, Y: 64, Z: 0}
 
@@ -115,7 +133,7 @@ func TestFallDamage_FallDistanceResetsOnLanding(t *testing.T) {
 
 func TestFallDamage_NoDamageExactlyAtThreshold(t *testing.T) {
 	tracker := NewPlayerDamageTracker()
-	w := newTestWorld(42)
+	w := newMockBlockWorld()
 	body := newTestBody(mcmath.Vec3{X: 0, Y: 64, Z: 0})
 	pos := mcmath.Vec3{X: 0, Y: 64, Z: 0}
 
@@ -132,7 +150,7 @@ func TestFallDamage_NoDamageExactlyAtThreshold(t *testing.T) {
 
 func TestFallDamage_NoAccumulationWhileRising(t *testing.T) {
 	tracker := NewPlayerDamageTracker()
-	w := newTestWorld(42)
+	w := newMockBlockWorld()
 	body := newTestBody(mcmath.Vec3{X: 0, Y: 64, Z: 0})
 	pos := mcmath.Vec3{X: 0, Y: 64, Z: 0}
 
@@ -146,13 +164,11 @@ func TestFallDamage_NoAccumulationWhileRising(t *testing.T) {
 
 func TestLavaDamage(t *testing.T) {
 	tracker := NewPlayerDamageTracker()
-	w := newTestWorld(42)
+	w := newMockBlockWorld()
 	body := newTestBody(mcmath.Vec3{X: 0, Y: 64, Z: 0})
 	body.OnGround = true
 
 	feetPos := mcmath.BlockPos{X: 0, Y: 64, Z: 0}
-	cp := feetPos.ToChunkPos()
-	w.LoadChunk(cp)
 	w.SetBlock(feetPos, block.Lava)
 
 	pos := mcmath.Vec3{X: 0, Y: 64, Z: 0}
@@ -166,13 +182,11 @@ func TestLavaDamage(t *testing.T) {
 
 func TestLavaDamage_ResetWhenNotInLava(t *testing.T) {
 	tracker := NewPlayerDamageTracker()
-	w := newTestWorld(42)
+	w := newMockBlockWorld()
 	body := newTestBody(mcmath.Vec3{X: 0, Y: 64, Z: 0})
 	body.OnGround = true
 
 	feetPos := mcmath.BlockPos{X: 0, Y: 64, Z: 0}
-	cp := feetPos.ToChunkPos()
-	w.LoadChunk(cp)
 	w.SetBlock(feetPos, block.Lava)
 
 	pos := mcmath.Vec3{X: 0, Y: 64, Z: 0}
@@ -187,14 +201,12 @@ func TestLavaDamage_ResetWhenNotInLava(t *testing.T) {
 
 func TestDrowning_NoDamageBeforeBreathHold(t *testing.T) {
 	tracker := NewPlayerDamageTracker()
-	w := newTestWorld(42)
+	w := newMockBlockWorld()
 	body := newTestBody(mcmath.Vec3{X: 0, Y: 64, Z: 0})
 	body.OnGround = true
 
 	headPos := mcmath.Vec3{X: 0, Y: 64 + EyeOffset, Z: 0}
 	headBlock := headPos.Floor()
-	cp := headBlock.ToChunkPos()
-	w.LoadChunk(cp)
 	w.SetBlock(headBlock, block.Water)
 
 	pos := mcmath.Vec3{X: 0, Y: 64, Z: 0}
@@ -208,14 +220,12 @@ func TestDrowning_NoDamageBeforeBreathHold(t *testing.T) {
 
 func TestDrowning_DamageAfterBreathHold(t *testing.T) {
 	tracker := NewPlayerDamageTracker()
-	w := newTestWorld(42)
+	w := newMockBlockWorld()
 	body := newTestBody(mcmath.Vec3{X: 0, Y: 64, Z: 0})
 	body.OnGround = true
 
 	headPos := mcmath.Vec3{X: 0, Y: 64 + EyeOffset, Z: 0}
 	headBlock := headPos.Floor()
-	cp := headBlock.ToChunkPos()
-	w.LoadChunk(cp)
 	w.SetBlock(headBlock, block.Water)
 
 	pos := mcmath.Vec3{X: 0, Y: 64, Z: 0}
@@ -229,13 +239,11 @@ func TestDrowning_DamageAfterBreathHold(t *testing.T) {
 
 func TestDrowning_NoWhenHeadAboveWater(t *testing.T) {
 	tracker := NewPlayerDamageTracker()
-	w := newTestWorld(42)
+	w := newMockBlockWorld()
 	body := newTestBody(mcmath.Vec3{X: 0, Y: 64, Z: 0})
 	body.OnGround = true
 
 	feetPos := mcmath.BlockPos{X: 0, Y: 64, Z: 0}
-	cp := feetPos.ToChunkPos()
-	w.LoadChunk(cp)
 	w.SetBlock(feetPos, block.Water)
 
 	pos := mcmath.Vec3{X: 0, Y: 64, Z: 0}
@@ -248,14 +256,12 @@ func TestDrowning_NoWhenHeadAboveWater(t *testing.T) {
 
 func TestDrowning_ResetOnSurface(t *testing.T) {
 	tracker := NewPlayerDamageTracker()
-	w := newTestWorld(42)
+	w := newMockBlockWorld()
 	body := newTestBody(mcmath.Vec3{X: 0, Y: 64, Z: 0})
 	body.OnGround = true
 
 	headPos := mcmath.Vec3{X: 0, Y: 64 + EyeOffset, Z: 0}
 	headBlock := headPos.Floor()
-	cp := headBlock.ToChunkPos()
-	w.LoadChunk(cp)
 	w.SetBlock(headBlock, block.Water)
 
 	pos := mcmath.Vec3{X: 0, Y: 64, Z: 0}
@@ -271,13 +277,11 @@ func TestDrowning_ResetOnSurface(t *testing.T) {
 
 func TestFireDamage(t *testing.T) {
 	tracker := NewPlayerDamageTracker()
-	w := newTestWorld(42)
+	w := newMockBlockWorld()
 	body := newTestBody(mcmath.Vec3{X: 0, Y: 64, Z: 0})
 	body.OnGround = true
 
 	feetPos := mcmath.BlockPos{X: 0, Y: 64, Z: 0}
-	cp := feetPos.ToChunkPos()
-	w.LoadChunk(cp)
 	w.SetBlock(feetPos, block.Fire)
 
 	pos := mcmath.Vec3{X: 0, Y: 64, Z: 0}
@@ -291,13 +295,11 @@ func TestFireDamage(t *testing.T) {
 
 func TestFireDamage_ResetOffFire(t *testing.T) {
 	tracker := NewPlayerDamageTracker()
-	w := newTestWorld(42)
+	w := newMockBlockWorld()
 	body := newTestBody(mcmath.Vec3{X: 0, Y: 64, Z: 0})
 	body.OnGround = true
 
 	feetPos := mcmath.BlockPos{X: 0, Y: 64, Z: 0}
-	cp := feetPos.ToChunkPos()
-	w.LoadChunk(cp)
 	w.SetBlock(feetPos, block.Fire)
 
 	pos := mcmath.Vec3{X: 0, Y: 64, Z: 0}
@@ -312,7 +314,7 @@ func TestFireDamage_ResetOffFire(t *testing.T) {
 
 func TestNoDamageOnSafeGround(t *testing.T) {
 	tracker := NewPlayerDamageTracker()
-	w := newTestWorld(42)
+	w := newMockBlockWorld()
 	body := newTestBody(mcmath.Vec3{X: 0, Y: 64, Z: 0})
 	body.OnGround = true
 	pos := mcmath.Vec3{X: 0, Y: 64, Z: 0}
@@ -323,19 +325,15 @@ func TestNoDamageOnSafeGround(t *testing.T) {
 
 func TestMultipleDamageSources(t *testing.T) {
 	tracker := NewPlayerDamageTracker()
-	w := newTestWorld(42)
+	w := newMockBlockWorld()
 	body := newTestBody(mcmath.Vec3{X: 0, Y: 64, Z: 0})
 	body.OnGround = true
 
 	feetPos := mcmath.BlockPos{X: 0, Y: 64, Z: 0}
-	cp := feetPos.ToChunkPos()
-	w.LoadChunk(cp)
 	w.SetBlock(feetPos, block.Lava)
 
 	headPos := mcmath.Vec3{X: 0, Y: 64 + EyeOffset, Z: 0}
 	headBlock := headPos.Floor()
-	hcp := headBlock.ToChunkPos()
-	w.LoadChunk(hcp)
 	w.SetBlock(headBlock, block.Water)
 
 	pos := mcmath.Vec3{X: 0, Y: 64, Z: 0}
@@ -349,7 +347,7 @@ func TestMultipleDamageSources(t *testing.T) {
 
 func TestFallDamage_AccumulatesAcrossMultipleTicks(t *testing.T) {
 	tracker := NewPlayerDamageTracker()
-	w := newTestWorld(42)
+	w := newMockBlockWorld()
 	body := newTestBody(mcmath.Vec3{X: 0, Y: 64, Z: 0})
 	pos := mcmath.Vec3{X: 0, Y: 64, Z: 0}
 
