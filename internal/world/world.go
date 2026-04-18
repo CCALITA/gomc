@@ -7,6 +7,7 @@ import (
 	"github.com/fanxiyao/gomc/internal/block"
 	"github.com/fanxiyao/gomc/internal/chunk"
 	"github.com/fanxiyao/gomc/internal/mcmath"
+	"github.com/fanxiyao/gomc/internal/tick"
 )
 
 // World manages loaded chunks and provides block-level access to the voxel world.
@@ -14,14 +15,19 @@ type World struct {
 	mu        sync.RWMutex
 	chunks    map[[2]int32]*chunk.Chunk
 	generator *TerrainGenerator
+	ticker    *tick.Ticker
 }
 
 // NewWorld creates a new World with the given seed for terrain generation.
 func NewWorld(seed int64) *World {
-	return &World{
+	w := &World{
 		chunks:    make(map[[2]int32]*chunk.Chunk),
 		generator: NewTerrainGenerator(seed),
 	}
+	registry := tick.NewHandlerRegistry()
+	tick.RegisterDefaults(registry)
+	w.ticker = tick.NewTicker(w, registry)
+	return w
 }
 
 // GetChunk returns the loaded chunk at pos, or nil if it is not loaded.
@@ -131,4 +137,30 @@ func (w *World) LoadedChunkCount() int {
 	w.mu.RLock()
 	defer w.mu.RUnlock()
 	return len(w.chunks)
+}
+
+// LoadedChunkPositions returns a snapshot of all currently loaded chunk positions.
+func (w *World) LoadedChunkPositions() []mcmath.ChunkPos {
+	w.mu.RLock()
+	defer w.mu.RUnlock()
+	positions := make([]mcmath.ChunkPos, 0, len(w.chunks))
+	for key := range w.chunks {
+		positions = append(positions, mcmath.ChunkPos{X: key[0], Z: key[1]})
+	}
+	return positions
+}
+
+// Tick advances the world by one game tick: processes scheduled ticks and
+// dispatches random ticks for every loaded chunk.
+func (w *World) Tick(currentTick int64) {
+	w.ticker.ProcessScheduledTicks(currentTick)
+	for _, cp := range w.LoadedChunkPositions() {
+		w.ticker.RandomTick(cp.X, cp.Z)
+	}
+}
+
+// Ticker returns the world's tick dispatcher, allowing external code to
+// schedule block ticks.
+func (w *World) Ticker() *tick.Ticker {
+	return w.ticker
 }
