@@ -26,13 +26,15 @@ const (
 
 // ItemProperties describes the static properties of an item type.
 type ItemProperties struct {
-	Name         string
-	MaxStackSize int
-	Durability   int    // 0 = no durability
-	IsBlock      bool
-	BlockID      uint16 // meaningful only when IsBlock is true
-	ToolType     string // one of the Tool* constants
-	ToolLevel    int    // one of the Level* constants
+	Name           string
+	MaxStackSize   int
+	Durability     int     // 0 = no durability
+	IsBlock        bool
+	BlockID        uint16  // meaningful only when IsBlock is true
+	ToolType       string  // one of the Tool* constants
+	ToolLevel      int     // one of the Level* constants
+	FoodRestore    int     // hunger points restored when eaten; 0 for non-food
+	FoodSaturation float64 // saturation points restored when eaten; 0 for non-food
 }
 
 // ----- Block item IDs (items that correspond to placeable blocks) -----
@@ -100,4 +102,17 @@ const (
 	Bucket      // 125
 	WaterBucket // 126
 	LavaBucket  // 127
+)
+
+// ----- Food item IDs -----
+
+const (
+	Apple         ItemID = iota + 200 // 200
+	Bread                             // 201
+	CookedPorkchop                    // 202
+	Steak                             // 203
+	GoldenApple                       // 204
+	Cookie                            // 205
+	Carrot                            // 206
+	BakedPotato                       // 207
 )

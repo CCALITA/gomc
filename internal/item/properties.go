@@ -116,6 +116,26 @@ func init() {
 		MaxStackSize: 1,
 		ToolType:     ToolNone,
 	}
+
+	// ---- food items ----
+	registerFood := func(id ItemID, name string, foodRestore int, foodSaturation float64) {
+		properties[id] = ItemProperties{
+			Name:           name,
+			MaxStackSize:   DefaultMaxStackSize,
+			ToolType:       ToolNone,
+			FoodRestore:    foodRestore,
+			FoodSaturation: foodSaturation,
+		}
+	}
+
+	registerFood(Apple, "Apple", 4, 2.4)
+	registerFood(Bread, "Bread", 5, 6.0)
+	registerFood(CookedPorkchop, "Cooked Porkchop", 8, 12.8)
+	registerFood(Steak, "Steak", 8, 12.8)
+	registerFood(GoldenApple, "Golden Apple", 4, 9.6)
+	registerFood(Cookie, "Cookie", 2, 0.4)
+	registerFood(Carrot, "Carrot", 3, 3.6)
+	registerFood(BakedPotato, "Baked Potato", 5, 6.0)
 }
 
 // GetProperties returns the static properties for the given item ID.
@@ -144,4 +164,9 @@ func IsTool(id ItemID) bool {
 // MaxStack returns the maximum stack size for the given item ID.
 func MaxStack(id ItemID) int {
 	return GetProperties(id).MaxStackSize
+}
+
+// IsFood reports whether the item restores hunger when eaten.
+func IsFood(id ItemID) bool {
+	return GetProperties(id).FoodRestore > 0
 }
