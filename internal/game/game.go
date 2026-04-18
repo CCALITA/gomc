@@ -23,8 +23,10 @@ import (
 )
 
 const (
-	tickRate     = 20.0
-	tickInterval = 1.0 / tickRate
+	tickRate        = 20.0
+	tickInterval    = 1.0 / tickRate
+	autoSaveTicks   = 6000 // 5 minutes at 20 TPS
+	defaultSavePath = "saves/world1"
 )
 
 type Game struct {
@@ -42,7 +44,9 @@ type Game struct {
 	Scheduler   *ecs.Scheduler
 	State       *StateManager
 	Inventory   *inventory.Inventory
+	Storage     *world.Storage
 	Running     bool
+	tickCount   int64
 }
 
 func (g *Game) Init(cfg *config.Config) error {
@@ -178,6 +182,8 @@ func (g *Game) tick(dt float64) {
 		return
 	}
 
+	g.tickCount++
+
 	if g.World != nil && g.Player != nil {
 		transform := ecs.GetStore[entity.Transform](g.ECSWorld)
 		if t, ok := transform.Get(g.Player.Entity); ok {
@@ -193,6 +199,10 @@ func (g *Game) tick(dt float64) {
 	}
 
 	g.Scheduler.Update(g.ECSWorld, dt)
+
+	if g.tickCount%autoSaveTicks == 0 {
+		g.autoSave()
+	}
 }
 
 func (g *Game) render() {
@@ -213,6 +223,73 @@ func (g *Game) render() {
 }
 
 func (g *Game) StartSingleplayer() {
+	storage, err := world.NewStorage(defaultSavePath)
+	if err != nil {
+		log.Printf("failed to create storage: %v", err)
+		return
+	}
+	g.Storage = storage
+
+	if storage.HasSave() {
+		g.loadExistingSave(storage)
+	} else {
+		g.startNewWorld(storage)
+	}
+
+	g.State.SetState(StatePlaying)
+}
+
+// loadExistingSave restores the world and player from an existing save.
+func (g *Game) loadExistingSave(storage *world.Storage) {
+	levelData, err := storage.LoadLevel()
+	if err != nil {
+		log.Printf("failed to load level data, starting new world: %v", err)
+		g.startNewWorld(storage)
+		return
+	}
+
+	g.World = world.NewWorld(levelData.Seed)
+	g.ChunkLoader = world.NewChunkLoader(g.World)
+
+	if err := g.World.LoadAll(storage); err != nil {
+		log.Printf("failed to load chunks: %v", err)
+	}
+
+	// Ensure spawn area is loaded.
+	spawnChunk := mcmath.BlockPos{X: levelData.SpawnX, Y: 0, Z: levelData.SpawnZ}.ToChunkPos()
+	for dx := int32(-2); dx <= 2; dx++ {
+		for dz := int32(-2); dz <= 2; dz++ {
+			g.World.LoadChunk(mcmath.ChunkPos{X: spawnChunk.X + dx, Z: spawnChunk.Z + dz})
+		}
+	}
+
+	spawnPos := mcmath.Vec3{
+		X: float32(levelData.SpawnX),
+		Y: float32(levelData.SpawnY),
+		Z: float32(levelData.SpawnZ),
+	}
+
+	// Try to load player data.
+	playerData, playerErr := storage.LoadPlayer()
+	if playerErr == nil {
+		spawnPos = mcmath.Vec3{X: playerData.X, Y: playerData.Y, Z: playerData.Z}
+	}
+
+	cam := render.NewCamera(spawnPos.Add(mcmath.Vec3{Y: player.EyeOffset}))
+	cam.FOV = g.Config.Render.FOV
+
+	playerEntity := entity.SpawnPlayer(g.ECSWorld, "Player", spawnPos)
+	g.Player = player.NewController(playerEntity, g.ECSWorld, cam, g.KeyMap)
+
+	// Restore player orientation.
+	if playerErr == nil {
+		g.Player.Camera.Yaw = playerData.Yaw
+		g.Player.Camera.Pitch = playerData.Pitch
+	}
+}
+
+// startNewWorld creates a fresh world with a random seed.
+func (g *Game) startNewWorld(storage *world.Storage) {
 	seed := time.Now().UnixNano()
 	g.World = world.NewWorld(seed)
 	g.ChunkLoader = world.NewChunkLoader(g.World)
@@ -234,10 +311,22 @@ func (g *Game) StartSingleplayer() {
 	playerEntity := entity.SpawnPlayer(g.ECSWorld, "Player", spawnPos)
 	g.Player = player.NewController(playerEntity, g.ECSWorld, cam, g.KeyMap)
 
-	g.State.SetState(StatePlaying)
+	// Save initial level data.
+	levelData := world.LevelData{
+		Seed:       seed,
+		SpawnX:     8,
+		SpawnY:     int32(spawnY),
+		SpawnZ:     8,
+		GameTime:   0,
+		Difficulty: "normal",
+	}
+	if err := storage.SaveLevel(levelData); err != nil {
+		log.Printf("failed to save initial level data: %v", err)
+	}
 }
 
 func (g *Game) Cleanup() {
+	g.saveWorldAndPlayer()
 	if g.ChunkLoader != nil {
 		g.ChunkLoader.Stop()
 	}
@@ -247,4 +336,86 @@ func (g *Game) Cleanup() {
 	if g.Renderer != nil {
 		g.Renderer.Cleanup()
 	}
+}
+
+// autoSave persists world and player data during gameplay.
+func (g *Game) autoSave() {
+	log.Println("auto-saving world...")
+	g.saveWorldAndPlayer()
+}
+
+// saveWorldAndPlayer writes all world chunks and player state to storage.
+func (g *Game) saveWorldAndPlayer() {
+	if g.Storage == nil || g.World == nil {
+		return
+	}
+
+	if err := g.World.SaveAll(g.Storage); err != nil {
+		log.Printf("failed to save world: %v", err)
+	}
+
+	if g.Player != nil {
+		pd := g.buildPlayerData()
+		if err := g.Storage.SavePlayer(pd); err != nil {
+			log.Printf("failed to save player: %v", err)
+		}
+	}
+
+	levelData := world.LevelData{
+		Seed:       g.World.Seed(),
+		GameTime:   g.tickCount,
+		Difficulty: "normal",
+	}
+
+	// Use player position as spawn if available.
+	if g.Player != nil {
+		transform := ecs.GetStore[entity.Transform](g.ECSWorld)
+		if t, ok := transform.Get(g.Player.Entity); ok {
+			levelData.SpawnX = int32(t.Position.X)
+			levelData.SpawnY = int32(t.Position.Y)
+			levelData.SpawnZ = int32(t.Position.Z)
+		}
+	}
+
+	if err := g.Storage.SaveLevel(levelData); err != nil {
+		log.Printf("failed to save level data: %v", err)
+	}
+}
+
+// buildPlayerData constructs a PlayerData from the current player state.
+func (g *Game) buildPlayerData() world.PlayerData {
+	pd := world.PlayerData{
+		Health: 20.0,
+		Hunger: 20.0,
+	}
+
+	transform := ecs.GetStore[entity.Transform](g.ECSWorld)
+	if t, ok := transform.Get(g.Player.Entity); ok {
+		pd.X = t.Position.X
+		pd.Y = t.Position.Y
+		pd.Z = t.Position.Z
+	}
+
+	pd.Yaw = g.Player.Camera.Yaw
+	pd.Pitch = g.Player.Camera.Pitch
+
+	health := ecs.GetStore[entity.Health](g.ECSWorld)
+	if h, ok := health.Get(g.Player.Entity); ok {
+		pd.Health = h.Current
+	}
+
+	if g.Inventory != nil {
+		slots := make([]world.InventorySlotData, g.Inventory.Size())
+		for i := 0; i < g.Inventory.Size(); i++ {
+			stack := g.Inventory.GetSlot(i)
+			slots[i] = world.InventorySlotData{
+				ItemID:     stack.ItemID,
+				Count:      stack.Count,
+				Durability: stack.Durability,
+			}
+		}
+		pd.InventorySlots = slots
+	}
+
+	return pd
 }
