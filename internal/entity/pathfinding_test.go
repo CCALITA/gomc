@@ -163,6 +163,159 @@ func TestFindPath(t *testing.T) {
 			maxNodes: 10,
 			wantNil:  true,
 		},
+		{
+			name: "narrow 1-wide corridor",
+			isSolid: func() func(mcmath.BlockPos) bool {
+				// Floor at y=0, walls on both sides of a z-axis corridor at x=0.
+				solid := make(map[mcmath.BlockPos]bool)
+				for z := int32(0); z <= 6; z++ {
+					solid[mcmath.BlockPos{X: 0, Y: 0, Z: z}] = true  // floor
+					solid[mcmath.BlockPos{X: -1, Y: 1, Z: z}] = true // west wall
+					solid[mcmath.BlockPos{X: 1, Y: 1, Z: z}] = true  // east wall
+				}
+				return makeGrid(solid)
+			}(),
+			start:   mcmath.BlockPos{X: 0, Y: 1, Z: 0},
+			goal:    mcmath.BlockPos{X: 0, Y: 1, Z: 6},
+			wantLen: 7,
+			check: func(t *testing.T, path []mcmath.BlockPos) {
+				for _, p := range path {
+					assert.Equal(t, int32(0), p.X, "path must stay in the corridor")
+				}
+			},
+		},
+		{
+			name:    "long flat path 20 blocks",
+			isSolid: flatFloor(0, nil),
+			start:   mcmath.BlockPos{X: 0, Y: 1, Z: 0},
+			goal:    mcmath.BlockPos{X: 20, Y: 1, Z: 0},
+			wantLen: 21,
+			check: func(t *testing.T, path []mcmath.BlockPos) {
+				assert.Equal(t, mcmath.BlockPos{X: 0, Y: 1, Z: 0}, path[0])
+				assert.Equal(t, mcmath.BlockPos{X: 20, Y: 1, Z: 0}, path[len(path)-1])
+			},
+		},
+		{
+			name: "multiple consecutive step-ups staircase",
+			isSolid: func() func(mcmath.BlockPos) bool {
+				// Staircase: each x has a floor one block higher than the previous.
+				solid := make(map[mcmath.BlockPos]bool)
+				for x := int32(0); x < 5; x++ {
+					solid[mcmath.BlockPos{X: x, Y: x, Z: 0}] = true
+				}
+				return makeGrid(solid)
+			}(),
+			start: mcmath.BlockPos{X: 0, Y: 1, Z: 0},
+			goal:  mcmath.BlockPos{X: 4, Y: 5, Z: 0},
+			check: func(t *testing.T, path []mcmath.BlockPos) {
+				assert.Equal(t, mcmath.BlockPos{X: 0, Y: 1, Z: 0}, path[0])
+				assert.Equal(t, mcmath.BlockPos{X: 4, Y: 5, Z: 0}, path[len(path)-1])
+				// Every step must go up by exactly 1.
+				for i := 1; i < len(path); i++ {
+					assert.Equal(t, int32(1), path[i].Y-path[i-1].Y,
+						"step %d->%d should ascend by 1", i-1, i)
+				}
+			},
+		},
+		{
+			name: "dead end requiring backtrack",
+			isSolid: func() func(mcmath.BlockPos) bool {
+				// Floor at y=0. A 2-high wall blocks the direct east path and
+				// forces A* to detour around it.
+				//
+				// Wall at x=3, z=-1..1, y=1..2 (2-high prevents step-ups).
+				walls := map[mcmath.BlockPos]bool{
+					{X: 3, Y: 1, Z: -1}: true, {X: 3, Y: 2, Z: -1}: true,
+					{X: 3, Y: 1, Z: 0}: true, {X: 3, Y: 2, Z: 0}: true,
+					{X: 3, Y: 1, Z: 1}: true, {X: 3, Y: 2, Z: 1}: true,
+				}
+				return flatFloor(0, walls)
+			}(),
+			start: mcmath.BlockPos{X: 0, Y: 1, Z: 0},
+			goal:  mcmath.BlockPos{X: 4, Y: 1, Z: 0},
+			check: func(t *testing.T, path []mcmath.BlockPos) {
+				assert.Equal(t, mcmath.BlockPos{X: 0, Y: 1, Z: 0}, path[0])
+				assert.Equal(t, mcmath.BlockPos{X: 4, Y: 1, Z: 0}, path[len(path)-1])
+				// Path must go around the wall; length > manhattan distance (4+1=5 positions).
+				assert.Greater(t, len(path), 5, "path should be longer than direct route")
+			},
+		},
+		{
+			name: "start in solid block returns nil",
+			isSolid: func() func(mcmath.BlockPos) bool {
+				// Solid cube around start blocks all neighbor directions.
+				solid := make(map[mcmath.BlockPos]bool)
+				for y := int32(0); y <= 2; y++ {
+					for x := int32(-1); x <= 1; x++ {
+						for z := int32(-1); z <= 1; z++ {
+							solid[mcmath.BlockPos{X: x, Y: y, Z: z}] = true
+						}
+					}
+				}
+				return makeGrid(solid)
+			}(),
+			start:   mcmath.BlockPos{X: 0, Y: 1, Z: 0},
+			goal:    mcmath.BlockPos{X: 10, Y: 1, Z: 0},
+			wantNil: true,
+		},
+		{
+			name: "goal in air with no ground below returns nil",
+			isSolid: func() func(mcmath.BlockPos) bool {
+				// Floor only near start; goal area has no solid blocks at all.
+				solid := make(map[mcmath.BlockPos]bool)
+				for x := int32(0); x <= 3; x++ {
+					solid[mcmath.BlockPos{X: x, Y: 0, Z: 0}] = true
+				}
+				// Goal at (10,5,0) — no solid block at (10,4,0).
+				return makeGrid(solid)
+			}(),
+			start:   mcmath.BlockPos{X: 0, Y: 1, Z: 0},
+			goal:    mcmath.BlockPos{X: 10, Y: 5, Z: 0},
+			wantNil: true,
+		},
+		{
+			name:     "maxNodes 1 returns nil for distant goal",
+			isSolid:  flatFloor(0, nil),
+			start:    mcmath.BlockPos{X: 0, Y: 1, Z: 0},
+			goal:     mcmath.BlockPos{X: 5, Y: 1, Z: 0},
+			maxNodes: 1,
+			wantNil:  true,
+		},
+		{
+			name:    "diagonal movement requires 2 steps",
+			isSolid: flatFloor(0, nil),
+			start:   mcmath.BlockPos{X: 0, Y: 1, Z: 0},
+			goal:    mcmath.BlockPos{X: 1, Y: 1, Z: 1},
+			wantLen: 3, // start -> one cardinal -> diagonal = 3 positions
+			check: func(t *testing.T, path []mcmath.BlockPos) {
+				assert.Equal(t, mcmath.BlockPos{X: 0, Y: 1, Z: 0}, path[0])
+				assert.Equal(t, mcmath.BlockPos{X: 1, Y: 1, Z: 1}, path[2])
+			},
+		},
+		{
+			name: "shorter path preferred over longer",
+			isSolid: func() func(mcmath.BlockPos) bool {
+				// Open flat floor — A* should pick the optimal straight-line
+				// east route rather than any detour.
+				return flatFloor(0, nil)
+			}(),
+			start:   mcmath.BlockPos{X: 0, Y: 1, Z: 0},
+			goal:    mcmath.BlockPos{X: 4, Y: 1, Z: 0},
+			wantLen: 5, // optimal straight-line path
+			check: func(t *testing.T, path []mcmath.BlockPos) {
+				assert.Equal(t, mcmath.BlockPos{X: 0, Y: 1, Z: 0}, path[0])
+				assert.Equal(t, mcmath.BlockPos{X: 4, Y: 1, Z: 0}, path[len(path)-1])
+			},
+		},
+		{
+			name: "empty world no solid blocks returns nil",
+			isSolid: func(mcmath.BlockPos) bool {
+				return false
+			},
+			start:   mcmath.BlockPos{X: 0, Y: 1, Z: 0},
+			goal:    mcmath.BlockPos{X: 5, Y: 1, Z: 0},
+			wantNil: true,
+		},
 	}
 
 	for _, tc := range tests {
