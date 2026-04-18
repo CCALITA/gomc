@@ -30,6 +30,7 @@ func (c *Controller) UpdateInteraction(inp *input.Manager, w *world.World, dt fl
 // updateBreaking handles the progressive block-breaking mechanic when the
 // attack button is held. Break progress accumulates based on block hardness;
 // once it reaches 1.0, the block is removed and progress resets.
+// In Creative mode, all breakable blocks break instantly.
 func (c *Controller) updateBreaking(inp *input.Manager, w *world.World, dt float32) {
 	attackBtn := c.KeyMap.GetKey(input.Attack)
 
@@ -56,6 +57,13 @@ func (c *Controller) updateBreaking(inp *input.Manager, w *world.World, dt float
 
 	// Unbreakable blocks (hardness < 0, e.g. bedrock).
 	if props.Hardness < 0 {
+		return
+	}
+
+	// Creative mode: instant break on all breakable blocks.
+	if c.Mode != nil && c.Mode.CanBreakInstantly() {
+		w.SetBlock(pos, block.Air)
+		c.resetBreaking()
 		return
 	}
 
