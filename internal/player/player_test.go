@@ -104,9 +104,10 @@ func TestSyncCameraPosition(t *testing.T) {
 	transform.Position = mcmath.Vec3{X: 10, Y: 70, Z: 20}
 
 	ctrl.syncCameraPosition()
-	assert.InDelta(t, 10.0, ctrl.Camera.Position.X, 0.01)
-	assert.InDelta(t, 71.62, ctrl.Camera.Position.Y, 0.01)
-	assert.InDelta(t, 20.0, ctrl.Camera.Position.Z, 0.01)
+	camPos := ctrl.Camera.GetPosition()
+	assert.InDelta(t, 10.0, camPos.X, 0.01)
+	assert.InDelta(t, 71.62, camPos.Y, 0.01)
+	assert.InDelta(t, 20.0, camPos.Z, 0.01)
 }
 
 func TestSyncCameraPosition_NoTransform(t *testing.T) {

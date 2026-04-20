@@ -23,9 +23,10 @@ import (
 )
 
 const (
-	defaultTickRate      = 20.0
-	defaultAutoSaveTicks = 6000 // 5 minutes at 20 TPS
-	defaultSavePath      = "saves/world1"
+	tickRate        = 20.0
+	tickInterval    = 1.0 / tickRate
+	autoSaveTicks   = 6000 // 5 minutes at 20 TPS
+	defaultSavePath = "saves/world1"
 )
 
 type Game struct {
@@ -51,11 +52,8 @@ type Game struct {
 	SpawnPoint  mcmath.Vec3
 
 	Storage     *world.Storage
-	Running       bool
-	tickCount     int64
-	tickRate      float64
-	tickInterval  float64
-	autoSaveTicks int64
+	Running     bool
+	tickCount   int64
 }
 
 func (g *Game) Init(cfg *config.Config) error {
@@ -64,19 +62,6 @@ func (g *Game) Init(cfg *config.Config) error {
 	g.State = NewStateManager()
 	g.Mode = NewModeManager()
 	g.Time = NewTimeKeeper()
-
-	// Derive tick timing from config, falling back to compile-time defaults.
-	g.tickRate = cfg.Gameplay.TickRate
-	if g.tickRate <= 0 {
-		g.tickRate = defaultTickRate
-	}
-	g.tickInterval = 1.0 / g.tickRate
-
-	saveTicks := cfg.Gameplay.AutoSaveIntervalTicks
-	if saveTicks <= 0 {
-		saveTicks = defaultAutoSaveTicks
-	}
-	g.autoSaveTicks = int64(saveTicks)
 
 	block.InitRegistry()
 
@@ -139,12 +124,11 @@ func (g *Game) setupSystems() {
 			return g.World.GetBlockAABBs(region)
 		},
 	})
-	g.Scheduler.Add(&entity.AISystem{
-		ChaseRange:  g.Config.Gameplay.AIChaseRange,
-		AttackRange: g.Config.Gameplay.AIAttackRange,
-	})
+	g.Scheduler.Add(&entity.AISystem{})
+	g.Scheduler.Add(&entity.BreedingSystem{})
 	g.Scheduler.Add(&entity.LifetimeSystem{})
 	g.Scheduler.Add(&entity.DamageSystem{})
+	g.Scheduler.Add(&entity.XPSystem{})
 	g.Scheduler.Add(&entity.HealthSystem{})
 	g.Scheduler.Add(&entity.HungerSystem{})
 }
@@ -172,9 +156,9 @@ func (g *Game) Run() {
 
 		g.handleGlobalInput()
 
-		for accumulator >= g.tickInterval {
-			g.tick(g.tickInterval)
-			accumulator -= g.tickInterval
+		for accumulator >= tickInterval {
+			g.tick(tickInterval)
+			accumulator -= tickInterval
 		}
 
 		g.render()
@@ -240,7 +224,7 @@ func (g *Game) tick(dt float64) {
 
 	g.checkPlayerDeath()
 
-	if g.autoSaveTicks > 0 && g.tickCount%g.autoSaveTicks == 0 {
+	if g.tickCount%autoSaveTicks == 0 {
 		g.autoSave()
 	}
 }
@@ -402,8 +386,7 @@ func (g *Game) loadExistingSave(storage *world.Storage) {
 	g.Player.Mode = g.Mode
 	g.Player.Inventory = g.Inventory
 
-	g.Spawner = g.newConfiguredSpawner()
-	g.applyPlayerConfig(g.Player)
+	g.Spawner = entity.NewSpawner(nil)
 
 	// Restore player orientation.
 	if playerErr == nil {
@@ -440,8 +423,7 @@ func (g *Game) startNewWorld(storage *world.Storage) {
 	g.Player.Mode = g.Mode
 	g.Player.Inventory = g.Inventory
 
-	g.Spawner = g.newConfiguredSpawner()
-	g.applyPlayerConfig(g.Player)
+	g.Spawner = entity.NewSpawner(nil)
 
 	// Save initial level data.
 	levelData := world.LevelData{
@@ -455,41 +437,6 @@ func (g *Game) startNewWorld(storage *world.Storage) {
 	if err := storage.SaveLevel(levelData); err != nil {
 		log.Printf("failed to save initial level data: %v", err)
 	}
-}
-
-// applyPlayerConfig overrides the player controller's default speeds and
-// reach with values from the configuration, when they are positive.
-func (g *Game) applyPlayerConfig(ctrl *player.Controller) {
-	pc := g.Config.Player
-	if pc.WalkSpeed > 0 {
-		ctrl.WalkSpeed = pc.WalkSpeed
-	}
-	if pc.SprintSpeed > 0 {
-		ctrl.SprintSpeed = pc.SprintSpeed
-	}
-	if pc.SneakSpeed > 0 {
-		ctrl.SneakSpeed = pc.SneakSpeed
-	}
-	if pc.FlySpeed > 0 {
-		ctrl.FlySpeed = pc.FlySpeed
-	}
-	if pc.JumpVelocity > 0 {
-		ctrl.JumpVelocity = pc.JumpVelocity
-	}
-	if pc.Reach > 0 {
-		ctrl.Reach = pc.Reach
-	}
-}
-
-// newConfiguredSpawner creates a Spawner populated with values from the
-// gameplay config.
-func (g *Game) newConfiguredSpawner() *entity.Spawner {
-	sp := entity.NewSpawner(nil)
-	gp := g.Config.Gameplay
-	sp.HostileSpawnCap = gp.HostileSpawnCap
-	sp.PassiveSpawnCap = gp.PassiveSpawnCap
-	sp.SpawnRadius = gp.SpawnRadius
-	return sp
 }
 
 func (g *Game) Cleanup() {

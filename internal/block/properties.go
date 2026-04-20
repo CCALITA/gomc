@@ -413,6 +413,25 @@ var properties = map[BlockID]BlockProperties{
 		Hardness: 3, BlastResistance: 3,
 		LightEmission: 0, LightFilter: 15,
 	},
+
+	// Dungeon blocks
+	MossyCobblestone: {
+		Name: "mossy_cobblestone", Solid: true, Transparent: false,
+		Hardness: 2, BlastResistance: 6,
+		LightEmission: 0, LightFilter: 15,
+	},
+	MobSpawner: {
+		Name: "mob_spawner", Solid: true, Transparent: false,
+		Hardness: 5, BlastResistance: 5,
+		LightEmission: 0, LightFilter: 15,
+	},
+
+	// Multi-block / special blocks
+	Bed: {
+		Name: "bed", Solid: true, Transparent: false,
+		Hardness: 0.2, BlastResistance: 0.2,
+		LightEmission: 0, LightFilter: 15,
+	},
 }
 
 // GetProperties returns the BlockProperties for the given block ID.

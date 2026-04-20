@@ -20,6 +20,8 @@ const (
 	hudBarHeight   = 48.0
 	crosshairSize  = 16.0
 	crosshairWidth = 2.0
+	xpBarHeight    = 5.0
+	xpBarPadding   = 2.0
 )
 
 // HUD is the always-visible heads-up display: crosshair, hotbar, health
@@ -42,6 +44,15 @@ type HUD struct {
 
 	// MaxHunger is the maximum hunger value.
 	MaxHunger int
+
+	// XPLevel is the player's current experience level.
+	XPLevel int
+
+	// XP is the current XP within the current level.
+	XP int
+
+	// XPForNext is the XP required to reach the next level.
+	XPForNext int
 
 	// ShowFPS toggles the debug overlay in the top-left corner.
 	ShowFPS bool
@@ -108,6 +119,7 @@ func (h *HUD) Update(inp *input.Manager, _ float64) {
 func (h *HUD) Draw(r *UIRenderer) {
 	h.drawCrosshair(r)
 	h.drawHotbar(r)
+	h.drawXPBar(r)
 	h.drawHealthBar(r)
 	h.drawHungerBar(r)
 	if h.ShowFPS {
@@ -122,6 +134,11 @@ func (h *HUD) IsOverlay() bool {
 
 // HandleKey is a no-op for the HUD; input is handled in Update.
 func (h *HUD) HandleKey(_ int) {}
+
+// hotbarTotalWidth returns the total pixel width of the hotbar including padding.
+func hotbarTotalWidth() float32 {
+	return float32(hotbarSlots)*slotSize + float32(hotbarSlots-1)*slotPadding
+}
 
 // drawCrosshair renders a + shape at the center of the screen.
 func (h *HUD) drawCrosshair(r *UIRenderer) {
@@ -144,7 +161,7 @@ func (h *HUD) drawCrosshair(r *UIRenderer) {
 
 // drawHotbar renders the 9-slot hotbar at the bottom center.
 func (h *HUD) drawHotbar(r *UIRenderer) {
-	totalWidth := float32(hotbarSlots)*slotSize + float32(hotbarSlots-1)*slotPadding
+	totalWidth := hotbarTotalWidth()
 	startX := (r.ScreenWidth - totalWidth) / 2
 	startY := r.ScreenHeight - hudBarHeight
 
@@ -171,7 +188,7 @@ func (h *HUD) drawHotbar(r *UIRenderer) {
 
 // drawHealthBar renders hearts above the hotbar on the left side.
 func (h *HUD) drawHealthBar(r *UIRenderer) {
-	totalWidth := float32(hotbarSlots)*slotSize + float32(hotbarSlots-1)*slotPadding
+	totalWidth := hotbarTotalWidth()
 	startX := (r.ScreenWidth - totalWidth) / 2
 	y := r.ScreenHeight - hudBarHeight - heartSize - 4
 
@@ -199,7 +216,7 @@ func (h *HUD) drawHealthBar(r *UIRenderer) {
 
 // drawHungerBar renders drumstick icons above the hotbar on the right side.
 func (h *HUD) drawHungerBar(r *UIRenderer) {
-	totalWidth := float32(hotbarSlots)*slotSize + float32(hotbarSlots-1)*slotPadding
+	totalWidth := hotbarTotalWidth()
 	endX := (r.ScreenWidth+totalWidth)/2 - heartSize
 	y := r.ScreenHeight - hudBarHeight - heartSize - 4
 
@@ -223,6 +240,37 @@ func (h *HUD) drawHungerBar(r *UIRenderer) {
 			// Half drumstick.
 			r.DrawRect(x+2, y+2, (heartSize-4)/2, heartSize-4, 0.8, 0.6, 0.2, 1.0)
 		}
+	}
+}
+
+// drawXPBar renders the experience bar below the hotbar and the level number
+// centered above it.
+func (h *HUD) drawXPBar(r *UIRenderer) {
+	totalWidth := hotbarTotalWidth()
+	startX := (r.ScreenWidth - totalWidth) / 2
+	barY := r.ScreenHeight - hudBarHeight - xpBarHeight - xpBarPadding
+
+	// Background (dark bar).
+	r.DrawRect(startX, barY, totalWidth, xpBarHeight, 0.1, 0.1, 0.1, 0.7)
+
+	// Filled portion (green).
+	if h.XPForNext > 0 {
+		fraction := float32(h.XP) / float32(h.XPForNext)
+		if fraction > 1 {
+			fraction = 1
+		}
+		fillWidth := totalWidth * fraction
+		if fillWidth > 0 {
+			r.DrawRect(startX, barY, fillWidth, xpBarHeight, 0.3, 0.9, 0.1, 0.9)
+		}
+	}
+
+	// Level number centered above the XP bar.
+	if h.XPLevel > 0 {
+		levelText := fmt.Sprintf("%d", h.XPLevel)
+		textY := barY - 14
+		textX := r.ScreenWidth/2 - float32(len(levelText))*4
+		r.DrawText(textX, textY, levelText, 1.0, 0.3, 0.9, 0.1)
 	}
 }
 

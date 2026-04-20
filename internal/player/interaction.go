@@ -97,6 +97,15 @@ func (c *Controller) updatePlacement(inp *input.Manager, w BlockWorld) {
 	}
 
 	targetBlockID := w.GetBlock(pos)
+
+	// Right-click on a bed: attempt to sleep.
+	if block.IsBed(targetBlockID) {
+		if c.OnSleepAttempt != nil {
+			c.OnSleepAttempt(pos)
+		}
+		return
+	}
+
 	if targetBlockID == block.CraftingTable || targetBlockID == block.Furnace || targetBlockID == block.Chest {
 		if c.OnUseBlock != nil {
 			c.OnUseBlock(targetBlockID, pos)
@@ -131,6 +140,12 @@ func (c *Controller) updatePlacement(inp *input.Manager, w BlockWorld) {
 	}
 	itemProps := item.GetProperties(selectedItem.ItemID)
 	if !itemProps.IsBlock {
+		return
+	}
+
+	// Special handling for bed placement (two-block).
+	if selectedItem.ItemID == item.BedItem {
+		c.placeBed(w, placePos)
 		return
 	}
 
@@ -238,4 +253,38 @@ func (c *Controller) UpdateCombat(inp *input.Manager, ecsWorld *ecs.World, _ flo
 		Amount:    handDamage,
 		Knockback: kb,
 	})
+}
+
+// placeBed places a two-block bed (foot + head) aligned to the player's
+// facing direction. The foot is placed at pos; the head one block forward.
+func (c *Controller) placeBed(w BlockWorld, pos mcmath.BlockPos) {
+	forward := c.Camera.Forward()
+	orient := block.FacingToBedOrientation(forward)
+
+	dx, dz := bedOrientDelta(orient)
+	headPos := pos.Offset(dx, 0, dz)
+
+	// Both positions must be free.
+	if block.IsSolid(w.GetBlock(headPos)) {
+		return
+	}
+
+	w.SetBlock(pos, block.EncodeBedFoot(orient))
+	w.SetBlock(headPos, block.EncodeBedHead(orient))
+}
+
+// bedOrientDelta returns the (dx, dz) offset from foot to head.
+func bedOrientDelta(orient block.BedOrientation) (int32, int32) {
+	switch orient {
+	case block.BedNorth:
+		return 0, -1
+	case block.BedSouth:
+		return 0, 1
+	case block.BedEast:
+		return 1, 0
+	case block.BedWest:
+		return -1, 0
+	default:
+		return 0, -1
+	}
 }

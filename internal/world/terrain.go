@@ -43,6 +43,7 @@ type TerrainGenerator struct {
 	biomeMap  *biome.BiomeMap
 	ores      []oreConfig
 	oreNoises []*noise.OctaveNoise
+	dungeon   DungeonGenerator
 }
 
 // NewTerrainGenerator creates a TerrainGenerator with the given seed.
@@ -80,6 +81,7 @@ func NewTerrainGenerator(seed int64) *TerrainGenerator {
 		biomeMap:  bm,
 		ores:      ores,
 		oreNoises: oreNoises,
+		dungeon:   DungeonGenerator{},
 	}
 }
 
@@ -110,6 +112,7 @@ func (tg *TerrainGenerator) GenerateChunk(pos mcmath.ChunkPos) *chunk.Chunk {
 	fillWaterAndShorelines(c, &cols)
 	applySnowLayer(c, &cols)
 	tg.carveCaves(c, pos, &cols)
+	tg.dungeon.TryPlaceDungeon(c, rng)
 	tg.placeOres(c, pos)
 	tg.generateTrees(c, pos, cols, rng)
 

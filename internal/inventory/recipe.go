@@ -202,6 +202,16 @@ func registerRecipes() {
 	registerBlockDecomposition(item.IronBlock, item.IronIngot)
 	registerBlockDecomposition(item.GoldBlock, item.GoldIngot)
 	registerBlockDecomposition(item.DiamondBlock, item.Diamond)
+
+	// -- Bed: 3 wool (top row) + 3 planks (bottom row) -> 1 bed
+	RegisterRecipe(Recipe{
+		Pattern: [3][3]uint16{
+			{item.WhiteWool, item.WhiteWool, item.WhiteWool},
+			{item.OakPlanks, item.OakPlanks, item.OakPlanks},
+			{0, 0, 0},
+		},
+		Result: item.NewItemStack(item.BedItem, 1),
+	})
 }
 
 // registerPickaxe registers a pickaxe recipe: 3 material on top, 2 sticks vertical center.

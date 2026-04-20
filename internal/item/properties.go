@@ -99,6 +99,9 @@ func init() {
 	registerMaterial(IronIngot, "Iron Ingot")
 	registerMaterial(GoldIngot, "Gold Ingot")
 	registerMaterial(Diamond, "Diamond")
+	registerMaterial(WheatSeeds, "Wheat Seeds")
+	registerMaterial(StringItem, "String")
+	registerMaterial(Wheat, "Wheat")
 
 	// ---- shears ----
 	properties[Shears] = ItemProperties{
@@ -116,6 +119,12 @@ func init() {
 	registerBlock(IronBlock, "Iron Block", IronBlock)
 	registerBlock(GoldBlock, "Gold Block", GoldBlock)
 	registerBlock(DiamondBlock, "Diamond Block", DiamondBlock)
+
+	// ---- bed ----
+	registerBlock(BedItem, "Bed", 96) // block.Bed = 96
+
+	// ---- wool ----
+	registerBlock(WhiteWool, "White Wool", 42) // block.WhiteWool = 42
 
 	// ---- boat (non-block, non-tool) ----
 	properties[Boat] = ItemProperties{
@@ -160,6 +169,10 @@ func init() {
 	registerFood(Cookie, "Cookie", 2, 0.4)
 	registerFood(Carrot, "Carrot", 3, 3.6)
 	registerFood(BakedPotato, "Baked Potato", 5, 6.0)
+	registerFood(RawBeef, "Raw Beef", 3, 1.8)
+	registerFood(RawPorkchop, "Raw Porkchop", 3, 1.8)
+	registerFood(RawChicken, "Raw Chicken", 2, 1.2)
+	registerFood(CookedChicken, "Cooked Chicken", 6, 7.2)
 
 	// ---- armor items ----
 	registerArmor := func(id ItemID, name string, slot, defense, durability int) {

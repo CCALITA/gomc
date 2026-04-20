@@ -64,6 +64,7 @@ func SpawnPlayer(w *ecs.World, name string, pos mcmath.Vec3) ecs.Entity {
 	ecs.GetStore[Inventory](w).Set(e, Inventory{})
 	ecs.GetStore[Armor](w).Set(e, Armor{})
 	ecs.GetStore[Hunger](w).Set(e, NewHunger())
+	ecs.GetStore[Experience](w).Set(e, Experience{})
 
 	return e
 }
@@ -115,6 +116,7 @@ func SpawnCow(w *ecs.World, pos mcmath.Vec3) ecs.Entity {
 	ecs.GetStore[Health](w).Set(e, Health{Current: 10, Max: 10})
 	ecs.GetStore[EntityTypeComp](w).Set(e, EntityTypeComp{Type: TypeCow})
 	ecs.GetStore[AI](w).Set(e, AI{State: AIIdle, Passive: true})
+	ecs.GetStore[Breedable](w).Set(e, Breedable{Scale: 1.0})
 
 	return e
 }
@@ -132,6 +134,7 @@ func SpawnPig(w *ecs.World, pos mcmath.Vec3) ecs.Entity {
 	ecs.GetStore[Health](w).Set(e, Health{Current: 10, Max: 10})
 	ecs.GetStore[EntityTypeComp](w).Set(e, EntityTypeComp{Type: TypePig})
 	ecs.GetStore[AI](w).Set(e, AI{State: AIIdle, Passive: true})
+	ecs.GetStore[Breedable](w).Set(e, Breedable{Scale: 1.0})
 
 	return e
 }
@@ -149,6 +152,7 @@ func SpawnSheep(w *ecs.World, pos mcmath.Vec3) ecs.Entity {
 	ecs.GetStore[Health](w).Set(e, Health{Current: 8, Max: 8})
 	ecs.GetStore[EntityTypeComp](w).Set(e, EntityTypeComp{Type: TypeSheep})
 	ecs.GetStore[AI](w).Set(e, AI{State: AIIdle, Passive: true})
+	ecs.GetStore[Breedable](w).Set(e, Breedable{Scale: 1.0})
 
 	return e
 }
@@ -166,6 +170,31 @@ func SpawnChicken(w *ecs.World, pos mcmath.Vec3) ecs.Entity {
 	ecs.GetStore[Health](w).Set(e, Health{Current: 4, Max: 4})
 	ecs.GetStore[EntityTypeComp](w).Set(e, EntityTypeComp{Type: TypeChicken})
 	ecs.GetStore[AI](w).Set(e, AI{State: AIIdle, Passive: true})
+	ecs.GetStore[Breedable](w).Set(e, Breedable{Scale: 1.0})
+
+	return e
+}
+
+// xpOrbBBox is the bounding box for an XP orb entity (0.2 cube).
+var xpOrbBBox = mcmath.AABB{
+	Min: mcmath.Vec3{X: -0.1, Y: 0, Z: -0.1},
+	Max: mcmath.Vec3{X: 0.1, Y: 0.2, Z: 0.1},
+}
+
+// SpawnXPOrb creates an experience orb entity at the given position that
+// awards the specified amount of XP. The orb has a 60-second lifetime.
+func SpawnXPOrb(w *ecs.World, pos mcmath.Vec3, amount int) ecs.Entity {
+	e := w.NewEntity()
+
+	ecs.GetStore[Transform](w).Set(e, Transform{Position: pos})
+
+	body := physics.NewBody(xpOrbBBox)
+	body.Position = pos
+	ecs.GetStore[PhysicsBody](w).Set(e, PhysicsBody{Body: &body})
+
+	ecs.GetStore[EntityTypeComp](w).Set(e, EntityTypeComp{Type: TypeXPOrb})
+	ecs.GetStore[Experience](w).Set(e, Experience{XP: amount})
+	ecs.GetStore[Lifetime](w).Set(e, Lifetime{Remaining: 60})
 
 	return e
 }

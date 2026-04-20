@@ -54,33 +54,10 @@ func (s *PhysicsSystem) Update(w *ecs.World, dt float64) {
 type AISystem struct {
 	// Rand is the random source; defaults to the global rand if nil.
 	Rand *rand.Rand
-
-	// ChaseRange overrides the default chase range when > 0.
-	ChaseRange float32
-	// AttackRange overrides the default attack range when > 0.
-	AttackRange float32
 }
 
 func (s *AISystem) rng() *rand.Rand {
 	return s.Rand
-}
-
-// chaseRange returns the effective chase range, falling back to the
-// package-level default when no override is configured.
-func (s *AISystem) chaseRange() float32 {
-	if s.ChaseRange > 0 {
-		return s.ChaseRange
-	}
-	return aiChaseRange
-}
-
-// attackRange returns the effective attack range, falling back to the
-// package-level default when no override is configured.
-func (s *AISystem) attackRange() float32 {
-	if s.AttackRange > 0 {
-		return s.AttackRange
-	}
-	return aiAttackRange
 }
 
 const (
@@ -186,7 +163,7 @@ func findNearestPlayer(pos mcmath.Vec3, players []playerEntry) nearestInfo {
 // handleIdleOrWander handles the shared idle/wander logic: transition to chase
 // if a player is in range, otherwise switch to fallbackState when the timer expires.
 func (s *AISystem) handleIdleOrWander(ai *AI, nearest nearestInfo, fallbackState uint8, timerFn func() float64) {
-	if nearest.dist <= s.chaseRange() {
+	if nearest.dist <= float32(aiChaseRange) {
 		ai.State = AIChase
 		ai.Target = nearest.entity
 		return
@@ -200,12 +177,12 @@ func (s *AISystem) handleIdleOrWander(ai *AI, nearest nearestInfo, fallbackState
 // handleChase moves the mob toward the nearest player, switching to attack or idle.
 func (s *AISystem) handleChase(ai *AI, t *Transform, nearest nearestInfo, dt float64) {
 	ai.Target = nearest.entity
-	if nearest.dist > s.chaseRange() {
+	if nearest.dist > float32(aiChaseRange) {
 		ai.State = AIIdle
 		ai.Timer = s.randomIdleTime()
 		return
 	}
-	if nearest.dist <= s.attackRange() {
+	if nearest.dist <= float32(aiAttackRange) {
 		ai.State = AIAttack
 		return
 	}
@@ -216,7 +193,7 @@ func (s *AISystem) handleChase(ai *AI, t *Transform, nearest nearestInfo, dt flo
 
 // handleAttack deals damage on cooldown or transitions back to chase.
 func (s *AISystem) handleAttack(w *ecs.World, e ecs.Entity, ai *AI, t *Transform, nearest nearestInfo) {
-	if nearest.dist > s.attackRange() {
+	if nearest.dist > float32(aiAttackRange) {
 		ai.State = AIChase
 		ai.Target = nearest.entity
 		return
@@ -232,7 +209,7 @@ func (s *AISystem) handleAttack(w *ecs.World, e ecs.Entity, ai *AI, t *Transform
 
 // handleFlee transitions back to idle when the player is far enough away.
 func (s *AISystem) handleFlee(ai *AI, nearest nearestInfo) {
-	if nearest.dist > s.chaseRange() {
+	if nearest.dist > float32(aiChaseRange) {
 		ai.State = AIIdle
 		ai.Timer = s.randomIdleTime()
 	}

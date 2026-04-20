@@ -65,6 +65,7 @@ type Controller struct {
 	Inventory     *inventory.Inventory
 	SelectedSlot  int
 	OnUseBlock    func(blockID uint16, pos mcmath.BlockPos)
+	OnSleepAttempt func(bedPos mcmath.BlockPos) (ok bool, msg string)
 	Flying        bool
 
 	// interaction holds block interaction state.

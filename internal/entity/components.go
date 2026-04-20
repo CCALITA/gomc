@@ -28,6 +28,10 @@ const (
 	TypeSheep uint8 = 9
 	// TypeChicken identifies a chicken passive mob.
 	TypeChicken uint8 = 10
+	// TypeXPOrb identifies an experience orb entity.
+	TypeXPOrb uint8 = 11
+	// TypeSpider identifies a spider hostile mob.
+	TypeSpider uint8 = 12
 )
 
 // AI state constants define the mob behaviour state machine states.

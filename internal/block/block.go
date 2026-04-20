@@ -105,6 +105,13 @@ const (
 	RedstoneOre  BlockID = 78
 	LapisOre     BlockID = 79
 	EmeraldOre   BlockID = 80
+
+	// Multi-block / special blocks
+	Bed BlockID = 96
+
+	// Dungeon blocks (97-98)
+	MossyCobblestone BlockID = 97
+	MobSpawner       BlockID = 98
 )
 
 // fluidBaseMask extracts the base block ID (lower 8 bits) from a block that

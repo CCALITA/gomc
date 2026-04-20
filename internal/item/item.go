@@ -109,19 +109,27 @@ const (
 	Bucket      // 125
 	WaterBucket // 126
 	LavaBucket  // 127
+
+	WheatSeeds // 128
+	StringItem // 129
+	Wheat      // 130
 )
 
 // ----- Food item IDs -----
 
 const (
-	Apple         ItemID = iota + 200 // 200
-	Bread                             // 201
-	CookedPorkchop                    // 202
-	Steak                             // 203
-	GoldenApple                       // 204
-	Cookie                            // 205
-	Carrot                            // 206
-	BakedPotato                       // 207
+	Apple          ItemID = iota + 200 // 200
+	Bread                              // 201
+	CookedPorkchop                     // 202
+	Steak                              // 203
+	GoldenApple                        // 204
+	Cookie                             // 205
+	Carrot                             // 206
+	BakedPotato                        // 207
+	RawBeef                            // 208
+	RawPorkchop                        // 209
+	RawChicken                         // 210
+	CookedChicken                      // 211
 )
 
 // ----- Utility / building item IDs -----
@@ -136,6 +144,8 @@ const (
 	IronBlock    ItemID = 340
 	GoldBlock    ItemID = 341
 	DiamondBlock ItemID = 342
+	BedItem      ItemID = 350
+	WhiteWool    ItemID = 351
 )
 
 // ----- Armor item IDs -----
