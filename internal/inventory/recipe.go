@@ -202,6 +202,22 @@ func registerRecipes() {
 	registerBlockDecomposition(item.IronBlock, item.IronIngot)
 	registerBlockDecomposition(item.GoldBlock, item.GoldIngot)
 	registerBlockDecomposition(item.DiamondBlock, item.Diamond)
+
+	// -- Stairs: 6 blocks in stair pattern -> 4 stairs
+	registerStairs(item.OakPlanks, item.OakStairs)
+	registerStairs(item.Cobblestone, item.CobblestoneStairs)
+	registerStairs(item.Stone, item.StoneStairs)
+	registerStairs(item.BirchPlanks, item.BirchStairs)
+	registerStairs(item.SprucePlanks, item.SpruceStairs)
+	registerStairs(item.Sandstone, item.SandstoneStairs)
+
+	// -- Slabs: 3 blocks in a row -> 6 slabs
+	registerSlab(item.OakPlanks, item.OakSlab)
+	registerSlab(item.Cobblestone, item.CobblestoneSlab)
+	registerSlab(item.Stone, item.StoneSlab)
+	registerSlab(item.BirchPlanks, item.BirchSlab)
+	registerSlab(item.SprucePlanks, item.SpruceSlab)
+	registerSlab(item.Sandstone, item.SandstoneSlab)
 }
 
 // registerPickaxe registers a pickaxe recipe: 3 material on top, 2 sticks vertical center.
@@ -286,5 +302,37 @@ func registerBlockDecomposition(block, material uint16) {
 		},
 		Result:    item.NewItemStack(material, 9),
 		Shapeless: true,
+	})
+}
+
+// registerStairs registers a stair recipe: 6 blocks in stair pattern -> 4 stairs.
+//
+//	M . .
+//	M M .
+//	M M M
+func registerStairs(material, result uint16) {
+	RegisterRecipe(Recipe{
+		Pattern: [3][3]uint16{
+			{material, 0, 0},
+			{material, material, 0},
+			{material, material, material},
+		},
+		Result: item.NewItemStack(result, 4),
+	})
+}
+
+// registerSlab registers a slab recipe: 3 blocks in a row -> 6 slabs.
+//
+//	M M M
+//	. . .
+//	. . .
+func registerSlab(material, result uint16) {
+	RegisterRecipe(Recipe{
+		Pattern: [3][3]uint16{
+			{material, material, material},
+			{0, 0, 0},
+			{0, 0, 0},
+		},
+		Result: item.NewItemStack(result, 6),
 	})
 }

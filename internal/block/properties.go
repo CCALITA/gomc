@@ -1,5 +1,9 @@
 package block
 
+import (
+	"github.com/fanxiyao/gomc/internal/mcmath"
+)
+
 // properties maps every known BlockID to its BlockProperties.
 var properties = map[BlockID]BlockProperties{
 	Air: {
@@ -413,6 +417,102 @@ var properties = map[BlockID]BlockProperties{
 		Hardness: 3, BlastResistance: 3,
 		LightEmission: 0, LightFilter: 15,
 	},
+
+	// Stairs — hardness matches base material
+	OakStairs: {
+		Name: "oak_stairs", Solid: true, Transparent: false,
+		Hardness: 2, BlastResistance: 3,
+		LightEmission: 0, LightFilter: 15,
+		IsStair: true,
+	},
+	CobblestoneStairs: {
+		Name: "cobblestone_stairs", Solid: true, Transparent: false,
+		Hardness: 2, BlastResistance: 6,
+		LightEmission: 0, LightFilter: 15,
+		IsStair: true,
+	},
+	StoneStairs: {
+		Name: "stone_stairs", Solid: true, Transparent: false,
+		Hardness: 1.5, BlastResistance: 6,
+		LightEmission: 0, LightFilter: 15,
+		IsStair: true,
+	},
+	BirchStairs: {
+		Name: "birch_stairs", Solid: true, Transparent: false,
+		Hardness: 2, BlastResistance: 3,
+		LightEmission: 0, LightFilter: 15,
+		IsStair: true,
+	},
+	SpruceStairs: {
+		Name: "spruce_stairs", Solid: true, Transparent: false,
+		Hardness: 2, BlastResistance: 3,
+		LightEmission: 0, LightFilter: 15,
+		IsStair: true,
+	},
+	SandstoneStairs: {
+		Name: "sandstone_stairs", Solid: true, Transparent: false,
+		Hardness: 0.8, BlastResistance: 0.8,
+		LightEmission: 0, LightFilter: 15,
+		IsStair: true,
+	},
+
+	// Slabs — hardness matches base material
+	OakSlab: {
+		Name: "oak_slab", Solid: true, Transparent: false,
+		Hardness: 2, BlastResistance: 3,
+		LightEmission: 0, LightFilter: 15,
+		IsSlab: true,
+	},
+	CobblestoneSlab: {
+		Name: "cobblestone_slab", Solid: true, Transparent: false,
+		Hardness: 2, BlastResistance: 6,
+		LightEmission: 0, LightFilter: 15,
+		IsSlab: true,
+	},
+	StoneSlab: {
+		Name: "stone_slab", Solid: true, Transparent: false,
+		Hardness: 1.5, BlastResistance: 6,
+		LightEmission: 0, LightFilter: 15,
+		IsSlab: true,
+	},
+	BirchSlab: {
+		Name: "birch_slab", Solid: true, Transparent: false,
+		Hardness: 2, BlastResistance: 3,
+		LightEmission: 0, LightFilter: 15,
+		IsSlab: true,
+	},
+	SpruceSlab: {
+		Name: "spruce_slab", Solid: true, Transparent: false,
+		Hardness: 2, BlastResistance: 3,
+		LightEmission: 0, LightFilter: 15,
+		IsSlab: true,
+	},
+	SandstoneSlab: {
+		Name: "sandstone_slab", Solid: true, Transparent: false,
+		Hardness: 0.8, BlastResistance: 0.8,
+		LightEmission: 0, LightFilter: 15,
+		IsSlab: true,
+	},
+}
+
+// GetBlockAABBs returns the collision AABBs for a block based on its properties
+// and state. For stair blocks, it returns two AABBs based on the orientation.
+// For slab blocks, it returns a half-height AABB. For regular solid blocks,
+// it returns a single full-block AABB. For non-solid blocks, it returns nil.
+func GetBlockAABBs(id BlockID, pos mcmath.BlockPos, orientation Orientation) []mcmath.AABB {
+	props := GetProperties(id)
+	if !props.Solid {
+		return nil
+	}
+	if props.IsStair {
+		return mcmath.StairAABBs(pos, int(orientation))
+	}
+	if props.IsSlab {
+		// OrientUp means top slab; everything else is bottom slab.
+		top := orientation == OrientUp
+		return []mcmath.AABB{mcmath.SlabAABB(pos, top)}
+	}
+	return []mcmath.AABB{mcmath.BlockAABB(pos)}
 }
 
 // GetProperties returns the BlockProperties for the given block ID.

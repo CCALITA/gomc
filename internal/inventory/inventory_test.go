@@ -555,8 +555,10 @@ func TestGetSmeltingRecipes(t *testing.T) {
 func TestGetRecipes(t *testing.T) {
 	all := GetRecipes()
 	// We registered at least: planks, sticks, crafting table, 4 pickaxes,
-	// 4 axes, 4 shovels, 4 swords, furnace, chest, torch = 21
-	assert.GreaterOrEqual(t, len(all), 21)
+	// 4 axes, 4 shovels, 4 swords, furnace, chest, torch, 4 hoes,
+	// bucket, ladder, oak door, oak fence, oak fence gate, shears, boat,
+	// 3 mineral blocks, 3 decompositions, 6 stairs, 6 slabs = 45+
+	assert.GreaterOrEqual(t, len(all), 45)
 }
 
 // ---------------------------------------------------------------------------
@@ -653,4 +655,121 @@ func TestFurnace_BurnTimeCarriesOver(t *testing.T) {
 	// Try to smelt second: no fuel, no burn time remaining.
 	f.Update(10.0)
 	assert.Equal(t, 1, f.OutputSlot.Count) // unchanged
+}
+
+// ---------------------------------------------------------------------------
+// Stair / slab recipe tests
+// ---------------------------------------------------------------------------
+
+func TestCraftOakStairs(t *testing.T) {
+	var g CraftingGrid
+	g.SetSlot(0, 0, item.NewItemStack(item.OakPlanks, 1))
+	g.SetSlot(1, 0, item.NewItemStack(item.OakPlanks, 1))
+	g.SetSlot(1, 1, item.NewItemStack(item.OakPlanks, 1))
+	g.SetSlot(2, 0, item.NewItemStack(item.OakPlanks, 1))
+	g.SetSlot(2, 1, item.NewItemStack(item.OakPlanks, 1))
+	g.SetSlot(2, 2, item.NewItemStack(item.OakPlanks, 1))
+
+	result := g.GetResult()
+	assert.Equal(t, item.OakStairs, result.ItemID)
+	assert.Equal(t, 4, result.Count)
+}
+
+func TestCraftCobblestoneStairs(t *testing.T) {
+	var g CraftingGrid
+	g.SetSlot(0, 0, item.NewItemStack(item.Cobblestone, 1))
+	g.SetSlot(1, 0, item.NewItemStack(item.Cobblestone, 1))
+	g.SetSlot(1, 1, item.NewItemStack(item.Cobblestone, 1))
+	g.SetSlot(2, 0, item.NewItemStack(item.Cobblestone, 1))
+	g.SetSlot(2, 1, item.NewItemStack(item.Cobblestone, 1))
+	g.SetSlot(2, 2, item.NewItemStack(item.Cobblestone, 1))
+
+	result := g.GetResult()
+	assert.Equal(t, item.CobblestoneStairs, result.ItemID)
+	assert.Equal(t, 4, result.Count)
+}
+
+func TestCraftStoneStairs(t *testing.T) {
+	var g CraftingGrid
+	g.SetSlot(0, 0, item.NewItemStack(item.Stone, 1))
+	g.SetSlot(1, 0, item.NewItemStack(item.Stone, 1))
+	g.SetSlot(1, 1, item.NewItemStack(item.Stone, 1))
+	g.SetSlot(2, 0, item.NewItemStack(item.Stone, 1))
+	g.SetSlot(2, 1, item.NewItemStack(item.Stone, 1))
+	g.SetSlot(2, 2, item.NewItemStack(item.Stone, 1))
+
+	result := g.GetResult()
+	assert.Equal(t, item.StoneStairs, result.ItemID)
+	assert.Equal(t, 4, result.Count)
+}
+
+func TestCraftOakSlab(t *testing.T) {
+	var g CraftingGrid
+	g.SetSlot(0, 0, item.NewItemStack(item.OakPlanks, 1))
+	g.SetSlot(0, 1, item.NewItemStack(item.OakPlanks, 1))
+	g.SetSlot(0, 2, item.NewItemStack(item.OakPlanks, 1))
+
+	result := g.GetResult()
+	assert.Equal(t, item.OakSlab, result.ItemID)
+	assert.Equal(t, 6, result.Count)
+}
+
+func TestCraftCobblestoneSlab(t *testing.T) {
+	var g CraftingGrid
+	g.SetSlot(0, 0, item.NewItemStack(item.Cobblestone, 1))
+	g.SetSlot(0, 1, item.NewItemStack(item.Cobblestone, 1))
+	g.SetSlot(0, 2, item.NewItemStack(item.Cobblestone, 1))
+
+	result := g.GetResult()
+	assert.Equal(t, item.CobblestoneSlab, result.ItemID)
+	assert.Equal(t, 6, result.Count)
+}
+
+func TestCraftStoneSlab(t *testing.T) {
+	var g CraftingGrid
+	g.SetSlot(0, 0, item.NewItemStack(item.Stone, 1))
+	g.SetSlot(0, 1, item.NewItemStack(item.Stone, 1))
+	g.SetSlot(0, 2, item.NewItemStack(item.Stone, 1))
+
+	result := g.GetResult()
+	assert.Equal(t, item.StoneSlab, result.ItemID)
+	assert.Equal(t, 6, result.Count)
+}
+
+func TestStairRecipesRegistered(t *testing.T) {
+	stairItems := []uint16{
+		item.OakStairs, item.CobblestoneStairs, item.StoneStairs,
+		item.BirchStairs, item.SpruceStairs, item.SandstoneStairs,
+	}
+	all := GetRecipes()
+	for _, stairID := range stairItems {
+		found := false
+		for _, r := range all {
+			if r.Result.ItemID == stairID {
+				found = true
+				assert.Equal(t, 4, r.Result.Count, "stair recipe for item %d should yield 4", stairID)
+				break
+			}
+		}
+		assert.True(t, found, "stair recipe not found for item ID %d", stairID)
+	}
+}
+
+func TestSlabRecipesRegistered(t *testing.T) {
+	slabItems := []uint16{
+		item.OakSlab, item.CobblestoneSlab, item.StoneSlab,
+		item.BirchSlab, item.SpruceSlab, item.SandstoneSlab,
+	}
+	all := GetRecipes()
+	for _, slabID := range slabItems {
+		found := false
+		for _, r := range all {
+			if r.Result.ItemID == slabID {
+				found = true
+				assert.Equal(t, 6, r.Result.Count, "slab recipe for item %d should yield 6", slabID)
+				break
+			}
+		}
+		assert.True(t, found, "slab recipe not found for item ID %d", slabID)
+	}
 }

@@ -14,6 +14,8 @@ type BlockProperties struct {
 	BlastResistance float32
 	LightEmission   uint8
 	LightFilter     uint8
+	IsStair         bool
+	IsSlab          bool
 }
 
 // Predefined block IDs.
@@ -105,6 +107,22 @@ const (
 	RedstoneOre  BlockID = 78
 	LapisOre     BlockID = 79
 	EmeraldOre   BlockID = 80
+
+	// Stairs (81-86)
+	OakStairs         BlockID = 81
+	CobblestoneStairs BlockID = 82
+	StoneStairs       BlockID = 83
+	BirchStairs       BlockID = 84
+	SpruceStairs      BlockID = 85
+	SandstoneStairs   BlockID = 86
+
+	// Slabs (87-92)
+	OakSlab         BlockID = 87
+	CobblestoneSlab BlockID = 88
+	StoneSlab       BlockID = 89
+	BirchSlab       BlockID = 90
+	SpruceSlab      BlockID = 91
+	SandstoneSlab   BlockID = 92
 )
 
 // fluidBaseMask extracts the base block ID (lower 8 bits) from a block that
@@ -164,4 +182,14 @@ func IsLava(id uint16) bool {
 // IsFire reports whether the block is fire.
 func IsFire(id uint16) bool {
 	return BaseID(id) == Fire
+}
+
+// IsStairBlock reports whether the block is a stair type.
+func IsStairBlock(id uint16) bool {
+	return GetProperties(id).IsStair
+}
+
+// IsSlabBlock reports whether the block is a slab type.
+func IsSlabBlock(id uint16) bool {
+	return GetProperties(id).IsSlab
 }

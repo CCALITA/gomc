@@ -164,6 +164,73 @@ func BlockAABB(pos BlockPos) AABB {
 	}
 }
 
+// StairAABBs returns two AABBs representing a stair block at pos.
+// The bottom half is always a full-width, half-height slab.
+// The stepped quarter sits on top of the bottom half and is offset
+// in the horizontal axis determined by orientation:
+//
+//	0 = North (+Z side), 1 = South (-Z side),
+//	2 = East (-X side), 3 = West (+X side).
+//
+// Other orientation values default to North.
+func StairAABBs(pos BlockPos, orientation int) []AABB {
+	fx := float32(pos.X)
+	fy := float32(pos.Y)
+	fz := float32(pos.Z)
+
+	// Bottom half: full 1x0.5x1 slab
+	bottom := AABB{
+		Min: Vec3{fx, fy, fz},
+		Max: Vec3{fx + 1, fy + 0.5, fz + 1},
+	}
+
+	// Top step: half-width, half-height quarter
+	var top AABB
+	switch orientation {
+	case 1: // South: step on -Z side
+		top = AABB{
+			Min: Vec3{fx, fy + 0.5, fz},
+			Max: Vec3{fx + 1, fy + 1, fz + 0.5},
+		}
+	case 2: // East: step on -X side
+		top = AABB{
+			Min: Vec3{fx, fy + 0.5, fz},
+			Max: Vec3{fx + 0.5, fy + 1, fz + 1},
+		}
+	case 3: // West: step on +X side
+		top = AABB{
+			Min: Vec3{fx + 0.5, fy + 0.5, fz},
+			Max: Vec3{fx + 1, fy + 1, fz + 1},
+		}
+	default: // 0 = North: step on +Z side
+		top = AABB{
+			Min: Vec3{fx, fy + 0.5, fz + 0.5},
+			Max: Vec3{fx + 1, fy + 1, fz + 1},
+		}
+	}
+
+	return []AABB{bottom, top}
+}
+
+// SlabAABB returns a half-height AABB for a slab block at pos.
+// If top is true the slab occupies the upper half; otherwise the lower half.
+func SlabAABB(pos BlockPos, top bool) AABB {
+	fx := float32(pos.X)
+	fy := float32(pos.Y)
+	fz := float32(pos.Z)
+
+	if top {
+		return AABB{
+			Min: Vec3{fx, fy + 0.5, fz},
+			Max: Vec3{fx + 1, fy + 1, fz + 1},
+		}
+	}
+	return AABB{
+		Min: Vec3{fx, fy, fz},
+		Max: Vec3{fx + 1, fy + 0.5, fz + 1},
+	}
+}
+
 func minf(a, b float32) float32 {
 	if a < b {
 		return a

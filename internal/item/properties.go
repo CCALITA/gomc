@@ -117,6 +117,27 @@ func init() {
 	registerBlock(GoldBlock, "Gold Block", GoldBlock)
 	registerBlock(DiamondBlock, "Diamond Block", DiamondBlock)
 
+	// ---- base materials for stair/slab crafting ----
+	registerBlock(Sandstone, "Sandstone", Sandstone)
+	registerBlock(BirchPlanks, "Birch Planks", BirchPlanks)
+	registerBlock(SprucePlanks, "Spruce Planks", SprucePlanks)
+
+	// ---- stair blocks ----
+	registerBlock(OakStairs, "Oak Stairs", OakStairs)
+	registerBlock(CobblestoneStairs, "Cobblestone Stairs", CobblestoneStairs)
+	registerBlock(StoneStairs, "Stone Stairs", StoneStairs)
+	registerBlock(BirchStairs, "Birch Stairs", BirchStairs)
+	registerBlock(SpruceStairs, "Spruce Stairs", SpruceStairs)
+	registerBlock(SandstoneStairs, "Sandstone Stairs", SandstoneStairs)
+
+	// ---- slab blocks ----
+	registerBlock(OakSlab, "Oak Slab", OakSlab)
+	registerBlock(CobblestoneSlab, "Cobblestone Slab", CobblestoneSlab)
+	registerBlock(StoneSlab, "Stone Slab", StoneSlab)
+	registerBlock(BirchSlab, "Birch Slab", BirchSlab)
+	registerBlock(SpruceSlab, "Spruce Slab", SpruceSlab)
+	registerBlock(SandstoneSlab, "Sandstone Slab", SandstoneSlab)
+
 	// ---- boat (non-block, non-tool) ----
 	properties[Boat] = ItemProperties{
 		Name:         "Boat",

@@ -110,7 +110,8 @@ func (w *World) SetBlock(pos mcmath.BlockPos, id uint16) {
 }
 
 // GetBlockAABBs returns the AABBs of all solid blocks that intersect the given region.
-// This is used for physics collision detection.
+// This is used for physics collision detection. Partial blocks such as stairs and
+// slabs return their shape-specific AABBs; full blocks return a single unit AABB.
 func (w *World) GetBlockAABBs(region mcmath.AABB) []mcmath.AABB {
 	minX := int32(math.Floor(float64(region.Min.X)))
 	minY := int32(math.Floor(float64(region.Min.Y)))
@@ -132,9 +133,8 @@ func (w *World) GetBlockAABBs(region mcmath.AABB) []mcmath.AABB {
 			for y := minY; y < maxY; y++ {
 				bp := mcmath.BlockPos{X: x, Y: y, Z: z}
 				id := w.GetBlock(bp)
-				if block.IsSolid(id) {
-					result = append(result, mcmath.BlockAABB(bp))
-				}
+				aabbs := block.GetBlockAABBs(id, bp, block.OrientNorth)
+				result = append(result, aabbs...)
 			}
 		}
 	}

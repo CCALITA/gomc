@@ -336,3 +336,149 @@ func TestInitRegistry_PanicsOnDuplicate(t *testing.T) {
 		InitRegistry()
 	})
 }
+
+// ---------------------------------------------------------------------------
+// Stair and slab block IDs and properties
+// ---------------------------------------------------------------------------
+
+func TestStairBlockIDConstants(t *testing.T) {
+	assert.Equal(t, BlockID(81), OakStairs)
+	assert.Equal(t, BlockID(82), CobblestoneStairs)
+	assert.Equal(t, BlockID(83), StoneStairs)
+	assert.Equal(t, BlockID(84), BirchStairs)
+	assert.Equal(t, BlockID(85), SpruceStairs)
+	assert.Equal(t, BlockID(86), SandstoneStairs)
+}
+
+func TestSlabBlockIDConstants(t *testing.T) {
+	assert.Equal(t, BlockID(87), OakSlab)
+	assert.Equal(t, BlockID(88), CobblestoneSlab)
+	assert.Equal(t, BlockID(89), StoneSlab)
+	assert.Equal(t, BlockID(90), BirchSlab)
+	assert.Equal(t, BlockID(91), SpruceSlab)
+	assert.Equal(t, BlockID(92), SandstoneSlab)
+}
+
+func TestStairProperties(t *testing.T) {
+	stairs := []struct {
+		id       BlockID
+		name     string
+		hardness float32
+	}{
+		{OakStairs, "oak_stairs", 2},
+		{CobblestoneStairs, "cobblestone_stairs", 2},
+		{StoneStairs, "stone_stairs", 1.5},
+		{BirchStairs, "birch_stairs", 2},
+		{SpruceStairs, "spruce_stairs", 2},
+		{SandstoneStairs, "sandstone_stairs", 0.8},
+	}
+	for _, tc := range stairs {
+		p := GetProperties(tc.id)
+		assert.Equal(t, tc.name, p.Name)
+		assert.True(t, p.Solid, "%s should be solid", tc.name)
+		assert.True(t, p.IsStair, "%s should be a stair", tc.name)
+		assert.False(t, p.IsSlab, "%s should not be a slab", tc.name)
+		assert.Equal(t, tc.hardness, p.Hardness, "%s hardness", tc.name)
+	}
+}
+
+func TestSlabProperties(t *testing.T) {
+	slabs := []struct {
+		id       BlockID
+		name     string
+		hardness float32
+	}{
+		{OakSlab, "oak_slab", 2},
+		{CobblestoneSlab, "cobblestone_slab", 2},
+		{StoneSlab, "stone_slab", 1.5},
+		{BirchSlab, "birch_slab", 2},
+		{SpruceSlab, "spruce_slab", 2},
+		{SandstoneSlab, "sandstone_slab", 0.8},
+	}
+	for _, tc := range slabs {
+		p := GetProperties(tc.id)
+		assert.Equal(t, tc.name, p.Name)
+		assert.True(t, p.Solid, "%s should be solid", tc.name)
+		assert.True(t, p.IsSlab, "%s should be a slab", tc.name)
+		assert.False(t, p.IsStair, "%s should not be a stair", tc.name)
+		assert.Equal(t, tc.hardness, p.Hardness, "%s hardness", tc.name)
+	}
+}
+
+func TestIsStairBlock(t *testing.T) {
+	assert.True(t, IsStairBlock(OakStairs))
+	assert.True(t, IsStairBlock(CobblestoneStairs))
+	assert.False(t, IsStairBlock(Stone))
+	assert.False(t, IsStairBlock(OakSlab))
+}
+
+func TestIsSlabBlock(t *testing.T) {
+	assert.True(t, IsSlabBlock(OakSlab))
+	assert.True(t, IsSlabBlock(CobblestoneSlab))
+	assert.False(t, IsSlabBlock(Stone))
+	assert.False(t, IsSlabBlock(OakStairs))
+}
+
+func TestGetBlockAABBs_FullBlock(t *testing.T) {
+	pos := mcmath.BlockPos{X: 0, Y: 0, Z: 0}
+	aabbs := GetBlockAABBs(Stone, pos, OrientNorth)
+	assert.Len(t, aabbs, 1)
+	assert.Equal(t, mcmath.BlockAABB(pos), aabbs[0])
+}
+
+func TestGetBlockAABBs_Air(t *testing.T) {
+	pos := mcmath.BlockPos{X: 0, Y: 0, Z: 0}
+	aabbs := GetBlockAABBs(Air, pos, OrientNorth)
+	assert.Nil(t, aabbs)
+}
+
+func TestGetBlockAABBs_Stair(t *testing.T) {
+	pos := mcmath.BlockPos{X: 0, Y: 0, Z: 0}
+	aabbs := GetBlockAABBs(OakStairs, pos, OrientNorth)
+	assert.Len(t, aabbs, 2)
+}
+
+func TestGetBlockAABBs_SlabBottom(t *testing.T) {
+	pos := mcmath.BlockPos{X: 0, Y: 0, Z: 0}
+	aabbs := GetBlockAABBs(OakSlab, pos, OrientNorth)
+	assert.Len(t, aabbs, 1)
+	assert.Equal(t, mcmath.SlabAABB(pos, false), aabbs[0])
+}
+
+func TestGetBlockAABBs_SlabTop(t *testing.T) {
+	pos := mcmath.BlockPos{X: 0, Y: 0, Z: 0}
+	aabbs := GetBlockAABBs(OakSlab, pos, OrientUp)
+	assert.Len(t, aabbs, 1)
+	assert.Equal(t, mcmath.SlabAABB(pos, true), aabbs[0])
+}
+
+func TestInitRegistry_StairsAndSlabs(t *testing.T) {
+	original := Blocks
+	Blocks = registry.New[BlockProperties]()
+	defer func() { Blocks = original }()
+
+	InitRegistry()
+
+	tests := []struct {
+		id   BlockID
+		name string
+	}{
+		{OakStairs, "oak_stairs"},
+		{CobblestoneStairs, "cobblestone_stairs"},
+		{StoneStairs, "stone_stairs"},
+		{BirchStairs, "birch_stairs"},
+		{SpruceStairs, "spruce_stairs"},
+		{SandstoneStairs, "sandstone_stairs"},
+		{OakSlab, "oak_slab"},
+		{CobblestoneSlab, "cobblestone_slab"},
+		{StoneSlab, "stone_slab"},
+		{BirchSlab, "birch_slab"},
+		{SpruceSlab, "spruce_slab"},
+		{SandstoneSlab, "sandstone_slab"},
+	}
+	for _, tc := range tests {
+		name, ok := Blocks.Name(tc.id)
+		assert.True(t, ok, "ID %d should exist", tc.id)
+		assert.Equal(t, tc.name, name)
+	}
+}
