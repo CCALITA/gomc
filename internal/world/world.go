@@ -18,6 +18,7 @@ type World struct {
 	chunks    map[[2]int32]*chunk.Chunk
 	generator *TerrainGenerator
 	ticker    *tick.Ticker
+	Signs     *SignManager
 
 	// OnBlockChange is called after a block is set, with the chunk position
 	// of the modified block. It can be used to trigger mesh rebuilds.
@@ -29,6 +30,7 @@ func NewWorld(seed int64) *World {
 	w := &World{
 		chunks:    make(map[[2]int32]*chunk.Chunk),
 		generator: NewTerrainGenerator(seed),
+		Signs:     NewSignManager(),
 	}
 	registry := tick.NewHandlerRegistry()
 	tick.RegisterDefaults(registry)
@@ -180,6 +182,7 @@ func (w *World) Seed() int64 {
 }
 
 // SaveAll serializes every loaded chunk and writes it via the given Storage.
+// Sign data is also persisted to signs.json.
 func (w *World) SaveAll(storage *Storage) error {
 	w.mu.RLock()
 	// Snapshot the chunk map to avoid holding the lock during I/O.
@@ -196,10 +199,14 @@ func (w *World) SaveAll(storage *Storage) error {
 			errs = append(errs, fmt.Errorf("SaveAll: %w", err))
 		}
 	}
+	if err := storage.SaveSigns(w.Signs.AllSigns()); err != nil {
+		errs = append(errs, fmt.Errorf("SaveAll: %w", err))
+	}
 	return errors.Join(errs...)
 }
 
 // LoadAll reads all saved chunks from Storage and loads them into the world.
+// Sign data is also loaded from signs.json if present.
 func (w *World) LoadAll(storage *Storage) error {
 	entries, listErr := storage.ListChunks()
 	if entries == nil && listErr != nil {
@@ -219,6 +226,12 @@ func (w *World) LoadAll(storage *Storage) error {
 		w.mu.Lock()
 		w.chunks[pos.Key()] = c
 		w.mu.Unlock()
+	}
+	signs, err := storage.LoadSigns()
+	if err != nil {
+		errs = append(errs, fmt.Errorf("LoadAll: %w", err))
+	} else {
+		w.Signs.LoadSigns(signs)
 	}
 	return errors.Join(errs...)
 }

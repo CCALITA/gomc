@@ -56,34 +56,34 @@ func init() {
 	}
 
 	// Pickaxes
-	registerTool(WoodenPickaxe, "Wooden Pickaxe", ToolPickaxe, LevelWood, 60)
-	registerTool(StonePickaxe, "Stone Pickaxe", ToolPickaxe, LevelStone, 132)
-	registerTool(IronPickaxe, "Iron Pickaxe", ToolPickaxe, LevelIron, 251)
-	registerTool(DiamondPickaxe, "Diamond Pickaxe", ToolPickaxe, LevelDiamond, 1562)
+	registerTool(WoodenPickaxe, "Wooden Pickaxe", ToolPickaxe, LevelWood, 59)
+	registerTool(StonePickaxe, "Stone Pickaxe", ToolPickaxe, LevelStone, 131)
+	registerTool(IronPickaxe, "Iron Pickaxe", ToolPickaxe, LevelIron, 250)
+	registerTool(DiamondPickaxe, "Diamond Pickaxe", ToolPickaxe, LevelDiamond, 1561)
 
 	// Axes
-	registerTool(WoodenAxe, "Wooden Axe", ToolAxe, LevelWood, 60)
-	registerTool(StoneAxe, "Stone Axe", ToolAxe, LevelStone, 132)
-	registerTool(IronAxe, "Iron Axe", ToolAxe, LevelIron, 251)
-	registerTool(DiamondAxe, "Diamond Axe", ToolAxe, LevelDiamond, 1562)
+	registerTool(WoodenAxe, "Wooden Axe", ToolAxe, LevelWood, 59)
+	registerTool(StoneAxe, "Stone Axe", ToolAxe, LevelStone, 131)
+	registerTool(IronAxe, "Iron Axe", ToolAxe, LevelIron, 250)
+	registerTool(DiamondAxe, "Diamond Axe", ToolAxe, LevelDiamond, 1561)
 
 	// Shovels
-	registerTool(WoodenShovel, "Wooden Shovel", ToolShovel, LevelWood, 60)
-	registerTool(StoneShovel, "Stone Shovel", ToolShovel, LevelStone, 132)
-	registerTool(IronShovel, "Iron Shovel", ToolShovel, LevelIron, 251)
-	registerTool(DiamondShovel, "Diamond Shovel", ToolShovel, LevelDiamond, 1562)
+	registerTool(WoodenShovel, "Wooden Shovel", ToolShovel, LevelWood, 59)
+	registerTool(StoneShovel, "Stone Shovel", ToolShovel, LevelStone, 131)
+	registerTool(IronShovel, "Iron Shovel", ToolShovel, LevelIron, 250)
+	registerTool(DiamondShovel, "Diamond Shovel", ToolShovel, LevelDiamond, 1561)
 
 	// Swords
-	registerTool(WoodenSword, "Wooden Sword", ToolSword, LevelWood, 60)
-	registerTool(StoneSword, "Stone Sword", ToolSword, LevelStone, 132)
-	registerTool(IronSword, "Iron Sword", ToolSword, LevelIron, 251)
-	registerTool(DiamondSword, "Diamond Sword", ToolSword, LevelDiamond, 1562)
+	registerTool(WoodenSword, "Wooden Sword", ToolSword, LevelWood, 59)
+	registerTool(StoneSword, "Stone Sword", ToolSword, LevelStone, 131)
+	registerTool(IronSword, "Iron Sword", ToolSword, LevelIron, 250)
+	registerTool(DiamondSword, "Diamond Sword", ToolSword, LevelDiamond, 1561)
 
 	// Hoes
-	registerTool(WoodenHoe, "Wooden Hoe", ToolHoe, LevelWood, 60)
-	registerTool(StoneHoe, "Stone Hoe", ToolHoe, LevelStone, 132)
-	registerTool(IronHoe, "Iron Hoe", ToolHoe, LevelIron, 251)
-	registerTool(DiamondHoe, "Diamond Hoe", ToolHoe, LevelDiamond, 1562)
+	registerTool(WoodenHoe, "Wooden Hoe", ToolHoe, LevelWood, 59)
+	registerTool(StoneHoe, "Stone Hoe", ToolHoe, LevelStone, 131)
+	registerTool(IronHoe, "Iron Hoe", ToolHoe, LevelIron, 250)
+	registerTool(DiamondHoe, "Diamond Hoe", ToolHoe, LevelDiamond, 1561)
 
 	// ---- materials ----
 	registerMaterial := func(id ItemID, name string) {
@@ -224,6 +224,11 @@ func IsTool(id ItemID) bool {
 // MaxStack returns the maximum stack size for the given item ID.
 func MaxStack(id ItemID) int {
 	return GetProperties(id).MaxStackSize
+}
+
+// HasDurability reports whether the item has durability (tools, armor, shears, etc.).
+func HasDurability(id ItemID) bool {
+	return GetProperties(id).Durability > 0
 }
 
 // IsFood reports whether the item restores hunger when eaten.

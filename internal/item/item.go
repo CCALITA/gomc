@@ -136,6 +136,28 @@ const (
 	IronBlock    ItemID = 340
 	GoldBlock    ItemID = 341
 	DiamondBlock ItemID = 342
+
+	// Base materials used in stair/slab crafting
+	Sandstone    ItemID = 343
+	BirchPlanks  ItemID = 344
+	SprucePlanks ItemID = 345
+)
+
+// ----- Stair / slab item IDs -----
+
+const (
+	OakStairs         ItemID = iota + 350 // 350
+	CobblestoneStairs                     // 351
+	StoneStairs                           // 352
+	BirchStairs                           // 353
+	SpruceStairs                          // 354
+	SandstoneStairs                       // 355
+	OakSlab                               // 356
+	CobblestoneSlab                       // 357
+	StoneSlab                             // 358
+	BirchSlab                             // 359
+	SpruceSlab                            // 360
+	SandstoneSlab                         // 361
 )
 
 // ----- Armor item IDs -----
@@ -160,4 +182,16 @@ const (
 	DiamondChestplate // 413
 	DiamondLeggings   // 414
 	DiamondBoots      // 415
+)
+
+// Crop and farming items.
+const (
+	WheatSeeds ItemID = 250
+	Wheat      ItemID = 251
+)
+
+// Furniture items.
+const (
+	BedItem  ItemID = 370
+	SignItem  ItemID = 371
 )

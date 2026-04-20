@@ -48,6 +48,18 @@ var chickenBBox = mcmath.AABB{
 	Max: mcmath.Vec3{X: 0.2, Y: 0.7, Z: 0.2},
 }
 
+// spiderBBox is the bounding box for a spider (1.4 wide, 0.9 tall).
+var spiderBBox = mcmath.AABB{
+	Min: mcmath.Vec3{X: -0.7, Y: 0, Z: -0.7},
+	Max: mcmath.Vec3{X: 0.7, Y: 0.9, Z: 0.7},
+}
+
+// endermanBBox is the bounding box for an enderman (0.6 wide, 2.9 tall).
+var endermanBBox = mcmath.AABB{
+	Min: mcmath.Vec3{X: -0.3, Y: 0, Z: -0.3},
+	Max: mcmath.Vec3{X: 0.3, Y: 2.9, Z: 0.3},
+}
+
 // SpawnPlayer creates a fully configured player entity.
 func SpawnPlayer(w *ecs.World, name string, pos mcmath.Vec3) ecs.Entity {
 	e := w.NewEntity()
@@ -166,6 +178,40 @@ func SpawnChicken(w *ecs.World, pos mcmath.Vec3) ecs.Entity {
 	ecs.GetStore[Health](w).Set(e, Health{Current: 4, Max: 4})
 	ecs.GetStore[EntityTypeComp](w).Set(e, EntityTypeComp{Type: TypeChicken})
 	ecs.GetStore[AI](w).Set(e, AI{State: AIIdle, Passive: true})
+
+	return e
+}
+
+// SpawnSpider creates a spider hostile mob entity.
+func SpawnSpider(w *ecs.World, pos mcmath.Vec3) ecs.Entity {
+	e := w.NewEntity()
+
+	ecs.GetStore[Transform](w).Set(e, Transform{Position: pos})
+
+	body := physics.NewBody(spiderBBox)
+	body.Position = pos
+	ecs.GetStore[PhysicsBody](w).Set(e, PhysicsBody{Body: &body})
+
+	ecs.GetStore[Health](w).Set(e, Health{Current: 16, Max: 16})
+	ecs.GetStore[EntityTypeComp](w).Set(e, EntityTypeComp{Type: TypeSpider})
+	ecs.GetStore[AI](w).Set(e, AI{State: AIIdle, SpiderClimb: true})
+
+	return e
+}
+
+// SpawnEnderman creates an enderman hostile mob entity.
+func SpawnEnderman(w *ecs.World, pos mcmath.Vec3) ecs.Entity {
+	e := w.NewEntity()
+
+	ecs.GetStore[Transform](w).Set(e, Transform{Position: pos})
+
+	body := physics.NewBody(endermanBBox)
+	body.Position = pos
+	ecs.GetStore[PhysicsBody](w).Set(e, PhysicsBody{Body: &body})
+
+	ecs.GetStore[Health](w).Set(e, Health{Current: 40, Max: 40})
+	ecs.GetStore[EntityTypeComp](w).Set(e, EntityTypeComp{Type: TypeEnderman})
+	ecs.GetStore[AI](w).Set(e, AI{State: AIIdle, EndermanTeleport: true})
 
 	return e
 }

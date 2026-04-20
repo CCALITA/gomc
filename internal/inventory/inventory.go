@@ -123,6 +123,28 @@ func (inv *Inventory) Clear() {
 	}
 }
 
+// DamageTool decrements the durability of the item in the given slot by amount.
+// Returns true if the tool broke (durability reached 0 and the slot was cleared).
+// Returns false if the slot is out of bounds, empty, holds a non-durability item,
+// or the tool survived.
+func (inv *Inventory) DamageTool(slot int, amount int) bool {
+	if slot < 0 || slot >= len(inv.slots) || amount <= 0 {
+		return false
+	}
+	stack := inv.slots[slot]
+	if stack.IsEmpty() || !item.HasDurability(stack.ItemID) {
+		return false
+	}
+
+	stack.Durability -= amount
+	if stack.Durability <= 0 {
+		inv.slots[slot] = item.ItemStack{}
+		return true
+	}
+	inv.slots[slot] = stack
+	return false
+}
+
 // IsEmpty reports whether all slots are empty.
 func (inv *Inventory) IsEmpty() bool {
 	for _, slot := range inv.slots {

@@ -32,18 +32,29 @@ func (r *HandlerRegistry) Register(blockID uint16, handler TickHandler) {
 }
 
 // Get returns the handler for the given block ID, if any.
+// For blocks that encode state in upper bits (fluids, crops), a fallback
+// lookup using the base ID is performed.
 func (r *HandlerRegistry) Get(blockID uint16) (TickHandler, bool) {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
-	h, ok := r.handlers[blockID]
-	return h, ok
+	if h, ok := r.handlers[blockID]; ok {
+		return h, true
+	}
+	// Fall back to the base ID for blocks with encoded state.
+	base := block.BaseID(blockID)
+	if base != blockID {
+		h, ok := r.handlers[base]
+		return h, ok
+	}
+	return nil, false
 }
 
 // RegisterDefaults registers the standard vanilla-style tick handlers:
-// grass spread and leaf decay.
+// grass spread, leaf decay, and crop farming.
 func RegisterDefaults(r *HandlerRegistry) {
 	r.Register(block.Dirt, grassSpreadHandler)
 	r.Register(block.OakLeaves, leafDecayHandler)
+	RegisterCropHandlers(r)
 }
 
 // grassSpreadHandler converts a dirt block to grass if an adjacent block is

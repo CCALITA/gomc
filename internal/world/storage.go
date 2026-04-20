@@ -189,3 +189,56 @@ func (s *Storage) HasSave() bool {
 	_, err := os.Stat(path)
 	return err == nil
 }
+
+// signEntry is the JSON-serializable representation of a single sign for persistence.
+type signEntry struct {
+	X     int32    `json:"x"`
+	Y     int32    `json:"y"`
+	Z     int32    `json:"z"`
+	Lines [4]string `json:"lines"`
+}
+
+// SaveSigns writes all sign data to signs.json.
+func (s *Storage) SaveSigns(signs map[mcmath.BlockPos]SignData) error {
+	entries := make([]signEntry, 0, len(signs))
+	for pos, sd := range signs {
+		entries = append(entries, signEntry{
+			X:     pos.X,
+			Y:     pos.Y,
+			Z:     pos.Z,
+			Lines: sd.Lines,
+		})
+	}
+	data, err := json.MarshalIndent(entries, "", "  ")
+	if err != nil {
+		return fmt.Errorf("SaveSigns: marshal data: %w", err)
+	}
+	path := filepath.Join(s.savePath, "signs.json")
+	if err := os.WriteFile(path, data, 0o644); err != nil {
+		return fmt.Errorf("SaveSigns: write file: %w", err)
+	}
+	return nil
+}
+
+// LoadSigns reads sign data from signs.json. Returns an empty map if the file
+// does not exist.
+func (s *Storage) LoadSigns() (map[mcmath.BlockPos]SignData, error) {
+	path := filepath.Join(s.savePath, "signs.json")
+	data, err := os.ReadFile(path)
+	if err != nil {
+		if errors.Is(err, os.ErrNotExist) {
+			return make(map[mcmath.BlockPos]SignData), nil
+		}
+		return nil, fmt.Errorf("LoadSigns: read file: %w", err)
+	}
+	var entries []signEntry
+	if err := json.Unmarshal(data, &entries); err != nil {
+		return nil, fmt.Errorf("LoadSigns: unmarshal data: %w", err)
+	}
+	result := make(map[mcmath.BlockPos]SignData, len(entries))
+	for _, e := range entries {
+		pos := mcmath.BlockPos{X: e.X, Y: e.Y, Z: e.Z}
+		result[pos] = SignData{Lines: e.Lines}
+	}
+	return result, nil
+}

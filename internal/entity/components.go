@@ -28,6 +28,10 @@ const (
 	TypeSheep uint8 = 9
 	// TypeChicken identifies a chicken passive mob.
 	TypeChicken uint8 = 10
+	// TypeSpider identifies a spider hostile mob.
+	TypeSpider uint8 = 11
+	// TypeEnderman identifies an enderman hostile mob.
+	TypeEnderman uint8 = 12
 )
 
 // AI state constants define the mob behaviour state machine states.
@@ -74,10 +78,12 @@ type EntityTypeComp struct {
 
 // AI holds mob behaviour state machine data.
 type AI struct {
-	State   uint8
-	Target  ecs.Entity
-	Timer   float64
-	Passive bool // Passive mobs only Idle and Wander, never Chase or Attack.
+	State           uint8
+	Target          ecs.Entity
+	Timer           float64
+	Passive         bool // Passive mobs only Idle and Wander, never Chase or Attack.
+	SpiderClimb     bool // Spider can climb walls when chasing.
+	EndermanTeleport bool // Enderman teleports when damaged.
 }
 
 // ItemSlot represents an item stack in an inventory slot.

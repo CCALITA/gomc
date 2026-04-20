@@ -413,25 +413,93 @@ var properties = map[BlockID]BlockProperties{
 		Hardness: 3, BlastResistance: 3,
 		LightEmission: 0, LightFilter: 15,
 	},
+
+	// Doors and trapdoors
+	OakDoor: {
+		Name: "oak_door", Solid: true, Transparent: true,
+		Hardness: 3, BlastResistance: 3,
+		LightEmission: 0, LightFilter: 0,
+		IsDoor: true,
+	},
+	IronDoor: {
+		Name: "iron_door", Solid: true, Transparent: true,
+		Hardness: 5, BlastResistance: 5,
+		LightEmission: 0, LightFilter: 0,
+		IsDoor: true,
+	},
+	OakTrapdoor: {
+		Name: "oak_trapdoor", Solid: true, Transparent: true,
+		Hardness: 3, BlastResistance: 3,
+		LightEmission: 0, LightFilter: 0,
+		IsTrapdoor: true,
+	},
+	OakStairs: {Name: "oak_stairs", Solid: true, Hardness: 2, BlastResistance: 3, LightFilter: 15, IsStair: true},
+	CobblestoneStairs: {Name: "cobblestone_stairs", Solid: true, Hardness: 2, BlastResistance: 6, LightFilter: 15, IsStair: true},
+	StoneStairs: {Name: "stone_stairs", Solid: true, Hardness: 1.5, BlastResistance: 6, LightFilter: 15, IsStair: true},
+	BirchStairs: {Name: "birch_stairs", Solid: true, Hardness: 2, BlastResistance: 3, LightFilter: 15, IsStair: true},
+	SpruceStairs: {Name: "spruce_stairs", Solid: true, Hardness: 2, BlastResistance: 3, LightFilter: 15, IsStair: true},
+	SandstoneStairs: {Name: "sandstone_stairs", Solid: true, Hardness: 0.8, BlastResistance: 0.8, LightFilter: 15, IsStair: true},
+	OakSlab: {Name: "oak_slab", Solid: true, Hardness: 2, BlastResistance: 3, LightFilter: 15, IsSlab: true},
+	CobblestoneSlab: {Name: "cobblestone_slab", Solid: true, Hardness: 2, BlastResistance: 6, LightFilter: 15, IsSlab: true},
+	StoneSlab: {Name: "stone_slab", Solid: true, Hardness: 1.5, BlastResistance: 6, LightFilter: 15, IsSlab: true},
+	BirchSlab: {Name: "birch_slab", Solid: true, Hardness: 2, BlastResistance: 3, LightFilter: 15, IsSlab: true},
+	SpruceSlab: {Name: "spruce_slab", Solid: true, Hardness: 2, BlastResistance: 3, LightFilter: 15, IsSlab: true},
+	SandstoneSlab: {Name: "sandstone_slab", Solid: true, Hardness: 0.8, BlastResistance: 0.8, LightFilter: 15, IsSlab: true},
+	Bed: {
+		Name: "bed", Solid: true, Transparent: true,
+		Hardness: 0.2, BlastResistance: 0.2,
+		LightEmission: 0, LightFilter: 0,
+	},
+	MossyCobblestone: {
+		Name: "mossy_cobblestone", Solid: true, Transparent: false,
+		Hardness: 2, BlastResistance: 6,
+		LightEmission: 0, LightFilter: 15,
+	},
+	MobSpawner: {
+		Name: "mob_spawner", Solid: true, Transparent: true,
+		Hardness: 5, BlastResistance: 5,
+		LightEmission: 0, LightFilter: 0,
+	},
+	OakSign: {
+		Name: "oak_sign", Solid: false, Transparent: true,
+		Hardness: 1, BlastResistance: 1,
+		LightEmission: 0, LightFilter: 0,
+	},
+	OakWallSign: {
+		Name: "oak_wall_sign", Solid: false, Transparent: true,
+		Hardness: 1, BlastResistance: 1,
+		LightEmission: 0, LightFilter: 0,
+	},
+	OakFence: {
+		Name: "oak_fence", Solid: true, Transparent: true,
+		Hardness: 2, BlastResistance: 3,
+		LightEmission: 0, LightFilter: 0,
+	},
 }
 
 // GetProperties returns the BlockProperties for the given block ID.
-// For flowing fluid blocks with encoded levels, the base ID is used for lookup.
+// For blocks with encoded upper-bit state (fluid levels, door open bit),
+// the base ID is used for property lookup.
 // If the ID is unknown, a zero-value BlockProperties is returned.
 func GetProperties(id BlockID) BlockProperties {
 	if p, ok := properties[id]; ok {
 		return p
 	}
-	// Only fall back to base ID for blocks that encode a fluid level.
+	// Fall back to base ID only for block types that encode state in upper bits.
 	base := BaseID(id)
-	if base == FlowingWater || base == FlowingLava {
+	switch base {
+	case FlowingWater, FlowingLava, OakDoor, IronDoor, OakTrapdoor:
 		return properties[base]
 	}
 	return BlockProperties{}
 }
 
 // IsSolid reports whether the block with the given ID is solid.
+// Open doors and trapdoors are not solid (players can walk through them).
 func IsSolid(id BlockID) bool {
+	if IsDoorOrTrapdoor(id) && IsDoorOpen(id) {
+		return false
+	}
 	return GetProperties(id).Solid
 }
 

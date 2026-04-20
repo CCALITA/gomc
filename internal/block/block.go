@@ -14,6 +14,10 @@ type BlockProperties struct {
 	BlastResistance float32
 	LightEmission   uint8
 	LightFilter     uint8
+	IsStair         bool
+	IsSlab          bool
+	IsDoor          bool
+	IsTrapdoor      bool
 }
 
 // Predefined block IDs.
@@ -105,6 +109,22 @@ const (
 	RedstoneOre  BlockID = 78
 	LapisOre     BlockID = 79
 	EmeraldOre   BlockID = 80
+
+	// Stairs (81-86)
+	OakStairs         BlockID = 81
+	CobblestoneStairs BlockID = 82
+	StoneStairs       BlockID = 83
+	BirchStairs       BlockID = 84
+	SpruceStairs      BlockID = 85
+	SandstoneStairs   BlockID = 86
+
+	// Slabs (87-92)
+	OakSlab         BlockID = 87
+	CobblestoneSlab BlockID = 88
+	StoneSlab       BlockID = 89
+	BirchSlab       BlockID = 90
+	SpruceSlab      BlockID = 91
+	SandstoneSlab   BlockID = 92
 )
 
 // fluidBaseMask extracts the base block ID (lower 8 bits) from a block that
@@ -165,3 +185,74 @@ func IsLava(id uint16) bool {
 func IsFire(id uint16) bool {
 	return BaseID(id) == Fire
 }
+
+// IsStairBlock reports whether the block is a stair type.
+func IsStairBlock(id uint16) bool {
+	return GetProperties(id).IsStair
+}
+
+// IsSlabBlock reports whether the block is a slab type.
+func IsSlabBlock(id uint16) bool {
+	return GetProperties(id).IsSlab
+}
+
+// Additional block IDs added in batch 12.
+const (
+	OakDoor       BlockID = 93
+	IronDoor      BlockID = 94
+	OakTrapdoor   BlockID = 95
+	Bed           BlockID = 96
+	MossyCobblestone BlockID = 97
+	MobSpawner    BlockID = 98
+	OakSign       BlockID = 99
+	OakWallSign   BlockID = 100
+	OakFence      BlockID = 101
+)
+
+const cropStageShift = 8
+const cropStageMask = 0x07
+const CropMatureStage = 7
+
+func WheatCropStage(stage int) uint16 {
+	return WheatCrop | (uint16(stage&cropStageMask) << cropStageShift)
+}
+
+func CropGrowthStage(id uint16) int {
+	if BaseID(id) != WheatCrop { return 0 }
+	return int((id >> cropStageShift) & cropStageMask)
+}
+
+func IsCrop(id uint16) bool { return BaseID(id) == WheatCrop }
+
+func IsBed(id uint16) bool { return BaseID(id) == Bed }
+
+func IsDoorBlock(id uint16) bool {
+	base := BaseID(id)
+	return base == OakDoor || base == IronDoor
+}
+
+func IsDoorOrTrapdoor(id uint16) bool {
+	base := BaseID(id)
+	return base == OakDoor || base == IronDoor || base == OakTrapdoor
+}
+
+func IsDoorOpen(id uint16) bool {
+	return id&(1<<10) != 0
+}
+
+func ToggleDoorOpen(id uint16) uint16 {
+	return id ^ (1 << 10)
+}
+
+func IsSign(id uint16) bool {
+	base := BaseID(id)
+	return base == OakSign || base == OakWallSign
+}
+
+const doorOpenBit uint16 = 1 << fluidLevelShift
+
+func WithDoorOpen(id uint16, open bool) uint16 {
+	if open { return id | doorOpenBit }
+	return id &^ doorOpenBit
+}
+func IsTrapdoorBlock(id uint16) bool { return BaseID(id) == OakTrapdoor }

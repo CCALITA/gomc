@@ -42,6 +42,8 @@ var passiveMobTypes = []mobSpawnEntry{
 var hostileMobTypes = []mobSpawnEntry{
 	{SpawnZombie},
 	{SpawnSkeleton},
+	{SpawnSpider},
+	{SpawnEnderman},
 }
 
 // Spawner controls periodic mob spawning around the player.
@@ -90,7 +92,7 @@ func (s *Spawner) countMobs(w *ecs.World) (passive, hostile int) {
 		switch et.Type {
 		case TypeCow, TypePig, TypeSheep, TypeChicken:
 			passive++
-		case TypeZombie, TypeSkeleton, TypeCreeper:
+		case TypeZombie, TypeSkeleton, TypeCreeper, TypeSpider, TypeEnderman:
 			hostile++
 		}
 	})
