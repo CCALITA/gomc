@@ -59,6 +59,15 @@ type AISystem struct {
 	ChaseRange float32
 	// AttackRange overrides the default attack range when > 0.
 	AttackRange float32
+
+	// GameTick is the current in-game tick for day/night calculations.
+	// Spiders are hostile only at night (ticks 13000-23000 mod 24000).
+	GameTick int64
+
+	// PlayerLookDir and PlayerEyePos are set by the game layer each tick
+	// so the AI system can determine enderman aggro (looked-at detection).
+	PlayerLookDir mcmath.Vec3
+	PlayerEyePos  mcmath.Vec3
 }
 
 func (s *AISystem) rng() *rand.Rand {
@@ -94,11 +103,32 @@ const (
 	zombieDamage float32 = 3.0
 	// skeletonDamage is the damage dealt per Skeleton melee attack.
 	skeletonDamage float32 = 2.0
+	// spiderDamage is the damage dealt per Spider attack.
+	spiderDamage float32 = 2.0
+	// endermanDamage is the damage dealt per Enderman attack.
+	endermanDamage float32 = 7.0
 
 	// mobKnockbackStrength is the horizontal knockback speed applied by mob attacks.
 	mobKnockbackStrength float32 = 6.0
 	// mobKnockbackUpward is the upward velocity component of mob knockback.
 	mobKnockbackUpward float32 = 4.0
+
+	// spiderClimbSpeed is the upward velocity applied when a spider climbs a wall.
+	spiderClimbSpeed float32 = 3.0
+
+	// endermanLookRange is the maximum distance for enderman look-aggro detection.
+	endermanLookRange float32 = 64.0
+	// endermanTeleportMin is the minimum teleport distance on damage.
+	endermanTeleportMin float32 = 8.0
+	// endermanTeleportMax is the maximum teleport distance on damage.
+	endermanTeleportMax float32 = 32.0
+
+	// nightStartTick is the tick when night begins (13000 in a 24000 day cycle).
+	nightStartTick int = 13000
+	// nightEndTick is the tick when night ends (23000 in a 24000 day cycle).
+	nightEndTick int = 23000
+	// dayLength is the number of ticks in a full in-game day.
+	dayLength int = 24000
 )
 
 // playerEntry holds a player entity and its position for AI target detection.
@@ -125,6 +155,8 @@ func (s *AISystem) Update(w *ecs.World, dt float64) {
 		}
 	})
 
+	pbStore := ecs.GetStore[PhysicsBody](w)
+
 	ecs.Query2[AI, Transform](w, func(e ecs.Entity, ai *AI, t *Transform) {
 		ai.Timer -= dt
 
@@ -133,7 +165,27 @@ func (s *AISystem) Update(w *ecs.World, dt float64) {
 			return
 		}
 
+		// Spider: passive during the day, hostile at night.
+		if ai.SpiderClimb && !s.isNight() {
+			s.handlePassive(ai)
+			return
+		}
+
 		nearest := findNearestPlayer(t.Position, players)
+
+		// Enderman: aggro when player looks at them within 64 blocks.
+		if ai.EndermanTeleport && nearest.dist <= endermanLookRange {
+			if ai.State == AIIdle || ai.State == AIWander {
+				if pb, ok := pbStore.Get(e); ok {
+					worldAABB := pb.Body.WorldAABB()
+					if s.isPlayerLookingAt(worldAABB) {
+						ai.State = AIChase
+						ai.Target = nearest.entity
+						return
+					}
+				}
+			}
+		}
 
 		switch ai.State {
 		case AIIdle:
@@ -142,6 +194,12 @@ func (s *AISystem) Update(w *ecs.World, dt float64) {
 			s.handleIdleOrWander(ai, nearest, AIIdle, s.randomIdleTime)
 		case AIChase:
 			s.handleChase(ai, t, nearest, dt)
+			// Spider wall climbing: add upward velocity when chasing.
+			if ai.SpiderClimb && ai.State == AIChase {
+				if pb, ok := pbStore.Get(e); ok && !pb.Body.NoClip {
+					pb.Body.Velocity.Y = spiderClimbSpeed
+				}
+			}
 		case AIAttack:
 			s.handleAttack(w, e, ai, t, nearest)
 		case AIFlee:
@@ -252,6 +310,22 @@ func (s *AISystem) randomIdleTime() float64 {
 	return 1.0 + rand.Float64()*3.0
 }
 
+// isNight returns true when the current game tick corresponds to night time.
+func (s *AISystem) isNight() bool {
+	tod := int(s.GameTick % int64(dayLength))
+	if tod < 0 {
+		tod += dayLength
+	}
+	return tod >= nightStartTick && tod < nightEndTick
+}
+
+// isPlayerLookingAt returns true when the player's look direction ray
+// intersects the given world-space AABB within endermanLookRange.
+func (s *AISystem) isPlayerLookingAt(worldAABB mcmath.AABB) bool {
+	hit, _ := worldAABB.RayIntersects(s.PlayerEyePos, s.PlayerLookDir, endermanLookRange)
+	return hit
+}
+
 // mobDamageForEntity returns the attack damage for the given mob entity
 // based on its EntityTypeComp. Returns 0 for unknown types.
 func mobDamageForEntity(w *ecs.World, e ecs.Entity) float32 {
@@ -264,6 +338,10 @@ func mobDamageForEntity(w *ecs.World, e ecs.Entity) float32 {
 		return zombieDamage
 	case TypeSkeleton:
 		return skeletonDamage
+	case TypeSpider:
+		return spiderDamage
+	case TypeEnderman:
+		return endermanDamage
 	default:
 		return 0
 	}
@@ -315,8 +393,11 @@ func (s *LifetimeSystem) Update(w *ecs.World, dt float64) {
 // ---------------------------------------------------------------------------
 
 // DamageSystem applies pending Damage to Health and PhysicsBody, then removes
-// the Damage component.
-type DamageSystem struct{}
+// the Damage component. Endermen teleport to a random position on taking damage.
+type DamageSystem struct {
+	// Rand is the random source for enderman teleport; defaults to global rand.
+	Rand *rand.Rand
+}
 
 // Update processes all Damage components.
 func (s *DamageSystem) Update(w *ecs.World, dt float64) {
@@ -324,6 +405,8 @@ func (s *DamageSystem) Update(w *ecs.World, dt float64) {
 	healthStore := ecs.GetStore[Health](w)
 	pbStore := ecs.GetStore[PhysicsBody](w)
 	armorStore := ecs.GetStore[Armor](w)
+	aiStore := ecs.GetStore[AI](w)
+	transformStore := ecs.GetStore[Transform](w)
 
 	var processed []ecs.Entity
 
@@ -344,12 +427,44 @@ func (s *DamageSystem) Update(w *ecs.World, dt float64) {
 			pb.Body.Velocity = pb.Body.Velocity.Add(d.Knockback)
 		}
 
+		// Enderman teleport: on taking damage, teleport 8-32 blocks away.
+		if ai, ok := aiStore.Get(e); ok && ai.EndermanTeleport {
+			if t, ok := transformStore.Get(e); ok {
+				offset := s.randomTeleportOffset()
+				newPos := t.Position.Add(offset)
+				t.Position = newPos
+				if pb, ok := pbStore.Get(e); ok {
+					pb.Body.Position = newPos
+					pb.Body.Velocity = mcmath.Vec3{}
+				}
+			}
+		}
+
 		processed = append(processed, e)
 	})
 
 	for _, e := range processed {
 		dmgStore.Remove(e)
 	}
+}
+
+// randomTeleportOffset returns a random XZ offset between endermanTeleportMin
+// and endermanTeleportMax blocks away from the current position.
+func (s *DamageSystem) randomTeleportOffset() mcmath.Vec3 {
+	angle := s.float64() * 2 * math.Pi
+	dist := float64(endermanTeleportMin) + s.float64()*float64(endermanTeleportMax-endermanTeleportMin)
+	return mcmath.Vec3{
+		X: float32(dist * math.Cos(angle)),
+		Y: 0,
+		Z: float32(dist * math.Sin(angle)),
+	}
+}
+
+func (s *DamageSystem) float64() float64 {
+	if s.Rand != nil {
+		return s.Rand.Float64()
+	}
+	return rand.Float64()
 }
 
 // ---------------------------------------------------------------------------
