@@ -104,6 +104,12 @@ func (c *Controller) updatePlacement(inp *input.Manager, w BlockWorld) {
 		return
 	}
 
+	// Jukebox interaction: right-click with disc inserts; empty-hand ejects.
+	if block.IsJukebox(targetBlockID) && c.JukeboxMgr != nil {
+		c.handleJukeboxInteraction(pos)
+		return
+	}
+
 	// Calculate the adjacent block position using the face normal.
 	normal := face.Normal()
 	placePos := mcmath.BlockPos{
@@ -238,4 +244,32 @@ func (c *Controller) UpdateCombat(inp *input.Manager, ecsWorld *ecs.World, _ flo
 		Amount:    handDamage,
 		Knockback: kb,
 	})
+}
+
+// handleJukeboxInteraction handles right-clicking a jukebox.
+// If the player holds a music disc, it is inserted and playback starts.
+// If the jukebox is playing and the player's hand is empty, the disc is ejected.
+func (c *Controller) handleJukeboxInteraction(pos mcmath.BlockPos) {
+	selectedItem := c.getSelectedHotbarItem()
+
+	if !selectedItem.IsEmpty() && block.IsDisc(selectedItem.ItemID) {
+		if c.JukeboxMgr.InsertDisc(pos, selectedItem.ItemID) {
+			// Consume one disc from the hotbar slot.
+			if c.Inventory != nil {
+				stack := c.Inventory.GetSlot(c.SelectedSlot)
+				stack.Count--
+				if stack.Count <= 0 {
+					stack = item.ItemStack{}
+				}
+				c.Inventory.SetSlot(c.SelectedSlot, stack)
+			}
+		}
+		return
+	}
+
+	if selectedItem.IsEmpty() && c.JukeboxMgr.IsPlaying(pos) {
+		_ = c.JukeboxMgr.EjectDisc(pos)
+		// The ejected disc would be spawned as an item entity in the world.
+		// Item entity spawning is handled by the game layer.
+	}
 }

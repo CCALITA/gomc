@@ -475,6 +475,11 @@ var properties = map[BlockID]BlockProperties{
 		Hardness: 2, BlastResistance: 3,
 		LightEmission: 0, LightFilter: 0,
 	},
+	Jukebox: {
+		Name: "jukebox", Solid: true, Transparent: false,
+		Hardness: 2.0, BlastResistance: 6,
+		LightEmission: 0, LightFilter: 15,
+	},
 }
 
 // GetProperties returns the BlockProperties for the given block ID.

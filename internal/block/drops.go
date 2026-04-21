@@ -36,6 +36,7 @@ var blockToItemID = map[BlockID]item.ItemID{
 	Obsidian:      item.Obsidian,
 	Sandstone:     Sandstone,
 	Bedrock:       item.Bedrock,
+	Jukebox:       item.JukeboxItem,
 }
 
 // toolCategory maps block IDs to the tool type that is effective

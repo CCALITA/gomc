@@ -196,6 +196,30 @@ func init() {
 	registerArmor(DiamondChestplate, "Diamond Chestplate", 1, 8, 528)
 	registerArmor(DiamondLeggings, "Diamond Leggings", 2, 6, 495)
 	registerArmor(DiamondBoots, "Diamond Boots", 3, 3, 429)
+
+	// ---- jukebox block item ----
+	properties[JukeboxItem] = ItemProperties{
+		Name:         "Jukebox",
+		MaxStackSize: DefaultMaxStackSize,
+		IsBlock:      true,
+		BlockID:      102, // block.Jukebox
+		ToolType:     ToolNone,
+	}
+
+	// ---- music discs (stack to 1) ----
+	registerDisc := func(id ItemID, name string) {
+		properties[id] = ItemProperties{
+			Name:         name,
+			MaxStackSize: 1,
+			ToolType:     ToolNone,
+		}
+	}
+
+	registerDisc(Disc13, "Music Disc 13")
+	registerDisc(DiscCat, "Music Disc Cat")
+	registerDisc(DiscBlocks, "Music Disc Blocks")
+	registerDisc(DiscChirp, "Music Disc Chirp")
+	registerDisc(DiscFar, "Music Disc Far")
 }
 
 // GetProperties returns the static properties for the given item ID.

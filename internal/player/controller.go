@@ -5,6 +5,7 @@ package player
 import (
 	"math"
 
+	"github.com/fanxiyao/gomc/internal/block"
 	"github.com/fanxiyao/gomc/internal/ecs"
 	"github.com/fanxiyao/gomc/internal/entity"
 	"github.com/fanxiyao/gomc/internal/input"
@@ -65,6 +66,7 @@ type Controller struct {
 	Inventory     *inventory.Inventory
 	SelectedSlot  int
 	OnUseBlock    func(blockID uint16, pos mcmath.BlockPos)
+	JukeboxMgr    *block.JukeboxManager
 	Flying        bool
 
 	// interaction holds block interaction state.

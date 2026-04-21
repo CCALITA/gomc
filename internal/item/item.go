@@ -195,3 +195,17 @@ const (
 	BedItem  ItemID = 370
 	SignItem  ItemID = 371
 )
+
+// Jukebox block item.
+const (
+	JukeboxItem ItemID = 380
+)
+
+// Music disc items.
+const (
+	Disc13     ItemID = 500
+	DiscCat    ItemID = 501
+	DiscBlocks ItemID = 502
+	DiscChirp  ItemID = 503
+	DiscFar    ItemID = 504
+)

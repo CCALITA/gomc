@@ -207,6 +207,9 @@ const (
 	OakSign       BlockID = 99
 	OakWallSign   BlockID = 100
 	OakFence      BlockID = 101
+
+	// Jukebox
+	Jukebox BlockID = 102
 )
 
 const cropStageShift = 8
@@ -256,3 +259,6 @@ func WithDoorOpen(id uint16, open bool) uint16 {
 	return id &^ doorOpenBit
 }
 func IsTrapdoorBlock(id uint16) bool { return BaseID(id) == OakTrapdoor }
+
+// IsJukebox reports whether the block is a jukebox.
+func IsJukebox(id uint16) bool { return BaseID(id) == Jukebox }

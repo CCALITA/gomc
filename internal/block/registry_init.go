@@ -129,4 +129,5 @@ var blockOrder = []BlockID{
 	OakSign,
 	OakWallSign,
 	OakFence,
+	Jukebox,
 }
