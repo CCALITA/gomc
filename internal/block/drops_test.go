@@ -3,7 +3,10 @@ package block
 import (
 	"testing"
 
+	"github.com/fanxiyao/gomc/internal/ecs"
+	"github.com/fanxiyao/gomc/internal/entity"
 	"github.com/fanxiyao/gomc/internal/item"
+	"github.com/fanxiyao/gomc/internal/mcmath"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -433,4 +436,53 @@ func TestToolEffectiveness_HigherLevelPickaxeFasterThanLower(t *testing.T) {
 	ironPickaxe := CalculateBreakSpeed(Stone, item.ToolPickaxe, item.LevelIron)
 	assert.Less(t, ironPickaxe, woodPickaxe,
 		"iron pickaxe should break stone faster than wood pickaxe")
+}
+
+// ---------------------------------------------------------------------------
+// SpawnDrops
+// ---------------------------------------------------------------------------
+
+func TestSpawnDrops_StoneSpawnsCobblestoneEntity(t *testing.T) {
+	w := ecs.NewWorld()
+	pos := mcmath.BlockPos{X: 10, Y: 64, Z: 20}
+
+	SpawnDrops(w, pos, Stone, item.ToolPickaxe, item.LevelWood)
+
+	// Verify an item entity was spawned.
+	dropStore := ecs.GetStore[entity.ItemDrop](w)
+	assert.Equal(t, 1, dropStore.Len(), "one item entity should have been spawned")
+
+	dropStore.Each(func(_ ecs.Entity, d *entity.ItemDrop) {
+		assert.Equal(t, item.Cobblestone, d.ItemID)
+		assert.Equal(t, 1, d.Count)
+	})
+
+	// Check position is centred on the block.
+	transformStore := ecs.GetStore[entity.Transform](w)
+	transformStore.Each(func(_ ecs.Entity, tr *entity.Transform) {
+		assert.InDelta(t, 10.5, float64(tr.Position.X), 1e-6)
+		assert.InDelta(t, 64.25, float64(tr.Position.Y), 1e-6)
+		assert.InDelta(t, 20.5, float64(tr.Position.Z), 1e-6)
+	})
+}
+
+func TestSpawnDrops_GlassDropsNothing(t *testing.T) {
+	w := ecs.NewWorld()
+	pos := mcmath.BlockPos{X: 0, Y: 64, Z: 0}
+
+	SpawnDrops(w, pos, Glass, item.ToolNone, item.LevelHand)
+
+	dropStore := ecs.GetStore[entity.ItemDrop](w)
+	assert.Equal(t, 0, dropStore.Len(), "glass should spawn no item entities")
+}
+
+func TestSpawnDrops_SkipsProbabilisticDrops(t *testing.T) {
+	w := ecs.NewWorld()
+	pos := mcmath.BlockPos{X: 0, Y: 64, Z: 0}
+
+	// OakLeaves has a 10% drop chance, so SpawnDrops should skip it.
+	SpawnDrops(w, pos, OakLeaves, item.ToolNone, item.LevelHand)
+
+	dropStore := ecs.GetStore[entity.ItemDrop](w)
+	assert.Equal(t, 0, dropStore.Len(), "probabilistic drops should be skipped")
 }

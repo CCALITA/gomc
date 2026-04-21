@@ -1,7 +1,10 @@
 package block
 
 import (
+	"github.com/fanxiyao/gomc/internal/ecs"
+	"github.com/fanxiyao/gomc/internal/entity"
 	"github.com/fanxiyao/gomc/internal/item"
+	"github.com/fanxiyao/gomc/internal/mcmath"
 )
 
 // Drop represents a single item drop from a broken block.
@@ -36,6 +39,7 @@ var blockToItemID = map[BlockID]item.ItemID{
 	Obsidian:      item.Obsidian,
 	Sandstone:     Sandstone,
 	Bedrock:       item.Bedrock,
+	Bed:           item.BedItem,
 }
 
 // toolCategory maps block IDs to the tool type that is effective
@@ -109,6 +113,10 @@ func GetDrops(blockID uint16, toolType string, toolLevel int) []Drop {
 		return []Drop{{ItemID: OakLeaves, Count: 1, Chance: 0.1}}
 
 	default:
+		// Bed blocks encode state in the upper bits; use the base ID.
+		if IsBed(blockID) {
+			return []Drop{{ItemID: item.BedItem, Count: 1, Chance: 1.0}}
+		}
 		// Default: the block drops its corresponding item.
 		itemID, ok := blockToItemID[blockID]
 		if !ok {
@@ -162,4 +170,26 @@ func CalculateBreakSpeed(blockID uint16, toolType string, toolLevel int) float32
 	}
 
 	return props.Hardness / multiplier
+}
+
+// SpawnDrops evaluates the drops for the given block and spawns item
+// entities at the centre of the block position. toolType and toolLevel
+// describe the tool used to break the block.
+func SpawnDrops(w *ecs.World, pos mcmath.BlockPos, blockID uint16, toolType string, toolLevel int) {
+	drops := GetDrops(blockID, toolType, toolLevel)
+	// Offset to centre of block (+0.5 on X and Z, +0.25 above floor).
+	spawnPos := mcmath.Vec3{
+		X: float32(pos.X) + 0.5,
+		Y: float32(pos.Y) + 0.25,
+		Z: float32(pos.Z) + 0.5,
+	}
+	for _, d := range drops {
+		if d.Chance < 1.0 {
+			// Probabilistic drops are skipped here; caller should roll
+			// the dice and filter before calling SpawnDrops, or use this
+			// for guaranteed drops only.
+			continue
+		}
+		entity.SpawnItemDrop(w, spawnPos, d.ItemID, d.Count)
+	}
 }
