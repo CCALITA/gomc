@@ -37,6 +37,8 @@ type ItemProperties struct {
 	FoodSaturation float64 // saturation points restored when eaten; 0 for non-food
 	ArmorSlot      int     // armor equipment slot (0=helmet, 1=chest, 2=legs, 3=boots); only meaningful when ArmorDefense > 0
 	ArmorDefense   int     // defense points provided by this armor piece; 0 for non-armor
+	IsCompass      bool    // true for compass items that point to spawn
+	IsClock        bool    // true for clock items that show day/night cycle
 }
 
 // IsArmor reports whether the item is an armor piece.
@@ -190,8 +192,65 @@ const (
 	Wheat      ItemID = 251
 )
 
+// Functional items.
+const (
+	Compass      ItemID = 262
+	Clock        ItemID = 263
+	RedstoneItem ItemID = 264
+)
+
 // Furniture items.
 const (
-	BedItem  ItemID = 370
-	SignItem  ItemID = 371
+	BedItem   ItemID = 370
+	SignItem   ItemID = 371
+	AnvilItem  ItemID = 372
+)
+
+// Decoration items.
+const (
+	PaintingItem  ItemID = 380
+	ItemFrameItem ItemID = 381
+)
+
+// Crafting material items.
+const (
+	Leather ItemID = 128
+	Wool    ItemID = 24
+)
+
+// Villager trading items.
+const (
+	Emerald   ItemID = 450
+	Paper     ItemID = 451
+	Bookshelf ItemID = 452
+)
+
+// Fishing items.
+const (
+	FishingRod   ItemID = 460
+	Cod          ItemID = 461
+	Salmon       ItemID = 462
+	CookedCod    ItemID = 463
+	CookedSalmon ItemID = 464
+	StringItem   ItemID = 465
+	Bowl         ItemID = 466
+	Bow          ItemID = 467
+	Book         ItemID = 468
+	Saddle       ItemID = 469
+)
+
+// Brewing item IDs.
+const (
+	WaterBottle      ItemID = iota + 500 // 500
+	AwkwardPotion                        // 501
+	SpeedPotion                          // 502
+	StrengthPotion                       // 503
+	RegenPotion                          // 504
+	PoisonPotion                         // 505
+	NetherWart                           // 506
+	BlazePowder                          // 507
+	SpiderEye                            // 508
+	GhastTear                            // 509
+	Sugar                                // 510
+	BrewingStandItem                     // 511
 )

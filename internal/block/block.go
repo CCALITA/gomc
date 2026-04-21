@@ -207,6 +207,12 @@ const (
 	OakSign       BlockID = 99
 	OakWallSign   BlockID = 100
 	OakFence      BlockID = 101
+	Anvil         BlockID = 110
+	BrewingStand  BlockID = 111
+
+	// Nether blocks (114-115)
+	NetherPortal    BlockID = 114
+	NetherQuartzOre BlockID = 115
 )
 
 const cropStageShift = 8
@@ -256,3 +262,6 @@ func WithDoorOpen(id uint16, open bool) uint16 {
 	return id &^ doorOpenBit
 }
 func IsTrapdoorBlock(id uint16) bool { return BaseID(id) == OakTrapdoor }
+
+// IsNetherPortal reports whether the block is a nether portal.
+func IsNetherPortal(id uint16) bool { return BaseID(id) == NetherPortal }

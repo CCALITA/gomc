@@ -1,11 +1,19 @@
 package item
 
+// Enchantment represents a single enchantment applied to an item.
+type Enchantment struct {
+	ID    string // enchantment identifier (e.g. "sharpness", "efficiency")
+	Level int    // enchantment level (1-5 typically)
+}
+
 // ItemStack represents a quantity of a single item type, optionally with
-// remaining durability for tools.
+// remaining durability for tools, enchantments, and a custom display name.
 type ItemStack struct {
-	ItemID     ItemID
-	Count      int
-	Durability int // current remaining durability; 0 for non-tool items
+	ItemID       ItemID
+	Count        int
+	Durability   int           // current remaining durability; 0 for non-tool items
+	Enchantments []Enchantment // enchantments applied to this item; nil if none
+	CustomName   string        // custom display name set by anvil; empty if unset
 }
 
 // NewItemStack creates an ItemStack for the given item and count.

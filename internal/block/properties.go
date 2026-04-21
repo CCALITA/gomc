@@ -475,6 +475,26 @@ var properties = map[BlockID]BlockProperties{
 		Hardness: 2, BlastResistance: 3,
 		LightEmission: 0, LightFilter: 0,
 	},
+	BrewingStand: {
+		Name: "brewing_stand", Solid: true, Transparent: true,
+		Hardness: 0.5, BlastResistance: 0.5,
+		LightEmission: 1, LightFilter: 0,
+	},
+	NetherPortal: {
+		Name: "nether_portal", Solid: false, Transparent: true,
+		Hardness: -1, BlastResistance: 0,
+		LightEmission: 11, LightFilter: 0,
+	},
+	NetherQuartzOre: {
+		Name: "nether_quartz_ore", Solid: true, Transparent: false,
+		Hardness: 3, BlastResistance: 3,
+		LightEmission: 0, LightFilter: 15,
+	},
+	Anvil: {
+		Name: "anvil", Solid: true, Transparent: false,
+		Hardness: 5, BlastResistance: 1200,
+		LightEmission: 0, LightFilter: 15,
+	},
 }
 
 // GetProperties returns the BlockProperties for the given block ID.

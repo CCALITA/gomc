@@ -202,6 +202,66 @@ func registerRecipes() {
 	registerBlockDecomposition(item.IronBlock, item.IronIngot)
 	registerBlockDecomposition(item.GoldBlock, item.GoldIngot)
 	registerBlockDecomposition(item.DiamondBlock, item.Diamond)
+
+	// -- Compass: 4 Iron Ingots + 1 Redstone (plus pattern)
+	RegisterRecipe(Recipe{
+		Pattern: [3][3]uint16{
+			{0, item.IronIngot, 0},
+			{item.IronIngot, item.RedstoneItem, item.IronIngot},
+			{0, item.IronIngot, 0},
+		},
+		Result: item.NewItemStack(item.Compass, 1),
+	})
+
+	// -- Clock: 4 Gold Ingots + 1 Redstone (plus pattern)
+	RegisterRecipe(Recipe{
+		Pattern: [3][3]uint16{
+			{0, item.GoldIngot, 0},
+			{item.GoldIngot, item.RedstoneItem, item.GoldIngot},
+			{0, item.GoldIngot, 0},
+		},
+		Result: item.NewItemStack(item.Clock, 1),
+	})
+
+	// -- Painting: 8 Sticks + 1 Wool center
+	RegisterRecipe(Recipe{
+		Pattern: [3][3]uint16{
+			{item.Stick, item.Stick, item.Stick},
+			{item.Stick, item.Wool, item.Stick},
+			{item.Stick, item.Stick, item.Stick},
+		},
+		Result: item.NewItemStack(item.PaintingItem, 1),
+	})
+
+	// -- Item Frame: 8 Sticks + 1 Leather center
+	RegisterRecipe(Recipe{
+		Pattern: [3][3]uint16{
+			{item.Stick, item.Stick, item.Stick},
+			{item.Stick, item.Leather, item.Stick},
+			{item.Stick, item.Stick, item.Stick},
+		},
+		Result: item.NewItemStack(item.ItemFrameItem, 1),
+	})
+
+	// -- Anvil: 3 IronBlock on top + 4 IronIngot (T-shape)
+	RegisterRecipe(Recipe{
+		Pattern: [3][3]uint16{
+			{item.IronBlock, item.IronBlock, item.IronBlock},
+			{0, item.IronIngot, 0},
+			{item.IronIngot, item.IronIngot, item.IronIngot},
+		},
+		Result: item.NewItemStack(item.AnvilItem, 1),
+	})
+
+	// -- Fishing Rod: 3 Sticks diagonal + 2 String
+	RegisterRecipe(Recipe{
+		Pattern: [3][3]uint16{
+			{0, 0, item.Stick},
+			{0, item.Stick, item.StringItem},
+			{item.Stick, 0, item.StringItem},
+		},
+		Result: item.NewItemStack(item.FishingRod, 1),
+	})
 }
 
 // registerPickaxe registers a pickaxe recipe: 3 material on top, 2 sticks vertical center.

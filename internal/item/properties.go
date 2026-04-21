@@ -43,6 +43,7 @@ func init() {
 	registerBlock(TNT, "TNT", TNT)
 	registerBlock(Obsidian, "Obsidian", Obsidian)
 	registerBlock(Torch, "Torch", Torch)
+	registerBlock(Wool, "Wool", Wool)
 
 	// ---- tools ----
 	registerTool := func(id ItemID, name, toolType string, level, durability int) {
@@ -99,6 +100,34 @@ func init() {
 	registerMaterial(IronIngot, "Iron Ingot")
 	registerMaterial(GoldIngot, "Gold Ingot")
 	registerMaterial(Diamond, "Diamond")
+	registerMaterial(Leather, "Leather")
+	registerMaterial(RedstoneItem, "Redstone")
+
+	// ---- functional items ----
+	properties[Compass] = ItemProperties{
+		Name:         "Compass",
+		MaxStackSize: DefaultMaxStackSize,
+		ToolType:     ToolNone,
+		IsCompass:    true,
+	}
+	properties[Clock] = ItemProperties{
+		Name:         "Clock",
+		MaxStackSize: DefaultMaxStackSize,
+		ToolType:     ToolNone,
+		IsClock:      true,
+	}
+
+	// ---- decoration items ----
+	properties[PaintingItem] = ItemProperties{
+		Name:         "Painting",
+		MaxStackSize: DefaultMaxStackSize,
+		ToolType:     ToolNone,
+	}
+	properties[ItemFrameItem] = ItemProperties{
+		Name:         "Item Frame",
+		MaxStackSize: DefaultMaxStackSize,
+		ToolType:     ToolNone,
+	}
 
 	// ---- shears ----
 	properties[Shears] = ItemProperties{
@@ -116,6 +145,7 @@ func init() {
 	registerBlock(IronBlock, "Iron Block", IronBlock)
 	registerBlock(GoldBlock, "Gold Block", GoldBlock)
 	registerBlock(DiamondBlock, "Diamond Block", DiamondBlock)
+	registerBlock(AnvilItem, "Anvil", AnvilItem)
 
 	// ---- boat (non-block, non-tool) ----
 	properties[Boat] = ItemProperties{
@@ -196,6 +226,52 @@ func init() {
 	registerArmor(DiamondChestplate, "Diamond Chestplate", 1, 8, 528)
 	registerArmor(DiamondLeggings, "Diamond Leggings", 2, 6, 495)
 	registerArmor(DiamondBoots, "Diamond Boots", 3, 3, 429)
+
+	// ---- villager trading materials ----
+	registerMaterial(Emerald, "Emerald")
+	registerMaterial(Paper, "Paper")
+	registerMaterial(Wheat, "Wheat")
+	registerBlock(Bookshelf, "Bookshelf", Bookshelf)
+
+	// ---- brewing items ----
+	registerMaterial(WaterBottle, "Water Bottle")
+	registerMaterial(AwkwardPotion, "Awkward Potion")
+	registerMaterial(SpeedPotion, "Speed Potion")
+	registerMaterial(StrengthPotion, "Strength Potion")
+	registerMaterial(RegenPotion, "Regen Potion")
+	registerMaterial(PoisonPotion, "Poison Potion")
+	registerMaterial(NetherWart, "Nether Wart")
+	registerMaterial(BlazePowder, "Blaze Powder")
+	registerMaterial(SpiderEye, "Spider Eye")
+	registerMaterial(GhastTear, "Ghast Tear")
+	registerMaterial(Sugar, "Sugar")
+	registerBlock(BrewingStandItem, "Brewing Stand", BrewingStandItem)
+
+	// ---- fishing items ----
+	properties[FishingRod] = ItemProperties{
+		Name:         "Fishing Rod",
+		MaxStackSize: 1,
+		Durability:   64,
+		ToolType:     ToolNone,
+	}
+	registerFood(Cod, "Cod", 2, 0.4)
+	registerFood(Salmon, "Salmon", 2, 0.4)
+	registerFood(CookedCod, "Cooked Cod", 5, 6.0)
+	registerFood(CookedSalmon, "Cooked Salmon", 6, 9.6)
+	registerMaterial(StringItem, "String")
+	registerMaterial(Bowl, "Bowl")
+	properties[Bow] = ItemProperties{
+		Name:         "Bow",
+		MaxStackSize: 1,
+		Durability:   384,
+		ToolType:     ToolNone,
+	}
+	registerMaterial(Book, "Book")
+	properties[Saddle] = ItemProperties{
+		Name:         "Saddle",
+		MaxStackSize: 1,
+		ToolType:     ToolNone,
+	}
 }
 
 // GetProperties returns the static properties for the given item ID.
