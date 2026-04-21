@@ -348,3 +348,15 @@ func registerBlockDecomposition(block, material uint16) {
 		Shapeless: true,
 	})
 }
+
+// registerPlusPattern registers a plus-shaped recipe: 4 outer + 1 center -> 1 result.
+func registerPlusPattern(outer, center, result uint16) {
+	RegisterRecipe(Recipe{
+		Pattern: [3][3]uint16{
+			{0, outer, 0},
+			{outer, center, outer},
+			{0, outer, 0},
+		},
+		Result: item.NewItemStack(result, 1),
+	})
+}
