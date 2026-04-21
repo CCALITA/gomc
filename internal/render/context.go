@@ -70,11 +70,15 @@ func (ctx *VulkanContext) Init(window *glfw.Window) error {
 
 	extensions := window.GetRequiredInstanceExtensions()
 
+	// macOS MoltenVK requires the portability enumeration extension.
+	extensions = append(extensions, "VK_KHR_portability_enumeration\x00")
+
 	createInfo := &vk.InstanceCreateInfo{
 		SType:                   vk.StructureTypeInstanceCreateInfo,
 		PApplicationInfo:        appInfo,
 		EnabledExtensionCount:   uint32(len(extensions)),
 		PpEnabledExtensionNames: extensions,
+		Flags:                   0x00000001, // VK_INSTANCE_CREATE_ENUMERATE_PORTABILITY_BIT_KHR
 	}
 
 	if debugMode {
@@ -257,7 +261,7 @@ func checkDeviceExtensionSupport(device vk.PhysicalDevice) bool {
 
 	requiredSet := make(map[string]bool)
 	for _, ext := range deviceExtensions {
-		requiredSet[ext] = true
+		requiredSet[vk.ToString([]byte(ext))] = true
 	}
 
 	for _, ext := range available {

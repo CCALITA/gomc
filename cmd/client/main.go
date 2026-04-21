@@ -2,10 +2,15 @@ package main
 
 import (
 	"log"
+	"runtime"
 
 	"github.com/fanxiyao/gomc/internal/config"
 	"github.com/fanxiyao/gomc/internal/game"
 )
+
+func init() {
+	runtime.LockOSThread()
+}
 
 func main() {
 	cfg, err := config.Load("config.json")
