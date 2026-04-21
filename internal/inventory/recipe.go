@@ -204,24 +204,10 @@ func registerRecipes() {
 	registerBlockDecomposition(item.DiamondBlock, item.Diamond)
 
 	// -- Compass: 4 Iron Ingots + 1 Redstone (plus pattern)
-	RegisterRecipe(Recipe{
-		Pattern: [3][3]uint16{
-			{0, item.IronIngot, 0},
-			{item.IronIngot, item.RedstoneItem, item.IronIngot},
-			{0, item.IronIngot, 0},
-		},
-		Result: item.NewItemStack(item.Compass, 1),
-	})
+	registerPlusPattern(item.IronIngot, item.RedstoneItem, item.Compass)
 
 	// -- Clock: 4 Gold Ingots + 1 Redstone (plus pattern)
-	RegisterRecipe(Recipe{
-		Pattern: [3][3]uint16{
-			{0, item.GoldIngot, 0},
-			{item.GoldIngot, item.RedstoneItem, item.GoldIngot},
-			{0, item.GoldIngot, 0},
-		},
-		Result: item.NewItemStack(item.Clock, 1),
-	})
+	registerPlusPattern(item.GoldIngot, item.RedstoneItem, item.Clock)
 
 	// -- Painting: 8 Sticks + 1 Wool center
 	RegisterRecipe(Recipe{
@@ -346,5 +332,17 @@ func registerBlockDecomposition(block, material uint16) {
 		},
 		Result:    item.NewItemStack(material, 9),
 		Shapeless: true,
+	})
+}
+
+// registerPlusPattern registers a plus-shaped recipe: 4 outer + 1 center -> 1 result.
+func registerPlusPattern(outer, center, result uint16) {
+	RegisterRecipe(Recipe{
+		Pattern: [3][3]uint16{
+			{0, outer, 0},
+			{outer, center, outer},
+			{0, outer, 0},
+		},
+		Result: item.NewItemStack(result, 1),
 	})
 }

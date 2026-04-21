@@ -19,6 +19,8 @@ type World struct {
 	generator *TerrainGenerator
 	ticker    *tick.Ticker
 	Signs     *SignManager
+	Dimension DimensionID
+	netherGen *NetherTerrainGenerator
 
 	// OnBlockChange is called after a block is set, with the chunk position
 	// of the modified block. It can be used to trigger mesh rebuilds.
