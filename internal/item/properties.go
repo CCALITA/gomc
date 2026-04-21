@@ -196,6 +196,13 @@ func init() {
 	registerArmor(DiamondChestplate, "Diamond Chestplate", 1, 8, 528)
 	registerArmor(DiamondLeggings, "Diamond Leggings", 2, 6, 495)
 	registerArmor(DiamondBoots, "Diamond Boots", 3, 3, 429)
+
+	// ---- redstone and piston items ----
+	registerMaterial(RedstoneDust, "Redstone Dust")
+	registerMaterial(Slimeball, "Slimeball")
+
+	registerBlock(PistonItem, "Piston", PistonItem)
+	registerBlock(StickyPistonItem, "Sticky Piston", StickyPistonItem)
 }
 
 // GetProperties returns the static properties for the given item ID.

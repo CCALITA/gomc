@@ -129,4 +129,7 @@ var blockOrder = []BlockID{
 	OakSign,
 	OakWallSign,
 	OakFence,
+	Piston,
+	StickyPiston,
+	PistonHead,
 }

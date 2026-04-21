@@ -475,6 +475,21 @@ var properties = map[BlockID]BlockProperties{
 		Hardness: 2, BlastResistance: 3,
 		LightEmission: 0, LightFilter: 0,
 	},
+	Piston: {
+		Name: "piston", Solid: true, Transparent: false,
+		Hardness: 1.5, BlastResistance: 1.5,
+		LightEmission: 0, LightFilter: 15,
+	},
+	StickyPiston: {
+		Name: "sticky_piston", Solid: true, Transparent: false,
+		Hardness: 1.5, BlastResistance: 1.5,
+		LightEmission: 0, LightFilter: 15,
+	},
+	PistonHead: {
+		Name: "piston_head", Solid: true, Transparent: false,
+		Hardness: 1.5, BlastResistance: 1.5,
+		LightEmission: 0, LightFilter: 15,
+	},
 }
 
 // GetProperties returns the BlockProperties for the given block ID.
@@ -488,7 +503,7 @@ func GetProperties(id BlockID) BlockProperties {
 	// Fall back to base ID only for block types that encode state in upper bits.
 	base := BaseID(id)
 	switch base {
-	case FlowingWater, FlowingLava, OakDoor, IronDoor, OakTrapdoor:
+	case FlowingWater, FlowingLava, OakDoor, IronDoor, OakTrapdoor, Piston, StickyPiston:
 		return properties[base]
 	}
 	return BlockProperties{}

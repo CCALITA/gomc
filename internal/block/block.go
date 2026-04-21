@@ -207,6 +207,11 @@ const (
 	OakSign       BlockID = 99
 	OakWallSign   BlockID = 100
 	OakFence      BlockID = 101
+
+	// Piston blocks
+	Piston       BlockID = 102
+	StickyPiston BlockID = 103
+	PistonHead   BlockID = 104
 )
 
 const cropStageShift = 8
@@ -256,3 +261,37 @@ func WithDoorOpen(id uint16, open bool) uint16 {
 	return id &^ doorOpenBit
 }
 func IsTrapdoorBlock(id uint16) bool { return BaseID(id) == OakTrapdoor }
+
+// IsPiston reports whether the block is a piston or sticky piston.
+func IsPiston(id uint16) bool {
+	base := BaseID(id)
+	return base == Piston || base == StickyPiston
+}
+
+// IsPistonHead reports whether the block is a piston head.
+func IsPistonHead(id uint16) bool {
+	return BaseID(id) == PistonHead
+}
+
+// IsImmovable reports whether the block cannot be pushed by a piston.
+func IsImmovable(id uint16) bool {
+	base := BaseID(id)
+	return base == Obsidian || base == Bedrock || base == PistonHead ||
+		(IsPiston(base) && IsPistonExtended(id))
+}
+
+// pistonExtendedBit is the bit used to encode extended state in the upper bits.
+const pistonExtendedBit uint16 = 1 << 12
+
+// IsPistonExtended reports whether a piston block ID has the extended bit set.
+func IsPistonExtended(id uint16) bool {
+	return id&pistonExtendedBit != 0
+}
+
+// WithPistonExtended returns a piston block ID with the extended bit set or cleared.
+func WithPistonExtended(id uint16, extended bool) uint16 {
+	if extended {
+		return id | pistonExtendedBit
+	}
+	return id &^ pistonExtendedBit
+}

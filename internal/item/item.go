@@ -195,3 +195,11 @@ const (
 	BedItem  ItemID = 370
 	SignItem  ItemID = 371
 )
+
+// Redstone and piston items.
+const (
+	RedstoneDust ItemID = 380
+	Slimeball    ItemID = 381
+	PistonItem       ItemID = 382
+	StickyPistonItem ItemID = 383
+)

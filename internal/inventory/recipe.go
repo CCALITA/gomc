@@ -202,6 +202,26 @@ func registerRecipes() {
 	registerBlockDecomposition(item.IronBlock, item.IronIngot)
 	registerBlockDecomposition(item.GoldBlock, item.GoldIngot)
 	registerBlockDecomposition(item.DiamondBlock, item.Diamond)
+
+	// -- Piston: 3 planks + 4 cobble + 1 iron + 1 redstone
+	RegisterRecipe(Recipe{
+		Pattern: [3][3]uint16{
+			{item.OakPlanks, item.OakPlanks, item.OakPlanks},
+			{item.Cobblestone, item.IronIngot, item.Cobblestone},
+			{item.Cobblestone, item.RedstoneDust, item.Cobblestone},
+		},
+		Result: item.NewItemStack(item.PistonItem, 1),
+	})
+
+	// -- Sticky Piston: 1 slimeball + 1 piston (shapeless)
+	RegisterRecipe(Recipe{
+		Pattern: [3][3]uint16{
+			{item.Slimeball, 0, 0},
+			{item.PistonItem, 0, 0},
+			{0, 0, 0},
+		},
+		Result: item.NewItemStack(item.StickyPistonItem, 1),
+	})
 }
 
 // registerPickaxe registers a pickaxe recipe: 3 material on top, 2 sticks vertical center.
