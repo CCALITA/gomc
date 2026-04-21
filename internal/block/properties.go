@@ -475,6 +475,30 @@ var properties = map[BlockID]BlockProperties{
 		Hardness: 2, BlastResistance: 3,
 		LightEmission: 0, LightFilter: 0,
 	},
+
+	// Reserved blocks
+	Reserved102: {Name: "reserved_102"},
+	Reserved103: {Name: "reserved_103"},
+	Reserved104: {Name: "reserved_104"},
+	Reserved105: {Name: "reserved_105"},
+	Reserved106: {Name: "reserved_106"},
+	Reserved107: {Name: "reserved_107"},
+	Reserved108: {Name: "reserved_108"},
+	Reserved109: {Name: "reserved_109"},
+	Reserved110: {Name: "reserved_110"},
+	Reserved111: {Name: "reserved_111"},
+
+	// Rail variants
+	PoweredRail: {
+		Name: "powered_rail", Solid: false, Transparent: true,
+		Hardness: 0.7, BlastResistance: 0.7,
+		LightEmission: 0, LightFilter: 0,
+	},
+	DetectorRail: {
+		Name: "detector_rail", Solid: false, Transparent: true,
+		Hardness: 0.7, BlastResistance: 0.7,
+		LightEmission: 0, LightFilter: 0,
+	},
 }
 
 // GetProperties returns the BlockProperties for the given block ID.

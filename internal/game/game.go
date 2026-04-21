@@ -147,6 +147,14 @@ func (g *Game) setupSystems() {
 	g.Scheduler.Add(&entity.DamageSystem{})
 	g.Scheduler.Add(&entity.HealthSystem{})
 	g.Scheduler.Add(&entity.HungerSystem{})
+	g.Scheduler.Add(&entity.MinecartSystem{
+		GetBlock: func(x, y, z int32) uint16 {
+			if g.World == nil {
+				return 0
+			}
+			return g.World.GetBlock(mcmath.BlockPos{X: x, Y: y, Z: z})
+		},
+	})
 }
 
 func (g *Game) setupUI() {

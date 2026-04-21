@@ -60,6 +60,12 @@ var endermanBBox = mcmath.AABB{
 	Max: mcmath.Vec3{X: 0.3, Y: 2.9, Z: 0.3},
 }
 
+// minecartBBox is the bounding box for a minecart (0.98 wide, 0.7 tall).
+var minecartBBox = mcmath.AABB{
+	Min: mcmath.Vec3{X: -0.49, Y: 0, Z: -0.49},
+	Max: mcmath.Vec3{X: 0.49, Y: 0.7, Z: 0.49},
+}
+
 // SpawnPlayer creates a fully configured player entity.
 func SpawnPlayer(w *ecs.World, name string, pos mcmath.Vec3) ecs.Entity {
 	e := w.NewEntity()
@@ -237,6 +243,25 @@ func SpawnItem(w *ecs.World, itemID uint16, pos mcmath.Vec3, velocity mcmath.Vec
 		}(),
 	})
 	ecs.GetStore[Lifetime](w).Set(e, Lifetime{Remaining: 300})
+
+	return e
+}
+
+// SpawnMinecart creates a minecart entity at the given position.
+func SpawnMinecart(w *ecs.World, pos mcmath.Vec3) ecs.Entity {
+	e := w.NewEntity()
+
+	ecs.GetStore[Transform](w).Set(e, Transform{Position: pos})
+
+	body := physics.NewBody(minecartBBox)
+	body.Position = pos
+	ecs.GetStore[PhysicsBody](w).Set(e, PhysicsBody{Body: &body})
+
+	ecs.GetStore[Health](w).Set(e, Health{Current: 6, Max: 6})
+	ecs.GetStore[EntityTypeComp](w).Set(e, EntityTypeComp{Type: TypeMinecart})
+	ecs.GetStore[MinecartData](w).Set(e, MinecartData{
+		Direction: mcmath.North,
+	})
 
 	return e
 }

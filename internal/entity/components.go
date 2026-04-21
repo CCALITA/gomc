@@ -32,6 +32,8 @@ const (
 	TypeSpider uint8 = 11
 	// TypeEnderman identifies an enderman hostile mob.
 	TypeEnderman uint8 = 12
+	// TypeMinecart identifies a minecart entity.
+	TypeMinecart uint8 = 15
 )
 
 // AI state constants define the mob behaviour state machine states.
@@ -107,6 +109,14 @@ type Lifetime struct {
 type Damage struct {
 	Amount    float32
 	Knockback mcmath.Vec3
+}
+
+// MinecartData holds minecart-specific state for rail riding.
+type MinecartData struct {
+	OnRail    bool
+	Speed     float32
+	Direction mcmath.Direction
+	Rider     ecs.Entity
 }
 
 // KnockbackFromTo computes a knockback vector directed horizontally from

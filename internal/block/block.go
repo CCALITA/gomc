@@ -207,6 +207,22 @@ const (
 	OakSign       BlockID = 99
 	OakWallSign   BlockID = 100
 	OakFence      BlockID = 101
+
+	// Reserved block IDs (102-111) for future use.
+	Reserved102 BlockID = 102
+	Reserved103 BlockID = 103
+	Reserved104 BlockID = 104
+	Reserved105 BlockID = 105
+	Reserved106 BlockID = 106
+	Reserved107 BlockID = 107
+	Reserved108 BlockID = 108
+	Reserved109 BlockID = 109
+	Reserved110 BlockID = 110
+	Reserved111 BlockID = 111
+
+	// Rail variants (112-113)
+	PoweredRail   BlockID = 112
+	DetectorRail  BlockID = 113
 )
 
 const cropStageShift = 8
@@ -256,3 +272,14 @@ func WithDoorOpen(id uint16, open bool) uint16 {
 	return id &^ doorOpenBit
 }
 func IsTrapdoorBlock(id uint16) bool { return BaseID(id) == OakTrapdoor }
+
+// IsRail reports whether the block is any rail type.
+func IsRail(id uint16) bool {
+	base := BaseID(id)
+	return base == Rail || base == PoweredRail || base == DetectorRail
+}
+
+// IsPoweredRail reports whether the block is a powered rail.
+func IsPoweredRail(id uint16) bool {
+	return BaseID(id) == PoweredRail
+}
