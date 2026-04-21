@@ -216,8 +216,44 @@ func SpawnEnderman(w *ecs.World, pos mcmath.Vec3) ecs.Entity {
 	return e
 }
 
-// SpawnItem creates a dropped item entity with a velocity and a limited
-// lifetime of 300 seconds (5 minutes).
+// SpawnFishingBobber creates a fishing bobber entity with the given position
+// and velocity. The bobber has a 60-second lifetime.
+func SpawnFishingBobber(w *ecs.World, pos, velocity mcmath.Vec3) ecs.Entity {
+	e := w.NewEntity()
+
+	ecs.GetStore[Transform](w).Set(e, Transform{Position: pos})
+
+	body := physics.NewBody(itemBBox)
+	body.Position = pos
+	body.Velocity = velocity
+	ecs.GetStore[PhysicsBody](w).Set(e, PhysicsBody{Body: &body})
+
+	ecs.GetStore[EntityTypeComp](w).Set(e, EntityTypeComp{Type: TypeFishingBobber})
+	ecs.GetStore[Lifetime](w).Set(e, Lifetime{Remaining: 60})
+
+	return e
+}
+
+// SpawnVillager creates a villager passive mob entity with the given profession.
+func SpawnVillager(w *ecs.World, pos mcmath.Vec3, prof Profession) ecs.Entity {
+	e := w.NewEntity()
+
+	ecs.GetStore[Transform](w).Set(e, Transform{Position: pos})
+
+	body := physics.NewBody(mobBBox)
+	body.Position = pos
+	ecs.GetStore[PhysicsBody](w).Set(e, PhysicsBody{Body: &body})
+
+	ecs.GetStore[Health](w).Set(e, Health{Current: 20, Max: 20})
+	ecs.GetStore[EntityTypeComp](w).Set(e, EntityTypeComp{Type: TypeVillager})
+	ecs.GetStore[AI](w).Set(e, AI{State: AIIdle, Passive: true})
+	ecs.GetStore[VillagerData](w).Set(e, VillagerData{
+		Prof:   prof,
+		Trades: DefaultTrades(prof),
+	})
+
+	return e
+}
 func SpawnItem(w *ecs.World, itemID uint16, pos mcmath.Vec3, velocity mcmath.Vec3) ecs.Entity {
 	e := w.NewEntity()
 

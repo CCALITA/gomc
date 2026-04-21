@@ -32,6 +32,14 @@ const (
 	TypeSpider uint8 = 11
 	// TypeEnderman identifies an enderman hostile mob.
 	TypeEnderman uint8 = 12
+	// TypeVillager identifies a villager passive mob.
+	TypeVillager uint8 = 13
+	// TypeFishingBobber identifies a fishing bobber projectile.
+	TypeFishingBobber uint8 = 14
+	// TypePainting identifies a wall painting decoration entity.
+	TypePainting uint8 = 17
+	// TypeItemFrame identifies an item frame decoration entity.
+	TypeItemFrame uint8 = 18
 )
 
 // AI state constants define the mob behaviour state machine states.
