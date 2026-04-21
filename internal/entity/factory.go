@@ -216,6 +216,26 @@ func SpawnEnderman(w *ecs.World, pos mcmath.Vec3) ecs.Entity {
 	return e
 }
 
+// SpawnBoat creates a boat vehicle entity at the given position.
+func SpawnBoat(w *ecs.World, pos mcmath.Vec3) ecs.Entity {
+	e := w.NewEntity()
+
+	ecs.GetStore[Transform](w).Set(e, Transform{Position: pos})
+
+	body := physics.NewBody(boatBBox)
+	body.Position = pos
+	ecs.GetStore[PhysicsBody](w).Set(e, PhysicsBody{Body: &body})
+
+	ecs.GetStore[Health](w).Set(e, Health{Current: boatHealth, Max: boatHealth})
+	ecs.GetStore[EntityTypeComp](w).Set(e, EntityTypeComp{Type: TypeBoat})
+	ecs.GetStore[BoatData](w).Set(e, BoatData{
+		WaterSpeed: boatWaterSpeed,
+		LandSpeed:  boatLandSpeed,
+	})
+
+	return e
+}
+
 // SpawnItem creates a dropped item entity with a velocity and a limited
 // lifetime of 300 seconds (5 minutes).
 func SpawnItem(w *ecs.World, itemID uint16, pos mcmath.Vec3, velocity mcmath.Vec3) ecs.Entity {
