@@ -32,6 +32,8 @@ const (
 	TypeSpider uint8 = 11
 	// TypeEnderman identifies an enderman hostile mob.
 	TypeEnderman uint8 = 12
+	// TypeBoat identifies a boat vehicle entity.
+	TypeBoat uint8 = 16
 )
 
 // AI state constants define the mob behaviour state machine states.
