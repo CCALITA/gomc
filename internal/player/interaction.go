@@ -97,6 +97,32 @@ func (c *Controller) updatePlacement(inp *input.Manager, w BlockWorld) {
 	}
 
 	targetBlockID := w.GetBlock(pos)
+	targetBase := block.BaseID(targetBlockID)
+
+	// Lever: toggle power state on right-click.
+	if targetBase == block.Lever {
+		if block.RedstonePowerLevel(targetBlockID) > 0 {
+			w.SetBlock(pos, block.Lever) // power 0
+		} else {
+			w.SetBlock(pos, block.WithRedstonePower(block.Lever, block.MaxRedstonePower))
+		}
+		if c.OnUseBlock != nil {
+			c.OnUseBlock(targetBlockID, pos)
+		}
+		return
+	}
+
+	// Stone button: activate for 20 ticks on right-click (deactivation via scheduled tick).
+	if targetBase == block.StoneButton {
+		if block.RedstonePowerLevel(targetBlockID) == 0 {
+			w.SetBlock(pos, block.WithRedstonePower(block.StoneButton, block.MaxRedstonePower))
+			if c.OnUseBlock != nil {
+				c.OnUseBlock(targetBlockID, pos)
+			}
+		}
+		return
+	}
+
 	if targetBlockID == block.CraftingTable || targetBlockID == block.Furnace || targetBlockID == block.Chest {
 		if c.OnUseBlock != nil {
 			c.OnUseBlock(targetBlockID, pos)

@@ -11,9 +11,9 @@ import (
 // ---------------------------------------------------------------------------
 
 func TestDoorBlockIDs(t *testing.T) {
-	assert.Equal(t, BlockID(81), OakDoor)
-	assert.Equal(t, BlockID(82), IronDoor)
-	assert.Equal(t, BlockID(83), OakTrapdoor)
+	assert.Equal(t, BlockID(93), OakDoor)
+	assert.Equal(t, BlockID(94), IronDoor)
+	assert.Equal(t, BlockID(95), OakTrapdoor)
 }
 
 func TestDoorProperties(t *testing.T) {

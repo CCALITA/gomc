@@ -207,6 +207,12 @@ const (
 	OakSign       BlockID = 99
 	OakWallSign   BlockID = 100
 	OakFence      BlockID = 101
+
+	// Redstone blocks (103-106)
+	RedstoneWire  BlockID = 103
+	RedstoneTorch BlockID = 104
+	Lever         BlockID = 105
+	StoneButton   BlockID = 106
 )
 
 const cropStageShift = 8
@@ -249,10 +255,65 @@ func IsSign(id uint16) bool {
 	return base == OakSign || base == OakWallSign
 }
 
-const doorOpenBit uint16 = 1 << fluidLevelShift
+const doorOpenBit uint16 = 1 << 10
 
 func WithDoorOpen(id uint16, open bool) uint16 {
 	if open { return id | doorOpenBit }
 	return id &^ doorOpenBit
 }
 func IsTrapdoorBlock(id uint16) bool { return BaseID(id) == OakTrapdoor }
+
+// --- Redstone power encoding ---
+// Redstone power level (0-15) is encoded in bits 8-11 of the block ID,
+// reusing the same upper-bit pattern as fluids and crops.
+
+const redstonePowerShift = 8
+const redstonePowerMask = 0x0F
+
+// MaxRedstonePower is the maximum redstone signal strength.
+const MaxRedstonePower = 15
+
+// RedstonePowerLevel extracts the redstone power level (0-15) from a block ID.
+func RedstonePowerLevel(id uint16) int {
+	if !IsRedstone(id) {
+		return 0
+	}
+	return int((id >> redstonePowerShift) & redstonePowerMask)
+}
+
+// WithRedstonePower returns a new block ID with the given power level (0-15) encoded.
+func WithRedstonePower(id uint16, level int) uint16 {
+	if level < 0 {
+		level = 0
+	}
+	if level > MaxRedstonePower {
+		level = MaxRedstonePower
+	}
+	base := BaseID(id)
+	return base | (uint16(level) << redstonePowerShift)
+}
+
+// IsRedstone reports whether the block is a redstone component.
+func IsRedstone(id uint16) bool {
+	base := BaseID(id)
+	return base == RedstoneWire || base == RedstoneTorch || base == Lever || base == StoneButton
+}
+
+// IsRedstoneWire reports whether the block is redstone wire.
+func IsRedstoneWire(id uint16) bool {
+	return BaseID(id) == RedstoneWire
+}
+
+// IsPowerSource reports whether the block is actively emitting redstone power.
+// Levers and buttons are sources only when powered (level > 0).
+// Redstone torches are always power sources (they emit 15 by default).
+func IsPowerSource(id uint16) bool {
+	base := BaseID(id)
+	switch base {
+	case RedstoneTorch:
+		return true
+	case Lever, StoneButton:
+		return RedstonePowerLevel(id) > 0
+	}
+	return false
+}

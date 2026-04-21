@@ -55,6 +55,7 @@ func RegisterDefaults(r *HandlerRegistry) {
 	r.Register(block.Dirt, grassSpreadHandler)
 	r.Register(block.OakLeaves, leafDecayHandler)
 	RegisterCropHandlers(r)
+	RegisterRedstoneHandlers(r)
 }
 
 // grassSpreadHandler converts a dirt block to grass if an adjacent block is

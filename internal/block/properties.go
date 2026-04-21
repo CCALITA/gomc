@@ -475,6 +475,26 @@ var properties = map[BlockID]BlockProperties{
 		Hardness: 2, BlastResistance: 3,
 		LightEmission: 0, LightFilter: 0,
 	},
+	RedstoneWire: {
+		Name: "redstone_wire", Solid: false, Transparent: true,
+		Hardness: 0, BlastResistance: 0,
+		LightEmission: 0, LightFilter: 0,
+	},
+	RedstoneTorch: {
+		Name: "redstone_torch", Solid: false, Transparent: true,
+		Hardness: 0, BlastResistance: 0,
+		LightEmission: 7, LightFilter: 0,
+	},
+	Lever: {
+		Name: "lever", Solid: false, Transparent: true,
+		Hardness: 0.5, BlastResistance: 0.5,
+		LightEmission: 0, LightFilter: 0,
+	},
+	StoneButton: {
+		Name: "stone_button", Solid: false, Transparent: true,
+		Hardness: 0.5, BlastResistance: 0.5,
+		LightEmission: 0, LightFilter: 0,
+	},
 }
 
 // GetProperties returns the BlockProperties for the given block ID.
@@ -488,7 +508,8 @@ func GetProperties(id BlockID) BlockProperties {
 	// Fall back to base ID only for block types that encode state in upper bits.
 	base := BaseID(id)
 	switch base {
-	case FlowingWater, FlowingLava, OakDoor, IronDoor, OakTrapdoor:
+	case FlowingWater, FlowingLava, OakDoor, IronDoor, OakTrapdoor,
+		RedstoneWire, RedstoneTorch, Lever, StoneButton:
 		return properties[base]
 	}
 	return BlockProperties{}
