@@ -69,6 +69,12 @@ type HUD struct {
 
 	// FacingDirection is the cardinal direction computed from PlayerYaw.
 	FacingDirection string
+
+	// SpawnX and SpawnZ hold the world spawn point (for compass display).
+	SpawnX, SpawnZ float32
+
+	// GameTick is the current game tick (for clock display).
+	GameTick int64
 }
 
 // NewHUD creates a HUD bound to the given hotbar inventory.
@@ -110,6 +116,7 @@ func (h *HUD) Draw(r *UIRenderer) {
 	h.drawHotbar(r)
 	h.drawHealthBar(r)
 	h.drawHungerBar(r)
+	h.drawFunctionalItemOverlay(r)
 	if h.ShowFPS {
 		h.drawDebugOverlay(r)
 	}
@@ -345,4 +352,45 @@ func (h *HUD) GetSelectedItem() item.ItemStack {
 		return item.ItemStack{}
 	}
 	return h.Hotbar.GetSlot(h.SelectedSlot)
+}
+
+// SetSpawnPoint updates the world spawn coordinates used by the compass overlay.
+func (h *HUD) SetSpawnPoint(x, z float32) {
+	h.SpawnX = x
+	h.SpawnZ = z
+}
+
+// SetGameTick updates the current game tick used by the clock overlay.
+func (h *HUD) SetGameTick(tick int64) {
+	h.GameTick = tick
+}
+
+// drawFunctionalItemOverlay renders context text above the hotbar when the
+// selected item is a compass or clock.
+func (h *HUD) drawFunctionalItemOverlay(r *UIRenderer) {
+	selected := h.GetSelectedItem()
+	if selected.IsEmpty() {
+		return
+	}
+	props := item.GetProperties(selected.ItemID)
+
+	var text string
+	switch {
+	case props.IsCompass:
+		text = fmt.Sprintf("-> Spawn: %.0f %.0f", h.SpawnX, h.SpawnZ)
+	case props.IsClock:
+		hour, minute := item.TickToHoursMinutes(h.GameTick)
+		dayNight := "Day"
+		if !item.TickIsDaytime(h.GameTick) {
+			dayNight = "Night"
+		}
+		text = fmt.Sprintf("Time: %s (%02d:%02d)", dayNight, hour, minute)
+	default:
+		return
+	}
+
+	totalWidth := float32(hotbarSlots)*slotSize + float32(hotbarSlots-1)*slotPadding
+	startX := (r.ScreenWidth - totalWidth) / 2
+	y := r.ScreenHeight - hudBarHeight - heartSize - 24
+	r.DrawText(startX, y, text, 1.0, 1, 1, 1)
 }

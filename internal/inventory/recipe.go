@@ -204,24 +204,10 @@ func registerRecipes() {
 	registerBlockDecomposition(item.DiamondBlock, item.Diamond)
 
 	// -- Compass: 4 Iron Ingots + 1 Redstone (plus pattern)
-	RegisterRecipe(Recipe{
-		Pattern: [3][3]uint16{
-			{0, item.IronIngot, 0},
-			{item.IronIngot, item.RedstoneItem, item.IronIngot},
-			{0, item.IronIngot, 0},
-		},
-		Result: item.NewItemStack(item.Compass, 1),
-	})
+	registerPlusPattern(item.IronIngot, item.RedstoneItem, item.Compass)
 
 	// -- Clock: 4 Gold Ingots + 1 Redstone (plus pattern)
-	RegisterRecipe(Recipe{
-		Pattern: [3][3]uint16{
-			{0, item.GoldIngot, 0},
-			{item.GoldIngot, item.RedstoneItem, item.GoldIngot},
-			{0, item.GoldIngot, 0},
-		},
-		Result: item.NewItemStack(item.Clock, 1),
-	})
+	registerPlusPattern(item.GoldIngot, item.RedstoneItem, item.Clock)
 
 	// -- Painting: 8 Sticks + 1 Wool center
 	RegisterRecipe(Recipe{
