@@ -195,3 +195,19 @@ const (
 	BedItem  ItemID = 370
 	SignItem  ItemID = 371
 )
+
+// Brewing item IDs.
+const (
+	WaterBottle      ItemID = iota + 500 // 500
+	AwkwardPotion                        // 501
+	SpeedPotion                          // 502
+	StrengthPotion                       // 503
+	RegenPotion                          // 504
+	PoisonPotion                         // 505
+	NetherWart                           // 506
+	BlazePowder                          // 507
+	SpiderEye                            // 508
+	GhastTear                            // 509
+	Sugar                                // 510
+	BrewingStandItem                     // 511
+)

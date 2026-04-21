@@ -207,6 +207,7 @@ const (
 	OakSign       BlockID = 99
 	OakWallSign   BlockID = 100
 	OakFence      BlockID = 101
+	BrewingStand  BlockID = 111
 )
 
 const cropStageShift = 8

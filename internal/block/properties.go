@@ -475,6 +475,11 @@ var properties = map[BlockID]BlockProperties{
 		Hardness: 2, BlastResistance: 3,
 		LightEmission: 0, LightFilter: 0,
 	},
+	BrewingStand: {
+		Name: "brewing_stand", Solid: true, Transparent: true,
+		Hardness: 0.5, BlastResistance: 0.5,
+		LightEmission: 1, LightFilter: 0,
+	},
 }
 
 // GetProperties returns the BlockProperties for the given block ID.

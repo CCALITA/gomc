@@ -196,6 +196,20 @@ func init() {
 	registerArmor(DiamondChestplate, "Diamond Chestplate", 1, 8, 528)
 	registerArmor(DiamondLeggings, "Diamond Leggings", 2, 6, 495)
 	registerArmor(DiamondBoots, "Diamond Boots", 3, 3, 429)
+
+	// ---- brewing items ----
+	registerMaterial(WaterBottle, "Water Bottle")
+	registerMaterial(AwkwardPotion, "Awkward Potion")
+	registerMaterial(SpeedPotion, "Speed Potion")
+	registerMaterial(StrengthPotion, "Strength Potion")
+	registerMaterial(RegenPotion, "Regen Potion")
+	registerMaterial(PoisonPotion, "Poison Potion")
+	registerMaterial(NetherWart, "Nether Wart")
+	registerMaterial(BlazePowder, "Blaze Powder")
+	registerMaterial(SpiderEye, "Spider Eye")
+	registerMaterial(GhastTear, "Ghast Tear")
+	registerMaterial(Sugar, "Sugar")
+	registerBlock(BrewingStandItem, "Brewing Stand", BrewingStandItem)
 }
 
 // GetProperties returns the static properties for the given item ID.
