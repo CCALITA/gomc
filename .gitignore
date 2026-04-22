@@ -28,3 +28,7 @@ Thumbs.db
 # Build
 /target/
 .claude/
+saves/
+gomc
+client
+gomc-server
