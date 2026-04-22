@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/go-gl/glfw/v3.3/glfw"
-	vk "github.com/vulkan-go/vulkan"
 
 	"github.com/fanxiyao/gomc/internal/audio"
 	"github.com/fanxiyao/gomc/internal/block"
@@ -328,27 +327,28 @@ func (g *Game) processMeshQueue() {
 	if g.meshQueue == nil || g.World == nil || g.Renderer == nil || g.Renderer.ChunkRenderer == nil {
 		return
 	}
-
-	select {
-	case cp := <-g.meshQueue:
-		cr := g.Renderer.ChunkRenderer
-		w := g.World
-		vk.DeviceWaitIdle(g.Renderer.Context.Device)
-		c := w.GetChunk(cp)
-		if c == nil {
+	cr := g.Renderer.ChunkRenderer
+	w := g.World
+	for i := 0; i < 16; i++ {
+		select {
+		case cp := <-g.meshQueue:
+			c := w.GetChunk(cp)
+			if c == nil {
+				continue
+			}
+			neighbors := [4]*chunk.Chunk{
+				w.GetChunk(mcmath.ChunkPos{X: cp.X, Z: cp.Z - 1}),
+				w.GetChunk(mcmath.ChunkPos{X: cp.X, Z: cp.Z + 1}),
+				w.GetChunk(mcmath.ChunkPos{X: cp.X + 1, Z: cp.Z}),
+				w.GetChunk(mcmath.ChunkPos{X: cp.X - 1, Z: cp.Z}),
+			}
+			mesh := chunk.MeshChunk(c, neighbors, block.IsSolid, block.IsTransparent)
+			if err := cr.UploadMesh(cp, mesh.Vertices, mesh.Indices); err != nil {
+				log.Printf("failed to mesh chunk %v: %v", cp, err)
+			}
+		default:
 			return
 		}
-		neighbors := [4]*chunk.Chunk{
-			w.GetChunk(mcmath.ChunkPos{X: cp.X, Z: cp.Z - 1}),
-			w.GetChunk(mcmath.ChunkPos{X: cp.X, Z: cp.Z + 1}),
-			w.GetChunk(mcmath.ChunkPos{X: cp.X + 1, Z: cp.Z}),
-			w.GetChunk(mcmath.ChunkPos{X: cp.X - 1, Z: cp.Z}),
-		}
-		mesh := chunk.MeshChunk(c, neighbors, block.IsSolid, block.IsTransparent)
-		if err := cr.UploadMesh(cp, mesh.Vertices, mesh.Indices); err != nil {
-			log.Printf("failed to mesh chunk %v: %v", cp, err)
-		}
-	default:
 	}
 }
 
