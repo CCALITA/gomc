@@ -96,7 +96,6 @@ func NewChunkRenderer(ctx *VulkanContext, cmdPool *CommandPool, pipe *Pipeline) 
 	// Create descriptor pool.
 	poolSizes := []vk.DescriptorPoolSize{
 		{Type: vk.DescriptorTypeUniformBuffer, DescriptorCount: maxFramesInFlight},
-		{Type: vk.DescriptorTypeCombinedImageSampler, DescriptorCount: maxFramesInFlight},
 	}
 	poolInfo := &vk.DescriptorPoolCreateInfo{
 		SType:         vk.StructureTypeDescriptorPoolCreateInfo,

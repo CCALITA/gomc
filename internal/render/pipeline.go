@@ -235,14 +235,7 @@ func (p *Pipeline) CreateGraphicsPipeline(vertShaderPath, fragShaderPath string,
 		StageFlags:      vk.ShaderStageFlags(vk.ShaderStageVertexBit),
 	}
 
-	samplerLayoutBinding := vk.DescriptorSetLayoutBinding{
-		Binding:         1,
-		DescriptorType:  vk.DescriptorTypeCombinedImageSampler,
-		DescriptorCount: 1,
-		StageFlags:      vk.ShaderStageFlags(vk.ShaderStageFragmentBit),
-	}
-
-	layoutBindings := []vk.DescriptorSetLayoutBinding{uboLayoutBinding, samplerLayoutBinding}
+	layoutBindings := []vk.DescriptorSetLayoutBinding{uboLayoutBinding}
 
 	descriptorLayoutInfo := &vk.DescriptorSetLayoutCreateInfo{
 		SType:        vk.StructureTypeDescriptorSetLayoutCreateInfo,
