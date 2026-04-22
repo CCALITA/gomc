@@ -104,28 +104,31 @@ func meshSection(
 func makeGetBlock(c *Chunk, neighbors [4]*Chunk) func(int, int, int) uint16 {
 	const N = mcmath.ChunkSize
 	return func(x, y, z int) uint16 {
-		if x >= 0 && x < N && z >= 0 && z < N && y >= 0 && y < mcmath.ChunkHeight {
+		if y < 0 || y >= mcmath.ChunkHeight {
+			return 0
+		}
+		if x >= 0 && x < N && z >= 0 && z < N {
 			return c.GetBlock(x, y, z)
 		}
-		if z < 0 {
+		if z < 0 && x >= 0 && x < N {
 			if neighbors[0] != nil {
 				return neighbors[0].GetBlock(x, y, z+N)
 			}
 			return 0
 		}
-		if z >= N {
+		if z >= N && x >= 0 && x < N {
 			if neighbors[1] != nil {
 				return neighbors[1].GetBlock(x, y, z-N)
 			}
 			return 0
 		}
-		if x >= N {
+		if x >= N && z >= 0 && z < N {
 			if neighbors[2] != nil {
 				return neighbors[2].GetBlock(x-N, y, z)
 			}
 			return 0
 		}
-		if x < 0 {
+		if x < 0 && z >= 0 && z < N {
 			if neighbors[3] != nil {
 				return neighbors[3].GetBlock(x+N, y, z)
 			}

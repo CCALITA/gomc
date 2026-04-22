@@ -20,6 +20,7 @@ var validationLayers = []string{
 // deviceExtensions lists the required Vulkan device extensions.
 var deviceExtensions = []string{
 	"VK_KHR_swapchain\x00",
+	"VK_KHR_portability_subset\x00",
 }
 
 // QueueFamilyIndices holds the indices of the queue families needed by the renderer.

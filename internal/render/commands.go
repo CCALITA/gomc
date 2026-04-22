@@ -2,6 +2,7 @@ package render
 
 import (
 	"fmt"
+	"runtime"
 
 	vk "github.com/vulkan-go/vulkan"
 )
@@ -343,9 +344,8 @@ func (cp *CommandPool) beginSingleTimeCommands() (vk.CommandBuffer, error) {
 // endSingleTimeCommands ends, submits, and waits for the command buffer,
 // then frees it.
 func (cp *CommandPool) endSingleTimeCommands(cmdBuf vk.CommandBuffer) error {
-	defer vk.FreeCommandBuffers(cp.ctx.Device, cp.Pool, 1, []vk.CommandBuffer{cmdBuf})
-
 	if res := vk.EndCommandBuffer(cmdBuf); res != vk.Success {
+		vk.FreeCommandBuffers(cp.ctx.Device, cp.Pool, 1, []vk.CommandBuffer{cmdBuf})
 		return fmt.Errorf("end single-time command buffer: vulkan result %d", res)
 	}
 
@@ -355,13 +355,19 @@ func (cp *CommandPool) endSingleTimeCommands(cmdBuf vk.CommandBuffer) error {
 		PCommandBuffers:    []vk.CommandBuffer{cmdBuf},
 	}
 
-	if res := vk.QueueSubmit(cp.ctx.GraphicsQueue, 1, []vk.SubmitInfo{*submitInfo}, nil); res != vk.Success {
+	vk.DeviceWaitIdle(cp.ctx.Device)
+	res := vk.QueueSubmit(cp.ctx.GraphicsQueue, 1, []vk.SubmitInfo{*submitInfo}, cp.InFlight[0])
+	runtime.KeepAlive(submitInfo)
+
+	if res != vk.Success {
+		vk.FreeCommandBuffers(cp.ctx.Device, cp.Pool, 1, []vk.CommandBuffer{cmdBuf})
 		return fmt.Errorf("submit single-time command buffer: vulkan result %d", res)
 	}
 
-	if res := vk.QueueWaitIdle(cp.ctx.GraphicsQueue); res != vk.Success {
-		return fmt.Errorf("wait for queue idle: vulkan result %d", res)
-	}
+	fences := []vk.Fence{cp.InFlight[0]}
+	vk.WaitForFences(cp.ctx.Device, 1, fences, vk.True, vk.MaxUint64)
+	vk.ResetFences(cp.ctx.Device, 1, fences)
+	vk.FreeCommandBuffers(cp.ctx.Device, cp.Pool, 1, []vk.CommandBuffer{cmdBuf})
 
 	return nil
 }

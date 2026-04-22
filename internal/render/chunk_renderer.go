@@ -58,7 +58,9 @@ type ChunkRenderer struct {
 	mu     sync.RWMutex
 	meshes map[[2]int32]*chunkMesh
 
-	uniformBuffers [maxFramesInFlight]*Buffer
+	uniformBuffers  [maxFramesInFlight]*Buffer
+	descriptorPool  vk.DescriptorPool
+	descriptorSets  []vk.DescriptorSet
 
 	ctx     *VulkanContext
 	cmdPool *CommandPool
@@ -82,6 +84,58 @@ func NewChunkRenderer(ctx *VulkanContext, cmdPool *CommandPool, pipe *Pipeline) 
 			return nil, fmt.Errorf("failed to create uniform buffer %d: %w", i, err)
 		}
 		cr.uniformBuffers[i] = ub
+	}
+
+	// Create descriptor pool.
+	poolSizes := []vk.DescriptorPoolSize{
+		{Type: vk.DescriptorTypeUniformBuffer, DescriptorCount: maxFramesInFlight},
+		{Type: vk.DescriptorTypeCombinedImageSampler, DescriptorCount: maxFramesInFlight},
+	}
+	poolInfo := &vk.DescriptorPoolCreateInfo{
+		SType:         vk.StructureTypeDescriptorPoolCreateInfo,
+		PoolSizeCount: uint32(len(poolSizes)),
+		PPoolSizes:    poolSizes,
+		MaxSets:       maxFramesInFlight,
+	}
+	if res := vk.CreateDescriptorPool(ctx.Device, poolInfo, nil, &cr.descriptorPool); res != vk.Success {
+		cr.Cleanup()
+		return nil, fmt.Errorf("create descriptor pool: vulkan result %d", res)
+	}
+
+	// Allocate descriptor sets.
+	layouts := make([]vk.DescriptorSetLayout, maxFramesInFlight)
+	for i := range layouts {
+		layouts[i] = pipe.DescriptorLayout
+	}
+	allocInfo := &vk.DescriptorSetAllocateInfo{
+		SType:              vk.StructureTypeDescriptorSetAllocateInfo,
+		DescriptorPool:     cr.descriptorPool,
+		DescriptorSetCount: maxFramesInFlight,
+		PSetLayouts:        layouts,
+	}
+	cr.descriptorSets = make([]vk.DescriptorSet, maxFramesInFlight)
+	if res := vk.AllocateDescriptorSets(ctx.Device, allocInfo, &cr.descriptorSets[0]); res != vk.Success {
+		cr.Cleanup()
+		return nil, fmt.Errorf("allocate descriptor sets: vulkan result %d", res)
+	}
+
+	// Update descriptor sets to point to uniform buffers.
+	for i := 0; i < maxFramesInFlight; i++ {
+		bufferInfo := vk.DescriptorBufferInfo{
+			Buffer: cr.uniformBuffers[i].Handle,
+			Offset: 0,
+			Range:  vk.DeviceSize(unsafe.Sizeof(ViewProjectionUBO{})),
+		}
+		write := vk.WriteDescriptorSet{
+			SType:           vk.StructureTypeWriteDescriptorSet,
+			DstSet:          cr.descriptorSets[i],
+			DstBinding:      0,
+			DstArrayElement: 0,
+			DescriptorType:  vk.DescriptorTypeUniformBuffer,
+			DescriptorCount: 1,
+			PBufferInfo:     []vk.DescriptorBufferInfo{bufferInfo},
+		}
+		vk.UpdateDescriptorSets(ctx.Device, 1, []vk.WriteDescriptorSet{write}, 0, nil)
 	}
 
 	return cr, nil
@@ -151,6 +205,7 @@ func (cr *ChunkRenderer) DrawAll(cmdBuf vk.CommandBuffer, camera *Camera, aspect
 	_ = ub.UpdateUniformBuffer(unsafe.Pointer(&ubo), vk.DeviceSize(unsafe.Sizeof(ubo)))
 
 	vk.CmdBindPipeline(cmdBuf, vk.PipelineBindPointGraphics, cr.pipe.GraphicsPipeline)
+	vk.CmdBindDescriptorSets(cmdBuf, vk.PipelineBindPointGraphics, cr.pipe.PipelineLayout, 0, 1, []vk.DescriptorSet{cr.descriptorSets[frameIndex]}, 0, nil)
 
 	frustum := camera.Frustum()
 

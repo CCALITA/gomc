@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/go-gl/glfw/v3.3/glfw"
+	vk "github.com/vulkan-go/vulkan"
 
 	"github.com/fanxiyao/gomc/internal/audio"
 	"github.com/fanxiyao/gomc/internal/block"
@@ -43,6 +44,8 @@ type Game struct {
 	Scheduler   *ecs.Scheduler
 	State       *StateManager
 	Inventory   *inventory.Inventory
+
+	meshQueue   chan mcmath.ChunkPos
 
 	Mode        *ModeManager
 	Spawner     *entity.Spawner
@@ -316,6 +319,36 @@ func (g *Game) render() {
 	if err := g.Renderer.EndFrame(imageIndex); err != nil {
 		log.Printf("end frame error: %v", err)
 	}
+
+	g.processMeshQueue()
+}
+
+func (g *Game) processMeshQueue() {
+	if g.meshQueue == nil || g.World == nil || g.Renderer == nil || g.Renderer.ChunkRenderer == nil {
+		return
+	}
+
+	select {
+	case cp := <-g.meshQueue:
+		cr := g.Renderer.ChunkRenderer
+		w := g.World
+		vk.DeviceWaitIdle(g.Renderer.Context.Device)
+		c := w.GetChunk(cp)
+		if c == nil {
+			return
+		}
+		neighbors := [4]*chunk.Chunk{
+			w.GetChunk(mcmath.ChunkPos{X: cp.X, Z: cp.Z - 1}),
+			w.GetChunk(mcmath.ChunkPos{X: cp.X, Z: cp.Z + 1}),
+			w.GetChunk(mcmath.ChunkPos{X: cp.X + 1, Z: cp.Z}),
+			w.GetChunk(mcmath.ChunkPos{X: cp.X - 1, Z: cp.Z}),
+		}
+		mesh := chunk.MeshChunk(c, neighbors, block.IsSolid, block.IsTransparent)
+		if err := cr.UploadMesh(cp, mesh.Vertices, mesh.Indices); err != nil {
+			log.Printf("failed to mesh chunk %v: %v", cp, err)
+		}
+	default:
+	}
 }
 
 func (g *Game) StartSingleplayer() {
@@ -336,7 +369,8 @@ func (g *Game) StartSingleplayer() {
 	if g.World != nil && g.Renderer != nil && g.Renderer.ChunkRenderer != nil {
 		cr := g.Renderer.ChunkRenderer
 		w := g.World
-		g.World.OnBlockChange = func(cp mcmath.ChunkPos) {
+
+		meshChunk := func(cp mcmath.ChunkPos) {
 			c := w.GetChunk(cp)
 			if c == nil {
 				return
@@ -349,7 +383,25 @@ func (g *Game) StartSingleplayer() {
 			}
 			mesh := chunk.MeshChunk(c, neighbors, block.IsSolid, block.IsTransparent)
 			if err := cr.UploadMesh(cp, mesh.Vertices, mesh.Indices); err != nil {
-				log.Printf("failed to re-mesh chunk %v: %v", cp, err)
+				log.Printf("failed to mesh chunk %v: %v", cp, err)
+			}
+		}
+
+		g.World.OnBlockChange = meshChunk
+
+		g.meshQueue = make(chan mcmath.ChunkPos, 256)
+		g.ChunkLoader.OnChunkLoaded = func(cp mcmath.ChunkPos) {
+			select {
+			case g.meshQueue <- cp:
+			default:
+			}
+		}
+
+		// Queue all initially loaded chunks for meshing on the render thread.
+		for _, cp := range w.LoadedChunkPositions() {
+			select {
+			case g.meshQueue <- cp:
+			default:
 			}
 		}
 	}

@@ -82,8 +82,8 @@ func (b *Buffer) Cleanup() {
 	}
 }
 
-// CreateVertexBuffer creates a device-local vertex buffer by staging
-// the given float32 data through a host-visible staging buffer.
+// CreateVertexBuffer creates a host-visible vertex buffer and copies the
+// given float32 data into it directly (no staging buffer or queue submit).
 func CreateVertexBuffer(ctx *VulkanContext, cmdPool *CommandPool, data []float32) (*Buffer, error) {
 	if len(data) == 0 {
 		return nil, fmt.Errorf("vertex data is empty")
@@ -91,41 +91,24 @@ func CreateVertexBuffer(ctx *VulkanContext, cmdPool *CommandPool, data []float32
 
 	bufferSize := vk.DeviceSize(len(data) * 4)
 
-	staging, err := CreateBuffer(
+	buf, err := CreateBuffer(
 		ctx,
 		bufferSize,
-		vk.BufferUsageFlags(vk.BufferUsageTransferSrcBit),
+		vk.BufferUsageFlags(vk.BufferUsageVertexBufferBit),
 		vk.MemoryPropertyFlags(vk.MemoryPropertyHostVisibleBit|vk.MemoryPropertyHostCoherentBit),
-	)
-	if err != nil {
-		return nil, fmt.Errorf("create staging buffer: %w", err)
-	}
-	defer staging.Cleanup()
-
-	if err := mapAndCopy(ctx.Device, staging.Memory, bufferSize, unsafe.Pointer(&data[0])); err != nil {
-		return nil, fmt.Errorf("map staging buffer: %w", err)
-	}
-
-	vertexBuffer, err := CreateBuffer(
-		ctx,
-		bufferSize,
-		vk.BufferUsageFlags(vk.BufferUsageTransferDstBit|vk.BufferUsageVertexBufferBit),
-		vk.MemoryPropertyFlags(vk.MemoryPropertyDeviceLocalBit),
 	)
 	if err != nil {
 		return nil, fmt.Errorf("create vertex buffer: %w", err)
 	}
 
-	if err := cmdPool.CopyBuffer(staging.Handle, vertexBuffer.Handle, bufferSize); err != nil {
-		vertexBuffer.Cleanup()
-		return nil, fmt.Errorf("copy to vertex buffer: %w", err)
+	if err := mapAndCopy(ctx.Device, buf.Memory, bufferSize, unsafe.Pointer(&data[0])); err != nil {
+		buf.Cleanup()
+		return nil, fmt.Errorf("map vertex buffer: %w", err)
 	}
 
-	return vertexBuffer, nil
+	return buf, nil
 }
 
-// CreateIndexBuffer creates a device-local index buffer by staging
-// the given uint32 data through a host-visible staging buffer.
 func CreateIndexBuffer(ctx *VulkanContext, cmdPool *CommandPool, data []uint32) (*Buffer, error) {
 	if len(data) == 0 {
 		return nil, fmt.Errorf("index data is empty")
@@ -133,37 +116,22 @@ func CreateIndexBuffer(ctx *VulkanContext, cmdPool *CommandPool, data []uint32) 
 
 	bufferSize := vk.DeviceSize(len(data) * 4)
 
-	staging, err := CreateBuffer(
+	buf, err := CreateBuffer(
 		ctx,
 		bufferSize,
-		vk.BufferUsageFlags(vk.BufferUsageTransferSrcBit),
+		vk.BufferUsageFlags(vk.BufferUsageIndexBufferBit),
 		vk.MemoryPropertyFlags(vk.MemoryPropertyHostVisibleBit|vk.MemoryPropertyHostCoherentBit),
-	)
-	if err != nil {
-		return nil, fmt.Errorf("create index staging buffer: %w", err)
-	}
-	defer staging.Cleanup()
-
-	if err := mapAndCopy(ctx.Device, staging.Memory, bufferSize, unsafe.Pointer(&data[0])); err != nil {
-		return nil, fmt.Errorf("map index staging buffer: %w", err)
-	}
-
-	indexBuffer, err := CreateBuffer(
-		ctx,
-		bufferSize,
-		vk.BufferUsageFlags(vk.BufferUsageTransferDstBit|vk.BufferUsageIndexBufferBit),
-		vk.MemoryPropertyFlags(vk.MemoryPropertyDeviceLocalBit),
 	)
 	if err != nil {
 		return nil, fmt.Errorf("create index buffer: %w", err)
 	}
 
-	if err := cmdPool.CopyBuffer(staging.Handle, indexBuffer.Handle, bufferSize); err != nil {
-		indexBuffer.Cleanup()
-		return nil, fmt.Errorf("copy to index buffer: %w", err)
+	if err := mapAndCopy(ctx.Device, buf.Memory, bufferSize, unsafe.Pointer(&data[0])); err != nil {
+		buf.Cleanup()
+		return nil, fmt.Errorf("map index buffer: %w", err)
 	}
 
-	return indexBuffer, nil
+	return buf, nil
 }
 
 // CreateUniformBuffer creates a host-visible, host-coherent buffer

@@ -20,16 +20,17 @@ type chunkRequest struct {
 
 // ChunkLoader manages asynchronous chunk loading around a moving center position.
 type ChunkLoader struct {
-	world       *World
-	LoadRadius  int
-	center      mcmath.ChunkPos
-	centerMu    sync.Mutex
-	pending     atomic.Int64
-	loaded      atomic.Int64
-	requests    chan chunkRequest
-	stopOnce    sync.Once
-	stop        chan struct{}
-	workersDone sync.WaitGroup
+	world         *World
+	LoadRadius    int
+	center        mcmath.ChunkPos
+	centerMu      sync.Mutex
+	pending       atomic.Int64
+	loaded        atomic.Int64
+	requests      chan chunkRequest
+	stopOnce      sync.Once
+	stop          chan struct{}
+	workersDone   sync.WaitGroup
+	OnChunkLoaded func(pos mcmath.ChunkPos)
 }
 
 // NewChunkLoader creates a ChunkLoader that will load chunks from the given world.
@@ -61,6 +62,9 @@ func (cl *ChunkLoader) worker() {
 			cl.world.LoadChunk(req.pos)
 			cl.pending.Add(-1)
 			cl.loaded.Add(1)
+			if cl.OnChunkLoaded != nil {
+				cl.OnChunkLoaded(req.pos)
+			}
 		case <-cl.stop:
 			return
 		}
