@@ -17,9 +17,10 @@ type chunkMesh struct {
 }
 
 // ViewProjectionUBO is the uniform buffer object layout sent to the vertex
-// shader. It contains the combined view-projection matrix (16 floats).
+// shader. It contains separate view and projection matrices.
 type ViewProjectionUBO struct {
-	ViewProjection [16]float32
+	View       [16]float32
+	Projection [16]float32
 }
 
 // TODO(day-night): Add a TimeOfDayUBO struct and per-frame uniform buffers
@@ -45,12 +46,18 @@ type ViewProjectionUBO struct {
 // See internal/game/timekeeper.go for the TimeKeeper API.
 
 // ChunkPushConstants is the push constant block for per-chunk data.
-// It carries the chunk's world-space origin.
+// It carries the model matrix (translation to chunk world position).
 type ChunkPushConstants struct {
-	ChunkWorldX float32
-	ChunkWorldY float32
-	ChunkWorldZ float32
-	_pad        float32 // align to 16 bytes
+	Model [16]float32
+}
+
+func chunkModelMatrix(worldX, worldY, worldZ float32) [16]float32 {
+	return [16]float32{
+		1, 0, 0, 0,
+		0, 1, 0, 0,
+		0, 0, 1, 0,
+		worldX, worldY, worldZ, 1,
+	}
 }
 
 // ChunkRenderer manages uploading and drawing chunk meshes.
@@ -198,8 +205,12 @@ func (cr *ChunkRenderer) RemoveMesh(chunkPos mcmath.ChunkPos) {
 // outside the camera frustum are skipped (frustum culling).
 func (cr *ChunkRenderer) DrawAll(cmdBuf vk.CommandBuffer, camera *Camera, aspect float32, frameIndex uint32) {
 	// Update the uniform buffer for this frame.
-	vp := camera.ViewProjectionMatrix(aspect)
-	ubo := ViewProjectionUBO{ViewProjection: vp}
+	view := camera.ViewMatrix()
+	proj := camera.ProjectionMatrix(aspect)
+	ubo := ViewProjectionUBO{
+		View:       view,
+		Projection: proj,
+	}
 
 	ub := cr.uniformBuffers[frameIndex]
 	_ = ub.UpdateUniformBuffer(unsafe.Pointer(&ubo), vk.DeviceSize(unsafe.Sizeof(ubo)))
@@ -229,9 +240,11 @@ func (cr *ChunkRenderer) DrawAll(cmdBuf vk.CommandBuffer, camera *Camera, aspect
 		vk.CmdBindIndexBuffer(cmdBuf, mesh.IndexBuffer.Handle, 0, vk.IndexTypeUint32)
 
 		pc := ChunkPushConstants{
-			ChunkWorldX: float32(key[0]) * float32(mcmath.ChunkSize),
-			ChunkWorldY: 0,
-			ChunkWorldZ: float32(key[1]) * float32(mcmath.ChunkSize),
+			Model: chunkModelMatrix(
+				float32(key[0])*float32(mcmath.ChunkSize),
+				0,
+				float32(key[1])*float32(mcmath.ChunkSize),
+			),
 		}
 
 		vk.CmdPushConstants(

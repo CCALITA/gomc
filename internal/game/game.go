@@ -321,6 +321,7 @@ func (g *Game) render() {
 	}
 
 	g.processMeshQueue()
+
 }
 
 func (g *Game) processMeshQueue() {
@@ -382,7 +383,7 @@ func (g *Game) StartSingleplayer() {
 				w.GetChunk(mcmath.ChunkPos{X: cp.X - 1, Z: cp.Z}),
 			}
 			mesh := chunk.MeshChunk(c, neighbors, block.IsSolid, block.IsTransparent)
-			if err := cr.UploadMesh(cp, mesh.Vertices, mesh.Indices); err != nil {
+		if err := cr.UploadMesh(cp, mesh.Vertices, mesh.Indices); err != nil {
 				log.Printf("failed to mesh chunk %v: %v", cp, err)
 			}
 		}

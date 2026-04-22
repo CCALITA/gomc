@@ -260,7 +260,7 @@ func (p *Pipeline) CreateGraphicsPipeline(vertShaderPath, fragShaderPath string,
 	pushConstantRange := vk.PushConstantRange{
 		StageFlags: vk.ShaderStageFlags(vk.ShaderStageVertexBit),
 		Offset:     0,
-		Size:       16, // vec3 position + padding
+		Size:       64, // mat4 model matrix
 	}
 
 	pipelineLayoutInfo := &vk.PipelineLayoutCreateInfo{
