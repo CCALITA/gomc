@@ -85,10 +85,10 @@ func (c *Camera) ViewMatrix() mgl32.Mat4 {
 // Aspect is width/height.
 func (c *Camera) ProjectionMatrix(aspect float32) mgl32.Mat4 {
 	proj := mgl32.Perspective(c.FOV, aspect, c.Near, c.Far)
-	// Vulkan clip space has Y inverted compared to OpenGL.
-	// In mgl32.Mat4 ([16]float32 column-major), element at col=1, row=1
-	// is at index col*4 + row = 5.
-	proj[5] *= -1
+	proj[5] *= -1 // Vulkan Y-flip
+	// Remap depth from OpenGL [-1,1] to Vulkan [0,1].
+	proj[10] = proj[10]*0.5 + proj[11]*0.5
+	proj[14] = proj[14]*0.5 + proj[15]*0.5
 	return proj
 }
 

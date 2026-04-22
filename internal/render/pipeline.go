@@ -193,7 +193,7 @@ func (p *Pipeline) CreateGraphicsPipeline(vertShaderPath, fragShaderPath string,
 		PolygonMode:             vk.PolygonModeFill,
 		LineWidth:               1,
 		CullMode:                vk.CullModeFlags(vk.CullModeBackBit),
-		FrontFace:               vk.FrontFaceCounterClockwise,
+		FrontFace:               vk.FrontFaceClockwise,
 		DepthBiasEnable:         vk.False,
 	}
 

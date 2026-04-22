@@ -271,12 +271,23 @@ func emitQuad(
 		corners[3] = vertex3{float32(u), float32(baseY + v + h), fz}
 	}
 
+	// Fix winding order: swap corners[1] and [3] for faces where the default
+	// corner layout produces CW winding (viewed from the outward normal).
+	if (ax == axisX && sign > 0) || (ax == axisY && sign > 0) || (ax == axisZ && sign < 0) {
+		corners[1], corners[3] = corners[3], corners[1]
+	}
+
 	// UV coordinates based on quad dimensions.
 	uvs := [4][2]float32{
 		{0, 0},
 		{float32(w), 0},
 		{float32(w), float32(h)},
 		{0, float32(h)},
+	}
+
+	// Match UV swap to corner swap.
+	if (ax == axisX && sign > 0) || (ax == axisY && sign > 0) || (ax == axisZ && sign < 0) {
+		uvs[1], uvs[3] = uvs[3], uvs[1]
 	}
 
 	// Compute ambient occlusion for each corner.
