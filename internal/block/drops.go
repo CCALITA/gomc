@@ -40,6 +40,49 @@ var blockToItemID = map[BlockID]item.ItemID{
 	Sandstone:     Sandstone,
 	Bedrock:       item.Bedrock,
 	Bed:           item.BedItem,
+
+	// Wool colors
+	WhiteWool:     item.Wool,
+	OrangeWool:    item.Wool,
+	MagentaWool:   item.Wool,
+	LightBlueWool: item.Wool,
+	YellowWool:    item.Wool,
+	LimeWool:      item.Wool,
+	PinkWool:      item.Wool,
+	GrayWool:      item.Wool,
+	LightGrayWool: item.Wool,
+	CyanWool:      item.Wool,
+	PurpleWool:    item.Wool,
+	BlueWool:      item.Wool,
+	BrownWool:     item.Wool,
+	GreenWool:     item.Wool,
+	RedWool:       item.Wool,
+	BlackWool:     item.Wool,
+
+	// Decorative / functional blocks
+	OakDoor:      item.OakDoor,
+	OakFence:     item.OakFence,
+	Ladder:       item.Ladder,
+	Bookshelf:    item.Bookshelf,
+	IronBlock:    item.IronBlock,
+	GoldBlock:    item.GoldBlock,
+	DiamondBlock: item.DiamondBlock,
+
+	// Stairs
+	OakStairs:         item.OakStairs,
+	CobblestoneStairs: item.CobblestoneStairs,
+	StoneStairs:       item.StoneStairs,
+	BirchStairs:       item.BirchStairs,
+	SpruceStairs:      item.SpruceStairs,
+	SandstoneStairs:   item.SandstoneStairs,
+
+	// Slabs
+	OakSlab:         item.OakSlab,
+	CobblestoneSlab: item.CobblestoneSlab,
+	StoneSlab:       item.StoneSlab,
+	BirchSlab:       item.BirchSlab,
+	SpruceSlab:      item.SpruceSlab,
+	SandstoneSlab:   item.SandstoneSlab,
 }
 
 // toolCategory maps block IDs to the tool type that is effective
@@ -60,6 +103,31 @@ var toolCategory = map[BlockID]string{
 	Grass:       item.ToolShovel,
 	Sand:        item.ToolShovel,
 	Gravel:      item.ToolShovel,
+
+	// Wood blocks – axe
+	OakDoor:           item.ToolAxe,
+	OakFence:          item.ToolAxe,
+	Ladder:            item.ToolAxe,
+	Bookshelf:         item.ToolAxe,
+	OakStairs:         item.ToolAxe,
+	BirchStairs:       item.ToolAxe,
+	SpruceStairs:      item.ToolAxe,
+	OakSlab:           item.ToolAxe,
+	BirchSlab:         item.ToolAxe,
+	SpruceSlab:        item.ToolAxe,
+
+	// Stone stairs/slabs – pickaxe
+	CobblestoneStairs: item.ToolPickaxe,
+	StoneStairs:       item.ToolPickaxe,
+	SandstoneStairs:   item.ToolPickaxe,
+	CobblestoneSlab:   item.ToolPickaxe,
+	StoneSlab:         item.ToolPickaxe,
+	SandstoneSlab:     item.ToolPickaxe,
+
+	// Metal / mineral blocks – pickaxe
+	IronBlock:    item.ToolPickaxe,
+	GoldBlock:    item.ToolPickaxe,
+	DiamondBlock: item.ToolPickaxe,
 }
 
 // minToolLevel specifies the minimum tool level required to obtain
