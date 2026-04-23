@@ -432,6 +432,33 @@ var blockColors = map[block.BlockID]BlockColor{
 		Secondary: color.RGBA{R: 40, G: 200, B: 60, A: 255},
 		Pattern:   PatternSpeckled,
 	},
+
+	// Stairs inherit color from their base material.
+	block.OakStairs:         {Primary: color.RGBA{R: 162, G: 130, B: 78, A: 255}, Secondary: color.RGBA{R: 140, G: 110, B: 65, A: 255}, Pattern: PatternStriped},
+	block.CobblestoneStairs: {Primary: color.RGBA{R: 128, G: 128, B: 128, A: 255}, Secondary: color.RGBA{R: 112, G: 112, B: 112, A: 255}, Pattern: PatternMottled},
+	block.StoneStairs:       {Primary: color.RGBA{R: 128, G: 128, B: 128, A: 255}, Secondary: color.RGBA{R: 112, G: 112, B: 112, A: 255}, Pattern: PatternSolid},
+	block.BirchStairs:       {Primary: color.RGBA{R: 200, G: 190, B: 160, A: 255}, Secondary: color.RGBA{R: 180, G: 170, B: 140, A: 255}, Pattern: PatternStriped},
+	block.SpruceStairs:      {Primary: color.RGBA{R: 104, G: 78, B: 47, A: 255}, Secondary: color.RGBA{R: 88, G: 64, B: 38, A: 255}, Pattern: PatternStriped},
+	block.SandstoneStairs:   {Primary: color.RGBA{R: 216, G: 204, B: 158, A: 255}, Secondary: color.RGBA{R: 196, G: 184, B: 138, A: 255}, Pattern: PatternBorder},
+
+	// Slabs inherit color from their base material.
+	block.OakSlab:         {Primary: color.RGBA{R: 162, G: 130, B: 78, A: 255}, Secondary: color.RGBA{R: 140, G: 110, B: 65, A: 255}, Pattern: PatternStriped},
+	block.CobblestoneSlab: {Primary: color.RGBA{R: 128, G: 128, B: 128, A: 255}, Secondary: color.RGBA{R: 112, G: 112, B: 112, A: 255}, Pattern: PatternMottled},
+	block.StoneSlab:       {Primary: color.RGBA{R: 128, G: 128, B: 128, A: 255}, Secondary: color.RGBA{R: 112, G: 112, B: 112, A: 255}, Pattern: PatternSolid},
+	block.BirchSlab:       {Primary: color.RGBA{R: 200, G: 190, B: 160, A: 255}, Secondary: color.RGBA{R: 180, G: 170, B: 140, A: 255}, Pattern: PatternStriped},
+	block.SpruceSlab:      {Primary: color.RGBA{R: 104, G: 78, B: 47, A: 255}, Secondary: color.RGBA{R: 88, G: 64, B: 38, A: 255}, Pattern: PatternStriped},
+	block.SandstoneSlab:   {Primary: color.RGBA{R: 216, G: 204, B: 158, A: 255}, Secondary: color.RGBA{R: 196, G: 184, B: 138, A: 255}, Pattern: PatternBorder},
+
+	// Functional blocks
+	block.OakDoor:          {Primary: color.RGBA{R: 162, G: 130, B: 78, A: 255}, Secondary: color.RGBA{R: 100, G: 80, B: 50, A: 255}, Pattern: PatternBorder},
+	block.IronDoor:         {Primary: color.RGBA{R: 200, G: 200, B: 200, A: 255}, Secondary: color.RGBA{R: 160, G: 160, B: 160, A: 255}, Pattern: PatternBorder},
+	block.OakTrapdoor:      {Primary: color.RGBA{R: 162, G: 130, B: 78, A: 255}, Secondary: color.RGBA{R: 120, G: 96, B: 58, A: 255}, Pattern: PatternCross},
+	block.Bed:              {Primary: color.RGBA{R: 180, G: 40, B: 40, A: 255}, Secondary: color.RGBA{R: 220, G: 220, B: 220, A: 255}, Pattern: PatternBorder},
+	block.MossyCobblestone: {Primary: color.RGBA{R: 110, G: 128, B: 100, A: 255}, Secondary: color.RGBA{R: 80, G: 120, B: 70, A: 255}, Pattern: PatternMottled},
+	block.MobSpawner:       {Primary: color.RGBA{R: 30, G: 40, B: 50, A: 255}, Secondary: color.RGBA{R: 60, G: 70, B: 80, A: 255}, Pattern: PatternCross},
+	block.OakSign:          {Primary: color.RGBA{R: 162, G: 130, B: 78, A: 255}, Secondary: color.RGBA{R: 140, G: 110, B: 65, A: 255}, Pattern: PatternSolid},
+	block.OakWallSign:      {Primary: color.RGBA{R: 162, G: 130, B: 78, A: 255}, Secondary: color.RGBA{R: 140, G: 110, B: 65, A: 255}, Pattern: PatternSolid},
+	block.OakFence:         {Primary: color.RGBA{R: 162, G: 130, B: 78, A: 255}, Secondary: color.RGBA{R: 140, G: 110, B: 65, A: 255}, Pattern: PatternStriped},
 }
 
 // GetBlockColor returns the color definition for the given block ID.

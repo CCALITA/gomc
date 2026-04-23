@@ -1,6 +1,51 @@
 package chunk
 
-import "github.com/fanxiyao/gomc/internal/mcmath"
+import (
+	"github.com/fanxiyao/gomc/internal/block"
+	"github.com/fanxiyao/gomc/internal/mcmath"
+)
+
+// faceTextureID returns the atlas tile ID to use for a given block and face.
+// Grass top is green, sides/bottom show dirt. Log tops show planks, sides show bark.
+func faceTextureID(id uint16, normalY float32) uint16 {
+	base := block.BaseID(id)
+	isTop := normalY > 0.5
+	isSide := normalY > -0.5 && normalY < 0.5
+
+	switch base {
+	case block.Grass:
+		if isTop {
+			return block.Grass
+		}
+		return block.Dirt
+	case block.OakLog, block.BirchLog, block.SpruceLog, block.JungleLog,
+		block.DarkOakLog, block.AcaciaLog:
+		if isSide {
+			return base // bark texture
+		}
+		// Top/bottom: use planks texture for the cut wood look
+		switch base {
+		case block.BirchLog:
+			return block.BirchPlanks
+		case block.SpruceLog:
+			return block.SprucePlanks
+		case block.JungleLog:
+			return block.JunglePlanks
+		case block.DarkOakLog:
+			return block.DarkOakPlanks
+		case block.AcaciaLog:
+			return block.AcaciaPlanks
+		default:
+			return block.OakPlanks
+		}
+	case block.Farmland:
+		if isTop {
+			return block.Farmland
+		}
+		return block.Dirt
+	}
+	return base
+}
 
 // ChunkMesh holds the generated mesh data for a chunk.
 type ChunkMesh struct {
@@ -282,9 +327,11 @@ func emitQuad(
 
 	// UV coordinates mapped to atlas tile for this block type.
 	// Atlas is 16x16 tiles; each tile is 1/16 of the atlas.
+	// Some blocks use different textures per face (e.g., grass top vs dirt sides).
+	texID := faceTextureID(blockID, normalY)
 	const gridSize = 16.0
-	tileU := float32(int(blockID)%16) / gridSize
-	tileV := float32(int(blockID)/16) / gridSize
+	tileU := float32(int(texID)%16) / gridSize
+	tileV := float32(int(texID)/16) / gridSize
 	tileS := float32(1.0) / gridSize
 
 	uvs := [4][2]float32{
