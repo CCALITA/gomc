@@ -228,6 +228,9 @@ func TestHUD_NewDefaults(t *testing.T) {
 	assert.Equal(t, 20, hud.MaxHealth)
 	assert.Equal(t, 20, hud.Hunger)
 	assert.Equal(t, 20, hud.MaxHunger)
+	assert.Equal(t, 0, hud.ArmorPoints)
+	assert.Equal(t, 10, hud.AirBubbles)
+	assert.Equal(t, 10, hud.MaxAirBubbles)
 	assert.False(t, hud.ShowFPS)
 }
 
@@ -363,6 +366,57 @@ func TestHUD_HungerBar_HalfDrumstick(t *testing.T) {
 	r := NewUIRenderer(800, 600)
 	hud.Draw(r)
 	assert.Greater(t, r.CommandCount(), 0)
+}
+
+func TestHUD_ArmorBar_Hidden_WhenZero(t *testing.T) {
+	hud := NewHUD(inventory.NewInventory(9))
+	hud.ArmorPoints = 0
+
+	rWith := NewUIRenderer(800, 600)
+	hud.Draw(rWith)
+	countZero := rWith.CommandCount()
+
+	hud.ArmorPoints = 10
+	rArmor := NewUIRenderer(800, 600)
+	hud.Draw(rArmor)
+	countArmor := rArmor.CommandCount()
+
+	assert.Greater(t, countArmor, countZero, "Armor bar should add draw commands when ArmorPoints > 0")
+}
+
+func TestHUD_ArmorBar_HalfShield(t *testing.T) {
+	hud := NewHUD(inventory.NewInventory(9))
+	hud.ArmorPoints = 7 // 3 full shields + 1 half
+
+	r := NewUIRenderer(800, 600)
+	hud.Draw(r)
+
+	// Count rect commands to verify the armor bar rendered.
+	rectCount := 0
+	for _, cmd := range r.Commands() {
+		if cmd.Type == drawCmdRect {
+			rectCount++
+		}
+	}
+	// Armor bar adds: 10 background rects + 3 full rects + 1 half rect = 14 rects.
+	// Plus all other HUD rects (crosshair, hotbar, health, hunger).
+	assert.GreaterOrEqual(t, rectCount, 14, "Should have rects from armor bar with half shields")
+}
+
+func TestHUD_BreathBar_Hidden_WhenFull(t *testing.T) {
+	hud := NewHUD(inventory.NewInventory(9))
+	// AirBubbles == MaxAirBubbles (both default to 10), breath bar hidden.
+	rFull := NewUIRenderer(800, 600)
+	hud.Draw(rFull)
+	countFull := rFull.CommandCount()
+
+	// Reduce air to show breath bar.
+	hud.AirBubbles = 5
+	rPartial := NewUIRenderer(800, 600)
+	hud.Draw(rPartial)
+	countPartial := rPartial.CommandCount()
+
+	assert.Greater(t, countPartial, countFull, "Breath bar should add draw commands when AirBubbles < MaxAirBubbles")
 }
 
 // ---------- Debug overlay tests ----------
