@@ -549,6 +549,54 @@ func TestCraftingTableScreen_GridSize(t *testing.T) {
 	assert.Equal(t, 3, ctGridSize, "Crafting table should use 3x3 grid")
 }
 
+func TestCraftingTableScreen_RightClickCraftSlot_PickUpHalf(t *testing.T) {
+	grid := &inventory.CraftingGrid{}
+	grid.SetSlot(0, 0, item.ItemStack{ItemID: item.Stone, Count: 10})
+	player := inventory.NewInventory(36)
+	screen := NewCraftingTableScreen(grid, player, nil)
+
+	// Right-click with empty hand picks up half (rounded up).
+	screen.rightClickCraftSlot(0, 0)
+
+	assert.Equal(t, item.Stone, screen.HeldItem.ItemID)
+	assert.Equal(t, 5, screen.HeldItem.Count)
+	remaining := grid.GetSlot(0, 0)
+	assert.Equal(t, item.Stone, remaining.ItemID)
+	assert.Equal(t, 5, remaining.Count)
+}
+
+func TestCraftingTableScreen_RightClickCraftSlot_PlaceOne(t *testing.T) {
+	grid := &inventory.CraftingGrid{}
+	player := inventory.NewInventory(36)
+	screen := NewCraftingTableScreen(grid, player, nil)
+
+	screen.HeldItem = item.ItemStack{ItemID: item.OakPlanks, Count: 8}
+
+	// Right-click on empty slot places exactly one item.
+	screen.rightClickCraftSlot(1, 1)
+
+	assert.Equal(t, 7, screen.HeldItem.Count)
+	placed := grid.GetSlot(1, 1)
+	assert.Equal(t, item.OakPlanks, placed.ItemID)
+	assert.Equal(t, 1, placed.Count)
+}
+
+func TestCraftingTableScreen_RightClickPlayerSlot_PickUpHalf(t *testing.T) {
+	grid := &inventory.CraftingGrid{}
+	player := inventory.NewInventory(36)
+	player.SetSlot(2, item.ItemStack{ItemID: item.Dirt, Count: 7})
+	screen := NewCraftingTableScreen(grid, player, nil)
+
+	// Right-click with empty hand picks up half (rounded up: 4 of 7).
+	screen.rightClickPlayerSlot(2)
+
+	assert.Equal(t, item.Dirt, screen.HeldItem.ItemID)
+	assert.Equal(t, 4, screen.HeldItem.Count)
+	remaining := player.GetSlot(2)
+	assert.Equal(t, item.Dirt, remaining.ItemID)
+	assert.Equal(t, 3, remaining.Count)
+}
+
 // ---------- Integration: container screens in UIManager ----------
 
 func TestUIManager_IsBlockingInput_ChestScreen(t *testing.T) {

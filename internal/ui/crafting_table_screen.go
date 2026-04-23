@@ -51,6 +51,10 @@ func (s *CraftingTableScreen) Update(inp *input.Manager, _ float64) {
 	if inp.IsMouseJustPressed(input.MouseButtonLeft) {
 		s.handleClick(float32(s.mouseX), float32(s.mouseY))
 	}
+
+	if inp.IsMouseJustPressed(input.MouseButtonRight) {
+		s.handleRightClick(float32(s.mouseX), float32(s.mouseY))
+	}
 }
 
 // Draw renders the crafting table screen.
@@ -223,6 +227,109 @@ func (s *CraftingTableScreen) takeCraftResult() {
 // swapWithPlayerSlot swaps the held item with a player inventory slot.
 func (s *CraftingTableScreen) swapWithPlayerSlot(slotIdx int) {
 	s.HeldItem = swapHeldWithSlot(s.HeldItem, s.PlayerInv, slotIdx)
+}
+
+// handleRightClick processes a right-click at screen coordinates.
+// Grid/player slots: holding nothing -> pick up half; holding items -> place 1.
+// Result slot: same as left-click (take result).
+func (s *CraftingTableScreen) handleRightClick(mx, my float32) {
+	cr, cc := s.hitTestCraftGrid(mx, my)
+	if cr >= 0 && cc >= 0 {
+		s.rightClickCraftSlot(cr, cc)
+		return
+	}
+
+	if s.hitTestResult(mx, my) {
+		s.takeCraftResult()
+		return
+	}
+
+	playerIdx := s.hitTestPlayer(mx, my)
+	if playerIdx >= 0 {
+		s.rightClickPlayerSlot(playerIdx)
+	}
+}
+
+// rightClickCraftSlot handles right-click on a crafting grid slot.
+// If not holding anything, picks up half the stack. If holding items,
+// places one item into the slot (if compatible or empty).
+func (s *CraftingTableScreen) rightClickCraftSlot(row, col int) {
+	if s.CraftGrid == nil {
+		return
+	}
+	current := s.CraftGrid.GetSlot(row, col)
+
+	if s.HeldItem.IsEmpty() {
+		// Pick up half (rounded up).
+		if current.IsEmpty() {
+			return
+		}
+		half := (current.Count + 1) / 2
+		taken, remaining := current.Split(half)
+		s.HeldItem = taken
+		s.CraftGrid.SetSlot(row, col, remaining)
+		return
+	}
+
+	// Holding items: place one into the slot.
+	if current.IsEmpty() {
+		placed, remaining := s.HeldItem.Split(1)
+		s.CraftGrid.SetSlot(row, col, placed)
+		s.HeldItem = remaining
+		return
+	}
+
+	if current.CanStackWith(s.HeldItem) {
+		max := item.MaxStack(current.ItemID)
+		if current.Count < max {
+			placed := current
+			placed.Count++
+			s.CraftGrid.SetSlot(row, col, placed)
+			_, remaining := s.HeldItem.Split(1)
+			s.HeldItem = remaining
+		}
+	}
+}
+
+// rightClickPlayerSlot handles right-click on a player inventory slot.
+// If not holding anything, picks up half the stack. If holding items,
+// places one item into the slot (if compatible or empty).
+func (s *CraftingTableScreen) rightClickPlayerSlot(slotIdx int) {
+	if s.PlayerInv == nil {
+		return
+	}
+	current := s.PlayerInv.GetSlot(slotIdx)
+
+	if s.HeldItem.IsEmpty() {
+		// Pick up half (rounded up).
+		if current.IsEmpty() {
+			return
+		}
+		half := (current.Count + 1) / 2
+		taken, remaining := current.Split(half)
+		s.HeldItem = taken
+		s.PlayerInv.SetSlot(slotIdx, remaining)
+		return
+	}
+
+	// Holding items: place one into the slot.
+	if current.IsEmpty() {
+		placed, remaining := s.HeldItem.Split(1)
+		s.PlayerInv.SetSlot(slotIdx, placed)
+		s.HeldItem = remaining
+		return
+	}
+
+	if current.CanStackWith(s.HeldItem) {
+		max := item.MaxStack(current.ItemID)
+		if current.Count < max {
+			placed := current
+			placed.Count++
+			s.PlayerInv.SetSlot(slotIdx, placed)
+			_, remaining := s.HeldItem.Split(1)
+			s.HeldItem = remaining
+		}
+	}
 }
 
 // --- Layout helpers ---
