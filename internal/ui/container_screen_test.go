@@ -620,6 +620,104 @@ func TestIntegration_FurnaceOpenClose(t *testing.T) {
 	assert.Equal(t, 1, m.ScreenCount())
 }
 
+// ---------- AnvilScreen tests ----------
+
+func TestAnvilScreen_New(t *testing.T) {
+	player := inventory.NewInventory(36)
+	closed := false
+	screen := NewAnvilScreen(player, func() { closed = true })
+
+	assert.NotNil(t, screen)
+	assert.False(t, screen.IsClosed())
+	assert.True(t, screen.HeldItem.IsEmpty())
+	assert.True(t, screen.LeftInput.IsEmpty())
+	assert.True(t, screen.RightInput.IsEmpty())
+	assert.True(t, screen.Output.IsEmpty())
+	assert.True(t, screen.IsOverlay())
+	assert.False(t, closed)
+}
+
+func TestAnvilScreen_CloseReturnsInputItems(t *testing.T) {
+	player := inventory.NewInventory(36)
+	screen := NewAnvilScreen(player, nil)
+
+	screen.LeftInput = item.ItemStack{ItemID: item.IronPickaxe, Count: 1, Durability: 100}
+	screen.RightInput = item.ItemStack{ItemID: item.IronPickaxe, Count: 1, Durability: 50}
+	screen.HeldItem = item.ItemStack{ItemID: item.Stone, Count: 10}
+	screen.Close()
+
+	assert.True(t, screen.LeftInput.IsEmpty())
+	assert.True(t, screen.RightInput.IsEmpty())
+	assert.True(t, screen.HeldItem.IsEmpty())
+
+	// All three stacks should be returned to the player inventory.
+	foundPickaxe1 := false
+	foundPickaxe2 := false
+	foundStone := false
+	for i := 0; i < player.Size(); i++ {
+		s := player.GetSlot(i)
+		if s.ItemID == item.IronPickaxe && s.Durability == 100 {
+			foundPickaxe1 = true
+		}
+		if s.ItemID == item.IronPickaxe && s.Durability == 50 {
+			foundPickaxe2 = true
+		}
+		if s.ItemID == item.Stone && s.Count == 10 {
+			foundStone = true
+		}
+	}
+	assert.True(t, foundPickaxe1, "Left input should be returned to player inventory")
+	assert.True(t, foundPickaxe2, "Right input should be returned to player inventory")
+	assert.True(t, foundStone, "Held item should be returned to player inventory")
+}
+
+func TestAnvilScreen_RepairComputesOutput(t *testing.T) {
+	player := inventory.NewInventory(36)
+	screen := NewAnvilScreen(player, nil)
+
+	// Place two iron pickaxes with partial durability into the input slots.
+	screen.LeftInput = item.ItemStack{ItemID: item.IronPickaxe, Count: 1, Durability: 100}
+	screen.RightInput = item.ItemStack{ItemID: item.IronPickaxe, Count: 1, Durability: 80}
+	screen.recomputeOutput()
+
+	assert.False(t, screen.Output.IsEmpty(), "Output should be computed for valid repair")
+	assert.Equal(t, item.IronPickaxe, screen.Output.ItemID)
+	assert.Greater(t, screen.Output.Durability, 0)
+	assert.Greater(t, screen.XPCost, 0)
+}
+
+func TestAnvilScreen_TakeOutputConsumesInputs(t *testing.T) {
+	player := inventory.NewInventory(36)
+	screen := NewAnvilScreen(player, nil)
+
+	screen.LeftInput = item.ItemStack{ItemID: item.IronPickaxe, Count: 1, Durability: 100}
+	screen.RightInput = item.ItemStack{ItemID: item.IronPickaxe, Count: 1, Durability: 80}
+	screen.recomputeOutput()
+
+	savedOutput := screen.Output
+	screen.takeOutput()
+
+	assert.Equal(t, savedOutput.ItemID, screen.HeldItem.ItemID)
+	assert.True(t, screen.LeftInput.IsEmpty(), "Left input should be consumed")
+	assert.True(t, screen.RightInput.IsEmpty(), "Right input should be consumed")
+	assert.True(t, screen.Output.IsEmpty(), "Output slot should be cleared")
+	assert.Equal(t, 0, screen.XPCost)
+}
+
+func TestAnvilScreen_RenameOnlyOutput(t *testing.T) {
+	player := inventory.NewInventory(36)
+	screen := NewAnvilScreen(player, nil)
+
+	screen.LeftInput = item.ItemStack{ItemID: item.DiamondSword, Count: 1, Durability: 1561}
+	screen.RenameTo = "Excalibur"
+	screen.recomputeOutput()
+
+	assert.False(t, screen.Output.IsEmpty(), "Rename-only should produce output")
+	assert.Equal(t, "Excalibur", screen.Output.CustomName)
+	assert.Equal(t, item.DiamondSword, screen.Output.ItemID)
+	assert.Equal(t, 1, screen.XPCost, "Rename-only costs 1 XP level")
+}
+
 func TestIntegration_CraftingTableOpenClose(t *testing.T) {
 	m := NewUIManager()
 	hud := NewHUD(inventory.NewInventory(9))
