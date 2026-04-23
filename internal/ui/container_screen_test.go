@@ -639,3 +639,45 @@ func TestIntegration_CraftingTableOpenClose(t *testing.T) {
 
 	assert.Equal(t, 1, m.ScreenCount())
 }
+
+// ---------- InventoryScreen Armor Slot tests ----------
+
+func TestInventoryScreen_ArmorSlot_EquipCorrectSlot(t *testing.T) {
+	inv := inventory.NewInventory(36)
+	grid := &inventory.CraftingGrid{}
+	screen := NewInventoryScreen(inv, grid, nil)
+
+	// Hold an iron helmet (ArmorSlot=0) and click armor slot 0.
+	screen.HeldItem = item.NewItemStack(item.IronHelmet, 1)
+	screen.handleArmorSlotClick(0)
+
+	assert.True(t, screen.HeldItem.IsEmpty(), "Held item should be empty after equipping")
+	assert.Equal(t, item.IronHelmet, screen.ArmorSlots[0].ItemID)
+	assert.Equal(t, 1, screen.ArmorSlots[0].Count)
+}
+
+func TestInventoryScreen_ArmorSlot_UnequipEmptyHands(t *testing.T) {
+	inv := inventory.NewInventory(36)
+	grid := &inventory.CraftingGrid{}
+	screen := NewInventoryScreen(inv, grid, nil)
+
+	// Place boots in armor slot 3, then click with empty hands.
+	screen.ArmorSlots[3] = item.NewItemStack(item.IronBoots, 1)
+	screen.handleArmorSlotClick(3)
+
+	assert.Equal(t, item.IronBoots, screen.HeldItem.ItemID, "Should pick up boots")
+	assert.True(t, screen.ArmorSlots[3].IsEmpty(), "Armor slot should be empty after unequip")
+}
+
+func TestInventoryScreen_ArmorSlot_RejectWrongSlot(t *testing.T) {
+	inv := inventory.NewInventory(36)
+	grid := &inventory.CraftingGrid{}
+	screen := NewInventoryScreen(inv, grid, nil)
+
+	// Hold a chestplate (ArmorSlot=1) and try to place in slot 0 (helmet).
+	screen.HeldItem = item.NewItemStack(item.IronChestplate, 1)
+	screen.handleArmorSlotClick(0)
+
+	assert.Equal(t, item.IronChestplate, screen.HeldItem.ItemID, "Should still be holding chestplate")
+	assert.True(t, screen.ArmorSlots[0].IsEmpty(), "Helmet slot should remain empty")
+}
