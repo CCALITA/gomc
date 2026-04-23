@@ -443,6 +443,146 @@ func TestToolEffectiveness_HigherLevelPickaxeFasterThanLower(t *testing.T) {
 // SpawnDrops
 // ---------------------------------------------------------------------------
 
+// ---------------------------------------------------------------------------
+// GetDrops – decorative and functional blocks
+// ---------------------------------------------------------------------------
+
+func TestGetDrops_WoolBlocksDropWool(t *testing.T) {
+	woolBlocks := []struct {
+		name    string
+		blockID uint16
+	}{
+		{"WhiteWool", WhiteWool},
+		{"OrangeWool", OrangeWool},
+		{"MagentaWool", MagentaWool},
+		{"LightBlueWool", LightBlueWool},
+		{"YellowWool", YellowWool},
+		{"LimeWool", LimeWool},
+		{"PinkWool", PinkWool},
+		{"GrayWool", GrayWool},
+		{"LightGrayWool", LightGrayWool},
+		{"CyanWool", CyanWool},
+		{"PurpleWool", PurpleWool},
+		{"BlueWool", BlueWool},
+		{"BrownWool", BrownWool},
+		{"GreenWool", GreenWool},
+		{"RedWool", RedWool},
+		{"BlackWool", BlackWool},
+	}
+
+	for _, tc := range woolBlocks {
+		t.Run(tc.name, func(t *testing.T) {
+			drops := GetDrops(tc.blockID, item.ToolNone, item.LevelHand)
+			require.Len(t, drops, 1)
+			assert.Equal(t, item.Wool, drops[0].ItemID)
+			assert.Equal(t, 1, drops[0].Count)
+			assert.Equal(t, 1.0, drops[0].Chance)
+		})
+	}
+}
+
+func TestGetDrops_DecorativeBlocksDropSelf(t *testing.T) {
+	tests := []struct {
+		name    string
+		blockID uint16
+		itemID  uint16
+	}{
+		{"OakDoor", OakDoor, item.OakDoor},
+		{"OakFence", OakFence, item.OakFence},
+		{"Ladder", Ladder, item.Ladder},
+		{"Bookshelf", Bookshelf, item.Bookshelf},
+		{"IronBlock", IronBlock, item.IronBlock},
+		{"GoldBlock", GoldBlock, item.GoldBlock},
+		{"DiamondBlock", DiamondBlock, item.DiamondBlock},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			drops := GetDrops(tc.blockID, item.ToolNone, item.LevelHand)
+			require.Len(t, drops, 1)
+			assert.Equal(t, tc.itemID, drops[0].ItemID)
+			assert.Equal(t, 1, drops[0].Count)
+			assert.Equal(t, 1.0, drops[0].Chance)
+		})
+	}
+}
+
+func TestGetDrops_StairsDropSelf(t *testing.T) {
+	tests := []struct {
+		name    string
+		blockID uint16
+		itemID  uint16
+	}{
+		{"OakStairs", OakStairs, item.OakStairs},
+		{"CobblestoneStairs", CobblestoneStairs, item.CobblestoneStairs},
+		{"StoneStairs", StoneStairs, item.StoneStairs},
+		{"BirchStairs", BirchStairs, item.BirchStairs},
+		{"SpruceStairs", SpruceStairs, item.SpruceStairs},
+		{"SandstoneStairs", SandstoneStairs, item.SandstoneStairs},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			drops := GetDrops(tc.blockID, item.ToolNone, item.LevelHand)
+			require.Len(t, drops, 1)
+			assert.Equal(t, tc.itemID, drops[0].ItemID)
+			assert.Equal(t, 1, drops[0].Count)
+			assert.Equal(t, 1.0, drops[0].Chance)
+		})
+	}
+}
+
+func TestGetToolCategory_DecorativeBlocks(t *testing.T) {
+	tests := []struct {
+		blockID uint16
+		want    string
+	}{
+		{OakDoor, item.ToolAxe},
+		{OakFence, item.ToolAxe},
+		{Ladder, item.ToolAxe},
+		{Bookshelf, item.ToolAxe},
+		{OakStairs, item.ToolAxe},
+		{CobblestoneStairs, item.ToolPickaxe},
+		{IronBlock, item.ToolPickaxe},
+		{GoldBlock, item.ToolPickaxe},
+		{DiamondBlock, item.ToolPickaxe},
+		{WhiteWool, item.ToolNone},
+	}
+
+	for _, tc := range tests {
+		assert.Equal(t, tc.want, GetToolCategory(tc.blockID), "block %d", tc.blockID)
+	}
+}
+
+func TestGetDrops_SlabsDropSelf(t *testing.T) {
+	tests := []struct {
+		name    string
+		blockID uint16
+		itemID  uint16
+	}{
+		{"OakSlab", OakSlab, item.OakSlab},
+		{"CobblestoneSlab", CobblestoneSlab, item.CobblestoneSlab},
+		{"StoneSlab", StoneSlab, item.StoneSlab},
+		{"BirchSlab", BirchSlab, item.BirchSlab},
+		{"SpruceSlab", SpruceSlab, item.SpruceSlab},
+		{"SandstoneSlab", SandstoneSlab, item.SandstoneSlab},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			drops := GetDrops(tc.blockID, item.ToolNone, item.LevelHand)
+			require.Len(t, drops, 1)
+			assert.Equal(t, tc.itemID, drops[0].ItemID)
+			assert.Equal(t, 1, drops[0].Count)
+			assert.Equal(t, 1.0, drops[0].Chance)
+		})
+	}
+}
+
+// ---------------------------------------------------------------------------
+// SpawnDrops
+// ---------------------------------------------------------------------------
+
 func TestSpawnDrops_StoneSpawnsCobblestoneEntity(t *testing.T) {
 	w := ecs.NewWorld()
 	pos := mcmath.BlockPos{X: 10, Y: 64, Z: 20}
