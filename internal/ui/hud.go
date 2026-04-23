@@ -20,6 +20,8 @@ const (
 	hudBarHeight   = 48.0
 	crosshairSize  = 16.0
 	crosshairWidth = 2.0
+	xpBarHeight    = 6.0
+	xpBarGap       = 4.0
 )
 
 // HUD is the always-visible heads-up display: crosshair, hotbar, health
@@ -75,6 +77,12 @@ type HUD struct {
 
 	// GameTick is the current game tick (for clock display).
 	GameTick int64
+
+	// XPLevel is the player's current experience level (displayed as text).
+	XPLevel int
+
+	// XPProgress is the progress toward the next level (0.0 to 1.0).
+	XPProgress float32
 }
 
 // NewHUD creates a HUD bound to the given hotbar inventory.
@@ -114,6 +122,7 @@ func (h *HUD) Update(inp *input.Manager, _ float64) {
 func (h *HUD) Draw(r *UIRenderer) {
 	h.drawCrosshair(r)
 	h.drawHotbar(r)
+	h.drawXPBar(r)
 	h.drawHealthBar(r)
 	h.drawHungerBar(r)
 	h.drawFunctionalItemOverlay(r)
@@ -173,6 +182,37 @@ func (h *HUD) drawHotbar(r *UIRenderer) {
 				r.DrawItemSlot(x+4, y+4, stack)
 			}
 		}
+	}
+}
+
+// drawXPBar renders a green experience progress bar below the hotbar with
+// the current XP level displayed as centered text.
+func (h *HUD) drawXPBar(r *UIRenderer) {
+	totalWidth := float32(hotbarSlots)*slotSize + float32(hotbarSlots-1)*slotPadding
+	startX := (r.ScreenWidth - totalWidth) / 2
+	y := r.ScreenHeight - hudBarHeight + slotSize + xpBarGap
+
+	// Dark background bar.
+	r.DrawRect(startX, y, totalWidth, xpBarHeight, 0.1, 0.1, 0.1, 0.8)
+
+	// Green filled portion.
+	progress := h.XPProgress
+	if progress < 0 {
+		progress = 0
+	}
+	if progress > 1 {
+		progress = 1
+	}
+	if progress > 0 {
+		r.DrawRect(startX, y, totalWidth*progress, xpBarHeight, 0.3, 0.9, 0.1, 0.9)
+	}
+
+	// XP level text centered above the bar.
+	if h.XPLevel > 0 {
+		label := fmt.Sprintf("%d", h.XPLevel)
+		textY := y - 14
+		textX := r.ScreenWidth/2 - float32(len(label))*4
+		r.DrawText(textX, textY, label, 1.0, 0.3, 0.9, 0.1)
 	}
 }
 

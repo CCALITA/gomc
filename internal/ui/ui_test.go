@@ -520,6 +520,55 @@ func TestHUD_DebugOverlay_ZeroFPS(t *testing.T) {
 	assert.Contains(t, lines[1], "FPS: 0 (0.0ms)")
 }
 
+// ---------- XP bar tests ----------
+
+func TestHUD_DrawXPBar_ProgressAndLevel(t *testing.T) {
+	hud := NewHUD(inventory.NewInventory(9))
+	hud.XPLevel = 15
+	hud.XPProgress = 0.6
+
+	r := NewUIRenderer(800, 600)
+	hud.Draw(r)
+
+	// Expect at least: 1 XP background rect + 1 green fill rect + 1 level text.
+	var greenRects int
+	var levelText bool
+	for _, cmd := range r.Commands() {
+		if cmd.Type == drawCmdRect && cmd.G > 0.8 && cmd.R < 0.4 && cmd.B < 0.2 {
+			greenRects++
+		}
+		if cmd.Type == drawCmdText && cmd.Text == "15" {
+			levelText = true
+		}
+	}
+	assert.GreaterOrEqual(t, greenRects, 1, "Should draw at least one green XP fill rect")
+	assert.True(t, levelText, "Should draw XP level text '15'")
+}
+
+func TestHUD_DrawXPBar_ZeroProgress(t *testing.T) {
+	hud := NewHUD(inventory.NewInventory(9))
+	hud.XPLevel = 0
+	hud.XPProgress = 0.0
+
+	r := NewUIRenderer(800, 600)
+	hud.Draw(r)
+
+	// With zero progress and level 0 there should be no green fill rect
+	// and no level text from the XP bar.
+	var greenRects int
+	var levelText bool
+	for _, cmd := range r.Commands() {
+		if cmd.Type == drawCmdRect && cmd.G > 0.8 && cmd.R < 0.4 && cmd.B < 0.2 {
+			greenRects++
+		}
+		if cmd.Type == drawCmdText && cmd.Text == "0" {
+			levelText = true
+		}
+	}
+	assert.Equal(t, 0, greenRects, "Should not draw green XP fill rect with zero progress")
+	assert.False(t, levelText, "Should not draw XP level text when level is 0")
+}
+
 // ---------- InventoryScreen tests ----------
 
 func TestInventoryScreen_New(t *testing.T) {
