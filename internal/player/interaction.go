@@ -60,17 +60,22 @@ func (c *Controller) updateBreaking(inp *input.Manager, w BlockWorld, dt float32
 		return
 	}
 
-	// Creative mode: instant break on all breakable blocks.
+	// Creative mode: instant break on all breakable blocks (no drops).
 	if c.Mode != nil && c.Mode.CanBreakInstantly() {
 		w.SetBlock(pos, block.Air)
 		c.resetBreaking()
 		return
 	}
 
+	// Resolve the held item's tool properties for drop calculations.
+	selectedItem := c.getSelectedHotbarItem()
+	itemProps := item.GetProperties(selectedItem.ItemID)
+	toolType := itemProps.ToolType
+	toolLevel := itemProps.ToolLevel
+
 	// Instant-break blocks (hardness == 0).
 	if props.Hardness == 0 {
-		w.SetBlock(pos, block.Air)
-		c.resetBreaking()
+		c.breakAndDrop(w, pos, toolType, toolLevel)
 		return
 	}
 
@@ -78,8 +83,7 @@ func (c *Controller) updateBreaking(inp *input.Manager, w BlockWorld, dt float32
 	c.BreakProgress += dt / breakTime
 
 	if c.BreakProgress >= 1.0 {
-		w.SetBlock(pos, block.Air)
-		c.resetBreaking()
+		c.breakAndDrop(w, pos, toolType, toolLevel)
 	}
 }
 
@@ -163,6 +167,15 @@ func (c *Controller) GetTargetBlock(w BlockWorld) (hit bool, pos mcmath.BlockPos
 // GetBreakProgress returns the current block breaking progress (0.0 to 1.0).
 func (c *Controller) GetBreakProgress() float32 {
 	return c.BreakProgress
+}
+
+// breakAndDrop removes the targeted block, spawns its item drops based on
+// the held tool, and resets the breaking state.
+func (c *Controller) breakAndDrop(w BlockWorld, pos mcmath.BlockPos, toolType string, toolLevel int) {
+	blockID := c.interaction.breakingBlockID
+	w.SetBlock(pos, block.Air)
+	block.SpawnDrops(c.ECSWorld, pos, blockID, toolType, toolLevel)
+	c.resetBreaking()
 }
 
 // resetBreaking clears all breaking state.

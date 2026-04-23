@@ -15,6 +15,7 @@ import (
 	"github.com/fanxiyao/gomc/internal/entity"
 	"github.com/fanxiyao/gomc/internal/input"
 	"github.com/fanxiyao/gomc/internal/inventory"
+	"github.com/fanxiyao/gomc/internal/item"
 	"github.com/fanxiyao/gomc/internal/mcmath"
 	"github.com/fanxiyao/gomc/internal/player"
 	"github.com/fanxiyao/gomc/internal/render"
@@ -149,6 +150,18 @@ func (g *Game) setupSystems() {
 	g.Scheduler.Add(&entity.DamageSystem{})
 	g.Scheduler.Add(&entity.HealthSystem{})
 	g.Scheduler.Add(&entity.HungerSystem{})
+	g.Scheduler.Add(&entity.ItemPickupSystem{
+		OnPickup: func(playerEntity ecs.Entity, itemID uint16, count int) bool {
+			if g.Player == nil || playerEntity != g.Player.Entity {
+				return false
+			}
+			if g.Inventory != nil {
+				remainder := g.Inventory.AddItem(item.ItemStack{ItemID: itemID, Count: count})
+				return remainder.IsEmpty()
+			}
+			return false
+		},
+	})
 }
 
 func (g *Game) setupUI() {
