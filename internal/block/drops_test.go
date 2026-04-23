@@ -88,6 +88,89 @@ func TestGetDrops_GrassWithShovel(t *testing.T) {
 	assert.Equal(t, item.Dirt, drops[0].ItemID)
 }
 
+func TestGetDrops_NatureBlocksDropSelf(t *testing.T) {
+	tests := []struct {
+		name    string
+		blockID uint16
+		itemID  uint16
+	}{
+		{"Sugarcane", Sugarcane, item.Sugarcane},
+		{"Cactus", Cactus, item.CactusItem},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			drops := GetDrops(tc.blockID, item.ToolNone, item.LevelHand)
+			require.Len(t, drops, 1)
+			assert.Equal(t, tc.itemID, drops[0].ItemID)
+			assert.Equal(t, 1, drops[0].Count)
+			assert.Equal(t, 1.0, drops[0].Chance)
+		})
+	}
+}
+
+func TestGetDrops_ClayDropsFourClayBalls(t *testing.T) {
+	drops := GetDrops(Clay, item.ToolNone, item.LevelHand)
+	require.Len(t, drops, 1)
+	assert.Equal(t, item.ClayBall, drops[0].ItemID)
+	assert.Equal(t, 4, drops[0].Count)
+	assert.Equal(t, 1.0, drops[0].Chance)
+}
+
+func TestGetDrops_RedstoneOreRequiresIronPickaxe(t *testing.T) {
+	tests := []struct {
+		name      string
+		toolType  string
+		toolLevel int
+		wantDrops bool
+	}{
+		{"bare hand", item.ToolNone, item.LevelHand, false},
+		{"wood pickaxe", item.ToolPickaxe, item.LevelWood, false},
+		{"stone pickaxe", item.ToolPickaxe, item.LevelStone, false},
+		{"iron pickaxe", item.ToolPickaxe, item.LevelIron, true},
+		{"diamond pickaxe", item.ToolPickaxe, item.LevelDiamond, true},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			drops := GetDrops(RedstoneOre, tc.toolType, tc.toolLevel)
+			if tc.wantDrops {
+				require.Len(t, drops, 1)
+				assert.Equal(t, item.RedstoneItem, drops[0].ItemID)
+				assert.Equal(t, 4, drops[0].Count)
+			} else {
+				assert.Empty(t, drops)
+			}
+		})
+	}
+}
+
+func TestGetDrops_LapisAndEmeraldOre(t *testing.T) {
+	// Lapis requires stone pickaxe minimum, drops 4.
+	t.Run("LapisOre/stone pickaxe", func(t *testing.T) {
+		drops := GetDrops(LapisOre, item.ToolPickaxe, item.LevelStone)
+		require.Len(t, drops, 1)
+		assert.Equal(t, item.LapisLazuli, drops[0].ItemID)
+		assert.Equal(t, 4, drops[0].Count)
+	})
+	t.Run("LapisOre/wood pickaxe fails", func(t *testing.T) {
+		drops := GetDrops(LapisOre, item.ToolPickaxe, item.LevelWood)
+		assert.Empty(t, drops)
+	})
+
+	// Emerald requires iron pickaxe minimum, drops 1.
+	t.Run("EmeraldOre/iron pickaxe", func(t *testing.T) {
+		drops := GetDrops(EmeraldOre, item.ToolPickaxe, item.LevelIron)
+		require.Len(t, drops, 1)
+		assert.Equal(t, item.Emerald, drops[0].ItemID)
+		assert.Equal(t, 1, drops[0].Count)
+	})
+	t.Run("EmeraldOre/stone pickaxe fails", func(t *testing.T) {
+		drops := GetDrops(EmeraldOre, item.ToolPickaxe, item.LevelStone)
+		assert.Empty(t, drops)
+	})
+}
+
 func TestGetDrops_OakLeavesDropsSapling(t *testing.T) {
 	drops := GetDrops(OakLeaves, item.ToolNone, item.LevelHand)
 	require.Len(t, drops, 1)

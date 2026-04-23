@@ -227,6 +227,12 @@ func init() {
 	registerArmor(DiamondLeggings, "Diamond Leggings", 2, 6, 495)
 	registerArmor(DiamondBoots, "Diamond Boots", 3, 3, 429)
 
+	// ---- nature / crop items ----
+	registerBlock(Sugarcane, "Sugarcane", Sugarcane)
+	registerBlock(CactusItem, "Cactus", CactusItem)
+	registerMaterial(ClayBall, "Clay Ball")
+	registerMaterial(LapisLazuli, "Lapis Lazuli")
+
 	// ---- villager trading materials ----
 	registerMaterial(Emerald, "Emerald")
 	registerMaterial(Paper, "Paper")
