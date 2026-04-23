@@ -174,7 +174,7 @@ func (c *Controller) GetBreakProgress() float32 {
 func (c *Controller) breakAndDrop(w BlockWorld, pos mcmath.BlockPos, toolType string, toolLevel int) {
 	blockID := c.interaction.breakingBlockID
 	w.SetBlock(pos, block.Air)
-	block.SpawnDrops(c.ECSWorld, pos, blockID, toolType, toolLevel)
+	block.SpawnDrops(c.ECSWorld, pos, blockID, toolType, toolLevel, nil)
 	c.resetBreaking()
 }
 
