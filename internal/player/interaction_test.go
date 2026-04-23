@@ -181,3 +181,89 @@ func (c *creativeModeStub) CanBreakInstantly() bool  { return true }
 func (c *creativeModeStub) HasInfiniteItems() bool   { return true }
 func (c *creativeModeStub) CanTakeDamage() bool      { return false }
 func (c *creativeModeStub) IsNoClip() bool           { return false }
+
+// ---------------------------------------------------------------------------
+// Eating tests
+// ---------------------------------------------------------------------------
+
+// setupEatingTest creates a Controller with an inventory and a Hunger
+// component ready for eating tests.
+func setupEatingTest() (*Controller, *ecs.World) {
+	ecsWorld := ecs.NewWorld()
+	e := entity.SpawnPlayer(ecsWorld, "test", mcmath.Vec3{X: 0.5, Y: 64, Z: 0.5})
+	cam := render.NewCamera(mcmath.Vec3{X: 0.5, Y: 65.62, Z: 0.5})
+	km := input.NewKeyMap()
+	ctrl := NewController(e, ecsWorld, cam, km)
+	ctrl.Inventory = inventory.NewInventory(36)
+	return ctrl, ecsWorld
+}
+
+// TestTryEatFood_RestoresHunger verifies that eating a food item restores
+// food level and saturation and removes one item from the inventory.
+func TestTryEatFood_RestoresHunger(t *testing.T) {
+	ctrl, ecsWorld := setupEatingTest()
+
+	// Drain hunger so the player can eat.
+	hungerStore := ecs.GetStore[entity.Hunger](ecsWorld)
+	hunger, ok := hungerStore.Get(ctrl.Entity)
+	require.True(t, ok)
+	hunger.FoodLevel = 10
+	hunger.Saturation = 0
+
+	// Place a stack of 5 bread in slot 0 (selected slot).
+	ctrl.Inventory.SetSlot(0, item.NewItemStack(item.Bread, 5))
+
+	ate := ctrl.tryEatFood()
+	assert.True(t, ate, "should eat food successfully")
+
+	// Bread restores 5 food and 6.0 saturation.
+	assert.Equal(t, 15, hunger.FoodLevel, "food level should be 10+5=15")
+	assert.InDelta(t, 6.0, hunger.Saturation, 0.01, "saturation should be restored")
+
+	// Count should decrease by 1.
+	remaining := ctrl.Inventory.GetSlot(0)
+	assert.Equal(t, 4, remaining.Count, "item count should decrease by 1")
+}
+
+// TestTryEatFood_FullHunger_DoesNotEat verifies that eating is refused
+// when the player's hunger bar is already full.
+func TestTryEatFood_FullHunger_DoesNotEat(t *testing.T) {
+	ctrl, ecsWorld := setupEatingTest()
+
+	// Hunger is at max by default (20).
+	hungerStore := ecs.GetStore[entity.Hunger](ecsWorld)
+	hunger, ok := hungerStore.Get(ctrl.Entity)
+	require.True(t, ok)
+	assert.Equal(t, entity.MaxFoodLevel, hunger.FoodLevel)
+
+	ctrl.Inventory.SetSlot(0, item.NewItemStack(item.Bread, 3))
+
+	ate := ctrl.tryEatFood()
+	assert.False(t, ate, "should not eat when hunger is full")
+
+	// Item count should be unchanged.
+	remaining := ctrl.Inventory.GetSlot(0)
+	assert.Equal(t, 3, remaining.Count, "item count should be unchanged")
+}
+
+// TestTryEatFood_NonFoodItem_DoesNotEat verifies that trying to eat a
+// non-food item (e.g. a tool) does nothing.
+func TestTryEatFood_NonFoodItem_DoesNotEat(t *testing.T) {
+	ctrl, ecsWorld := setupEatingTest()
+
+	// Drain hunger so the player would eat if the item were food.
+	hungerStore := ecs.GetStore[entity.Hunger](ecsWorld)
+	hunger, ok := hungerStore.Get(ctrl.Entity)
+	require.True(t, ok)
+	hunger.FoodLevel = 5
+
+	// Place a wooden pickaxe (non-food) in slot 0.
+	ctrl.Inventory.SetSlot(0, item.NewItemStack(item.WoodenPickaxe, 1))
+
+	ate := ctrl.tryEatFood()
+	assert.False(t, ate, "should not eat a non-food item")
+
+	// Item should be untouched.
+	remaining := ctrl.Inventory.GetSlot(0)
+	assert.Equal(t, 1, remaining.Count, "item count should be unchanged")
+}
