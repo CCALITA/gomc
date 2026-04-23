@@ -95,6 +95,11 @@ func (c *Controller) updatePlacement(inp *input.Manager, w BlockWorld) {
 		return
 	}
 
+	// Try eating food before block placement.
+	if c.tryEatFood() {
+		return
+	}
+
 	hit, pos, face := c.GetTargetBlock(w)
 	if !hit {
 		return
