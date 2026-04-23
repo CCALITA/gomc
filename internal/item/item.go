@@ -143,6 +143,8 @@ const (
 	Sandstone    ItemID = 343
 	BirchPlanks  ItemID = 344
 	SprucePlanks ItemID = 345
+
+	GlassPane ItemID = 346
 )
 
 // ----- Stair / slab item IDs -----

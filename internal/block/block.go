@@ -213,6 +213,8 @@ const (
 	// Nether blocks (114-115)
 	NetherPortal    BlockID = 114
 	NetherQuartzOre BlockID = 115
+
+	GlassPane BlockID = 116
 )
 
 const cropStageShift = 8

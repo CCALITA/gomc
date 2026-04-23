@@ -146,6 +146,7 @@ func init() {
 	registerBlock(GoldBlock, "Gold Block", GoldBlock)
 	registerBlock(DiamondBlock, "Diamond Block", DiamondBlock)
 	registerBlock(AnvilItem, "Anvil", AnvilItem)
+	registerBlock(GlassPane, "Glass Pane", 116) // block.GlassPane
 
 	// ---- boat (non-block, non-tool) ----
 	properties[Boat] = ItemProperties{

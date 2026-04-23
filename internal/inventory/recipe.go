@@ -248,6 +248,16 @@ func registerRecipes() {
 		},
 		Result: item.NewItemStack(item.FishingRod, 1),
 	})
+
+	// -- Glass Pane: 6 Glass in 2x3 grid -> 16 Glass Panes
+	RegisterRecipe(Recipe{
+		Pattern: [3][3]uint16{
+			{item.Glass, item.Glass, item.Glass},
+			{item.Glass, item.Glass, item.Glass},
+			{0, 0, 0},
+		},
+		Result: item.NewItemStack(item.GlassPane, 16),
+	})
 }
 
 // registerPickaxe registers a pickaxe recipe: 3 material on top, 2 sticks vertical center.

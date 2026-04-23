@@ -495,6 +495,11 @@ var properties = map[BlockID]BlockProperties{
 		Hardness: 5, BlastResistance: 1200,
 		LightEmission: 0, LightFilter: 15,
 	},
+	GlassPane: {
+		Name: "glass_pane", Solid: false, Transparent: true,
+		Hardness: 0.3, BlastResistance: 0.3,
+		LightEmission: 0, LightFilter: 0,
+	},
 }
 
 // GetProperties returns the BlockProperties for the given block ID.
