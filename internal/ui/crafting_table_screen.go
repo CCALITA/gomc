@@ -49,7 +49,11 @@ func (s *CraftingTableScreen) Update(inp *input.Manager, _ float64) {
 	}
 
 	if inp.IsMouseJustPressed(input.MouseButtonLeft) {
-		s.handleClick(float32(s.mouseX), float32(s.mouseY))
+		if inp.IsKeyDown(input.KeyLeftShift) {
+			s.handleShiftClick(float32(s.mouseX), float32(s.mouseY))
+		} else {
+			s.handleClick(float32(s.mouseX), float32(s.mouseY))
+		}
 	}
 }
 
@@ -183,6 +187,72 @@ func (s *CraftingTableScreen) handleClick(mx, my float32) {
 	playerIdx := s.hitTestPlayer(mx, my)
 	if playerIdx >= 0 {
 		s.swapWithPlayerSlot(playerIdx)
+	}
+}
+
+// handleShiftClick processes a shift-click at screen coordinates for quick move.
+// - Result slot: craft the item and move it directly to the player inventory.
+// - Craft grid slot: move the item to the player inventory.
+// - Player slot: move the item to the first empty craft grid slot.
+func (s *CraftingTableScreen) handleShiftClick(mx, my float32) {
+	if s.hitTestResult(mx, my) {
+		s.shiftClickResult()
+		return
+	}
+
+	cr, cc := s.hitTestCraftGrid(mx, my)
+	if cr >= 0 && cc >= 0 {
+		s.shiftClickCraftSlot(cr, cc)
+		return
+	}
+
+	playerIdx := s.hitTestPlayer(mx, my)
+	if playerIdx >= 0 {
+		s.shiftClickPlayerSlot(playerIdx)
+	}
+}
+
+// shiftClickResult crafts the item and moves it directly to the player inventory.
+func (s *CraftingTableScreen) shiftClickResult() {
+	if s.CraftGrid == nil || s.PlayerInv == nil {
+		return
+	}
+	result, ok := s.CraftGrid.Craft()
+	if ok {
+		s.PlayerInv.AddItem(result)
+	}
+}
+
+// shiftClickCraftSlot moves a craft grid item directly to the player inventory.
+func (s *CraftingTableScreen) shiftClickCraftSlot(row, col int) {
+	if s.CraftGrid == nil || s.PlayerInv == nil {
+		return
+	}
+	stack := s.CraftGrid.GetSlot(row, col)
+	if stack.IsEmpty() {
+		return
+	}
+	s.CraftGrid.SetSlot(row, col, item.ItemStack{})
+	s.PlayerInv.AddItem(stack)
+}
+
+// shiftClickPlayerSlot moves a player inventory item to the first empty craft grid slot.
+func (s *CraftingTableScreen) shiftClickPlayerSlot(slotIdx int) {
+	if s.CraftGrid == nil || s.PlayerInv == nil {
+		return
+	}
+	stack := s.PlayerInv.GetSlot(slotIdx)
+	if stack.IsEmpty() {
+		return
+	}
+	for row := 0; row < ctGridSize; row++ {
+		for col := 0; col < ctGridSize; col++ {
+			if s.CraftGrid.GetSlot(row, col).IsEmpty() {
+				s.CraftGrid.SetSlot(row, col, stack)
+				s.PlayerInv.SetSlot(slotIdx, item.ItemStack{})
+				return
+			}
+		}
 	}
 }
 
