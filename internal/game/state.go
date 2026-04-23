@@ -6,6 +6,7 @@ const (
 	GameStateMainMenu GameState = iota
 	GameStatePlaying
 	GameStatePaused
+	GameStateInventory
 	GameStateDead
 )
 
