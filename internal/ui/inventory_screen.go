@@ -67,6 +67,11 @@ func (s *InventoryScreen) Update(inp *input.Manager, _ float64) {
 	if inp.IsMouseJustPressed(input.MouseButtonLeft) {
 		s.handleClick(float32(s.mouseX), float32(s.mouseY))
 	}
+
+	// Handle right-click for split interaction.
+	if inp.IsMouseJustPressed(input.MouseButtonRight) {
+		s.handleRightClick(float32(s.mouseX), float32(s.mouseY))
+	}
 }
 
 // Draw renders the inventory screen: background, inventory grid, crafting
@@ -160,6 +165,71 @@ func (s *InventoryScreen) handleClick(mx, my float32) {
 	if s.hitTestCraftResult(mx, my) {
 		s.takeCraftResult()
 	}
+}
+
+// handleRightClick processes a right-click at screen coordinates (mx, my).
+func (s *InventoryScreen) handleRightClick(mx, my float32) {
+	slotIdx := s.hitTestInventory(mx, my)
+	if slotIdx >= 0 {
+		s.rightClickSlot(slotIdx)
+		return
+	}
+}
+
+// rightClickSlot handles right-click on an inventory slot.
+// - Holding nothing: pick up half the stack (rounded up).
+// - Holding items + empty or compatible slot: place one item.
+// - Incompatible: do nothing.
+func (s *InventoryScreen) rightClickSlot(slotIdx int) {
+	if s.Inv == nil {
+		return
+	}
+	current := s.Inv.GetSlot(slotIdx)
+
+	// Holding nothing: pick up half (rounded up).
+	if s.HeldItem.IsEmpty() {
+		if current.IsEmpty() {
+			return
+		}
+		half := (current.Count + 1) / 2
+		taken, remaining := current.Split(half)
+		s.HeldItem = taken
+		s.Inv.SetSlot(slotIdx, remaining)
+		return
+	}
+
+	// Holding items: try to place one.
+	if current.IsEmpty() {
+		placed, remaining := s.HeldItem.Split(1)
+		s.Inv.SetSlot(slotIdx, placed)
+		s.HeldItem = remaining
+		if s.HeldItem.Count <= 0 {
+			s.HeldItem = item.ItemStack{}
+		}
+		return
+	}
+
+	if s.HeldItem.CanStackWith(current) {
+		max := item.MaxStack(current.ItemID)
+		if current.Count >= max {
+			return
+		}
+		placed, remaining := s.HeldItem.Split(1)
+		merged := current
+		leftover := merged.Merge(placed)
+		s.Inv.SetSlot(slotIdx, merged)
+		// If merge failed (shouldn't happen), recombine with held.
+		if !leftover.IsEmpty() {
+			remaining.Count += leftover.Count
+		}
+		s.HeldItem = remaining
+		if s.HeldItem.Count <= 0 {
+			s.HeldItem = item.ItemStack{}
+		}
+		return
+	}
+
+	// Incompatible: do nothing.
 }
 
 // swapWithSlot swaps the held item with the item in the given inventory slot.
