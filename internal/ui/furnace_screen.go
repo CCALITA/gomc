@@ -49,6 +49,10 @@ func (s *FurnaceScreen) Update(inp *input.Manager, _ float64) {
 	if inp.IsMouseJustPressed(input.MouseButtonLeft) {
 		s.handleClick(float32(s.mouseX), float32(s.mouseY))
 	}
+
+	if inp.IsMouseJustPressed(input.MouseButtonRight) {
+		s.handleRightClick(float32(s.mouseX), float32(s.mouseY))
+	}
 }
 
 // Draw renders the furnace screen.
@@ -272,6 +276,113 @@ func (s *FurnaceScreen) takeOutput() {
 // swapWithPlayerSlot swaps the held item with a player inventory slot.
 func (s *FurnaceScreen) swapWithPlayerSlot(slotIdx int) {
 	s.HeldItem = swapHeldWithSlot(s.HeldItem, s.PlayerInv, slotIdx)
+}
+
+// handleRightClick processes a right-click at screen coordinates.
+// For input/fuel/player slots: holding nothing picks up half the stack;
+// holding items places one item into the slot.
+// For the output slot: behaves the same as left-click (take output).
+func (s *FurnaceScreen) handleRightClick(mx, my float32) {
+	if s.hitTestInput(mx, my) {
+		s.rightClickSlot(&s.Furnace.InputSlot)
+		return
+	}
+
+	if s.hitTestFuel(mx, my) {
+		s.rightClickSlot(&s.Furnace.FuelSlot)
+		return
+	}
+
+	if s.hitTestOutput(mx, my) {
+		s.takeOutput()
+		return
+	}
+
+	playerIdx := s.hitTestPlayer(mx, my)
+	if playerIdx >= 0 {
+		s.rightClickPlayerSlot(playerIdx)
+	}
+}
+
+// rightClickSlot handles right-click on a furnace slot (input or fuel).
+// Empty hand: picks up half the stack (rounded up stays, rounded down taken).
+// Holding items: places exactly one item if the slot is empty or compatible.
+func (s *FurnaceScreen) rightClickSlot(slot *item.ItemStack) {
+	if s.Furnace == nil || slot == nil {
+		return
+	}
+
+	if s.HeldItem.IsEmpty() {
+		// Pick up half (ceiling stays in slot, floor goes to hand).
+		if slot.IsEmpty() {
+			return
+		}
+		half := slot.Count / 2
+		taken, remaining := slot.Split(half)
+		s.HeldItem = taken
+		*slot = remaining
+		return
+	}
+
+	// Holding items: place one into the slot.
+	if slot.IsEmpty() {
+		one, remaining := s.HeldItem.Split(1)
+		*slot = one
+		s.HeldItem = remaining
+		return
+	}
+
+	if s.HeldItem.CanStackWith(*slot) {
+		max := item.MaxStack(slot.ItemID)
+		if slot.Count < max {
+			slot.Count++
+			s.HeldItem.Count--
+			if s.HeldItem.Count <= 0 {
+				s.HeldItem = item.ItemStack{}
+			}
+		}
+	}
+}
+
+// rightClickPlayerSlot handles right-click on a player inventory slot.
+func (s *FurnaceScreen) rightClickPlayerSlot(slotIdx int) {
+	if s.PlayerInv == nil {
+		return
+	}
+
+	current := s.PlayerInv.GetSlot(slotIdx)
+
+	if s.HeldItem.IsEmpty() {
+		// Pick up half.
+		if current.IsEmpty() {
+			return
+		}
+		half := current.Count / 2
+		taken, remaining := current.Split(half)
+		s.HeldItem = taken
+		s.PlayerInv.SetSlot(slotIdx, remaining)
+		return
+	}
+
+	// Holding items: place one into the slot.
+	if current.IsEmpty() {
+		one, remaining := s.HeldItem.Split(1)
+		s.PlayerInv.SetSlot(slotIdx, one)
+		s.HeldItem = remaining
+		return
+	}
+
+	if s.HeldItem.CanStackWith(current) {
+		max := item.MaxStack(current.ItemID)
+		if current.Count < max {
+			current.Count++
+			s.PlayerInv.SetSlot(slotIdx, current)
+			s.HeldItem.Count--
+			if s.HeldItem.Count <= 0 {
+				s.HeldItem = item.ItemStack{}
+			}
+		}
+	}
 }
 
 // --- Layout helpers ---
