@@ -3,8 +3,6 @@
 package player
 
 import (
-	"math"
-
 	"github.com/fanxiyao/gomc/internal/ecs"
 	"github.com/fanxiyao/gomc/internal/entity"
 	"github.com/fanxiyao/gomc/internal/input"
@@ -306,15 +304,4 @@ func (c *Controller) PlayerAABB() mcmath.AABB {
 		return mcmath.AABB{}
 	}
 	return pb.Body.WorldAABB()
-}
-
-// horizontalForward returns the camera forward vector projected onto
-// the horizontal plane with the given yaw, for use in calculating
-// the move direction angle.
-func horizontalForward(yaw float32) mcmath.Vec3 {
-	return mcmath.Vec3{
-		X: float32(math.Sin(float64(yaw))),
-		Y: 0,
-		Z: float32(-math.Cos(float64(yaw))),
-	}
 }

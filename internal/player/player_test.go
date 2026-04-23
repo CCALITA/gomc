@@ -3,6 +3,7 @@
 package player
 
 import (
+	"math"
 	"testing"
 
 	"github.com/fanxiyao/gomc/internal/ecs"
@@ -219,6 +220,17 @@ func TestUpdateMovement_NoPhysicsBody(t *testing.T) {
 
 	// Should not panic
 	ctrl.updateMovement(mgr, 0.05)
+}
+
+// horizontalForward returns the camera forward vector projected onto
+// the horizontal plane with the given yaw, for use in calculating
+// the move direction angle.
+func horizontalForward(yaw float32) mcmath.Vec3 {
+	return mcmath.Vec3{
+		X: float32(math.Sin(float64(yaw))),
+		Y: 0,
+		Z: float32(-math.Cos(float64(yaw))),
+	}
 }
 
 func TestHorizontalForward(t *testing.T) {
