@@ -621,6 +621,21 @@ func TestPickaxe_Offset(t *testing.T) {
 	assert.Equal(t, item.StonePickaxe, result.ItemID)
 }
 
+func TestGlassPaneRecipe(t *testing.T) {
+	var g CraftingGrid
+	// 6 Glass in 2x3 grid (top two rows)
+	g.SetSlot(0, 0, item.NewItemStack(item.Glass, 1))
+	g.SetSlot(0, 1, item.NewItemStack(item.Glass, 1))
+	g.SetSlot(0, 2, item.NewItemStack(item.Glass, 1))
+	g.SetSlot(1, 0, item.NewItemStack(item.Glass, 1))
+	g.SetSlot(1, 1, item.NewItemStack(item.Glass, 1))
+	g.SetSlot(1, 2, item.NewItemStack(item.Glass, 1))
+
+	result := g.GetResult()
+	assert.Equal(t, item.GlassPane, result.ItemID)
+	assert.Equal(t, 16, result.Count)
+}
+
 func TestFurnace_SmeltSand(t *testing.T) {
 	f := NewFurnace()
 	f.InputSlot = item.NewItemStack(item.Sand, 1)
