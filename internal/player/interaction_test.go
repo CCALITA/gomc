@@ -119,19 +119,13 @@ func TestBreakBlock_InstantBreak_SpawnsDrops(t *testing.T) {
 func TestPlacement_DecrementsItemCount(t *testing.T) {
 	ctrl, _, bw, mgr := setupBreakingTest(block.Air)
 
-	// Give the player 10 dirt in hotbar slot 0.
 	inv := inventory.NewInventory(9)
 	inv.SetSlot(0, item.ItemStack{ItemID: item.Dirt, Count: 10})
 	ctrl.Inventory = inv
 	ctrl.SelectedSlot = 0
 
-	// Clear the block in front so placement succeeds.
 	placeTarget := mcmath.BlockPos{X: 0, Y: 65, Z: -1}
 	bw.SetBlock(placeTarget, block.Air)
-
-	// Place a solid block next to the target so the raycast hits something.
-	// The player looks at -Z; put a solid block at Z=-2 so the adjacent face
-	// places at Z=-1.
 	bw.SetBlock(mcmath.BlockPos{X: 0, Y: 65, Z: -2}, block.Stone)
 
 	useBtn := ctrl.KeyMap.GetKey(input.Use)
@@ -148,20 +142,15 @@ func TestPlacement_DecrementsItemCount(t *testing.T) {
 func TestPlacement_CreativeMode_DoesNotDecrement(t *testing.T) {
 	ctrl, _, bw, mgr := setupBreakingTest(block.Air)
 
-	// Enable creative mode.
 	ctrl.Mode = &creativeModeStub{}
 
-	// Give the player 10 dirt in hotbar slot 0.
 	inv := inventory.NewInventory(9)
 	inv.SetSlot(0, item.ItemStack{ItemID: item.Dirt, Count: 10})
 	ctrl.Inventory = inv
 	ctrl.SelectedSlot = 0
 
-	// Clear the block in front so placement succeeds.
 	placeTarget := mcmath.BlockPos{X: 0, Y: 65, Z: -1}
 	bw.SetBlock(placeTarget, block.Air)
-
-	// Place a solid block at Z=-2 so raycast hits it and places at Z=-1.
 	bw.SetBlock(mcmath.BlockPos{X: 0, Y: 65, Z: -2}, block.Stone)
 
 	useBtn := ctrl.KeyMap.GetKey(input.Use)
@@ -171,6 +160,45 @@ func TestPlacement_CreativeMode_DoesNotDecrement(t *testing.T) {
 
 	slot := ctrl.Inventory.GetSlot(0)
 	assert.Equal(t, 10, slot.Count, "creative mode should not consume items")
+}
+
+func TestBreakBlock_ToolDurabilityDecrements(t *testing.T) {
+	ctrl, _, bw, mgr := setupBreakingTest(block.Stone)
+
+	inv := inventory.NewInventory(9)
+	inv.SetSlot(0, item.NewItemStack(item.WoodenPickaxe, 1))
+	ctrl.Inventory = inv
+	ctrl.SelectedSlot = 0
+
+	attackBtn := ctrl.KeyMap.GetKey(input.Attack)
+	mgr.MouseButtonCallback(attackBtn, input.ActionPress, 0)
+
+	ctrl.updateBreaking(mgr, bw, 0.01)
+	ctrl.updateBreaking(mgr, bw, 3.0)
+
+	slot := inv.GetSlot(0)
+	assert.Equal(t, item.WoodenPickaxe, slot.ItemID)
+	assert.Equal(t, 58, slot.Durability, "tool durability should decrement by 1 on block break")
+}
+
+func TestBreakBlock_NonToolDurabilityUnchanged(t *testing.T) {
+	ctrl, _, bw, mgr := setupBreakingTest(block.Stone)
+
+	inv := inventory.NewInventory(9)
+	inv.SetSlot(0, item.NewItemStack(item.Cobblestone, 32))
+	ctrl.Inventory = inv
+	ctrl.SelectedSlot = 0
+
+	attackBtn := ctrl.KeyMap.GetKey(input.Attack)
+	mgr.MouseButtonCallback(attackBtn, input.ActionPress, 0)
+
+	ctrl.updateBreaking(mgr, bw, 0.01)
+	ctrl.updateBreaking(mgr, bw, 3.0)
+
+	slot := inv.GetSlot(0)
+	assert.Equal(t, item.Cobblestone, slot.ItemID)
+	assert.Equal(t, 32, slot.Count, "non-tool item count should not change")
+	assert.Equal(t, 0, slot.Durability, "non-tool item should have no durability")
 }
 
 // creativeModeStub implements ModeChecker for creative mode testing.

@@ -185,6 +185,9 @@ func (c *Controller) breakAndDrop(w BlockWorld, pos mcmath.BlockPos, toolType st
 	blockID := c.interaction.breakingBlockID
 	w.SetBlock(pos, block.Air)
 	block.SpawnDrops(c.ECSWorld, pos, blockID, toolType, toolLevel, nil)
+	if c.Inventory != nil {
+		c.Inventory.DamageTool(c.SelectedSlot, 1)
+	}
 	c.resetBreaking()
 }
 
