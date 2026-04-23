@@ -213,6 +213,57 @@ func TestChestScreen_SlotCounts(t *testing.T) {
 	assert.Equal(t, 36, invTotalSlots)
 }
 
+// ---------- ChestScreen shift-click (quick-move) tests ----------
+
+func TestChestScreen_ShiftClick_ChestToPlayer(t *testing.T) {
+	chest := inventory.NewInventory(27)
+	chest.SetSlot(0, item.ItemStack{ItemID: item.Stone, Count: 32})
+	player := inventory.NewInventory(36)
+	screen := NewChestScreen(chest, player, nil)
+
+	screen.quickMove(chest, 0, player)
+
+	assert.True(t, chest.GetSlot(0).IsEmpty(), "chest slot should be empty after quick move")
+	slot := player.GetSlot(0)
+	assert.Equal(t, item.Stone, slot.ItemID)
+	assert.Equal(t, 32, slot.Count)
+}
+
+func TestChestScreen_ShiftClick_PlayerToChest(t *testing.T) {
+	chest := inventory.NewInventory(27)
+	player := inventory.NewInventory(36)
+	player.SetSlot(0, item.ItemStack{ItemID: item.Dirt, Count: 16})
+	screen := NewChestScreen(chest, player, nil)
+
+	screen.quickMove(player, 0, chest)
+
+	assert.True(t, player.GetSlot(0).IsEmpty(), "player slot should be empty after quick move")
+	slot := chest.GetSlot(0)
+	assert.Equal(t, item.Dirt, slot.ItemID)
+	assert.Equal(t, 16, slot.Count)
+}
+
+func TestChestScreen_ShiftClick_PartialTransfer(t *testing.T) {
+	chest := inventory.NewInventory(27)
+	player := inventory.NewInventory(36)
+
+	// Fill every player slot to capacity with stone so no room remains.
+	for i := 0; i < player.Size(); i++ {
+		player.SetSlot(i, item.ItemStack{ItemID: item.Stone, Count: item.MaxStack(item.Stone)})
+	}
+
+	// Place dirt in chest slot 0 — it cannot merge with stone, and all slots are full.
+	chest.SetSlot(0, item.ItemStack{ItemID: item.Dirt, Count: 10})
+	screen := NewChestScreen(chest, player, nil)
+
+	screen.quickMove(chest, 0, player)
+
+	// The entire stack should remain in the chest because the player inventory is full.
+	remaining := chest.GetSlot(0)
+	assert.Equal(t, item.Dirt, remaining.ItemID)
+	assert.Equal(t, 10, remaining.Count, "all items should remain when target is full")
+}
+
 // ---------- FurnaceScreen tests ----------
 
 func TestFurnaceScreen_New(t *testing.T) {
