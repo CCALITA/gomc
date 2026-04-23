@@ -52,7 +52,11 @@ func (s *ChestScreen) Update(inp *input.Manager, _ float64) {
 	}
 
 	if inp.IsMouseJustPressed(input.MouseButtonLeft) {
-		s.handleClick(float32(s.mouseX), float32(s.mouseY))
+		if inp.IsKeyDown(input.KeyLeftShift) {
+			s.handleShiftClick(float32(s.mouseX), float32(s.mouseY))
+		} else {
+			s.handleClick(float32(s.mouseX), float32(s.mouseY))
+		}
 	}
 }
 
@@ -151,6 +155,34 @@ func (s *ChestScreen) handleClick(mx, my float32) {
 	if playerIdx >= 0 {
 		s.HeldItem = swapHeldWithSlot(s.HeldItem, s.PlayerInv, playerIdx)
 	}
+}
+
+// handleShiftClick moves an entire stack from one inventory to the other.
+// Clicking a chest slot moves the stack to the player inventory; clicking a
+// player slot moves it to the chest inventory. Any remainder that does not
+// fit stays in the source slot.
+func (s *ChestScreen) handleShiftClick(mx, my float32) {
+	if chestIdx := s.hitTestChest(mx, my); chestIdx >= 0 {
+		s.quickMove(s.ChestInv, chestIdx, s.PlayerInv)
+		return
+	}
+	if playerIdx := s.hitTestPlayer(mx, my); playerIdx >= 0 {
+		s.quickMove(s.PlayerInv, playerIdx, s.ChestInv)
+	}
+}
+
+// quickMove transfers the stack at srcSlot in src to dst. Any portion that
+// does not fit is written back to the source slot.
+func (s *ChestScreen) quickMove(src *inventory.Inventory, srcSlot int, dst *inventory.Inventory) {
+	if src == nil || dst == nil {
+		return
+	}
+	stack := src.GetSlot(srcSlot)
+	if stack.IsEmpty() {
+		return
+	}
+	remainder := dst.AddItem(stack)
+	src.SetSlot(srcSlot, remainder)
 }
 
 // swapWithInventory swaps the held item with a slot in the given inventory.
