@@ -216,6 +216,22 @@ func (g *Game) handleGlobalInput() {
 			g.State.SetState(GameStatePlaying)
 		}
 	}
+
+	invKey := g.KeyMap.GetKey(input.OpenInventory)
+	if g.Input.IsKeyJustPressed(invKey) {
+		switch g.State.CurrentState() {
+		case GameStatePlaying:
+			grid := &inventory.CraftingGrid{}
+			g.State.SetState(GameStateInventory)
+			g.UI.PushScreen(ui.NewInventoryScreen(g.Inventory, grid, func() {
+				g.UI.PopScreen()
+				g.State.SetState(GameStatePlaying)
+			}))
+		case GameStateInventory:
+			g.UI.PopScreen()
+			g.State.SetState(GameStatePlaying)
+		}
+	}
 }
 
 func (g *Game) tick(dt float64) {
