@@ -37,6 +37,7 @@ type ItemProperties struct {
 	FoodSaturation float64 // saturation points restored when eaten; 0 for non-food
 	ArmorSlot      int     // armor equipment slot (0=helmet, 1=chest, 2=legs, 3=boots); only meaningful when ArmorDefense > 0
 	ArmorDefense   int     // defense points provided by this armor piece; 0 for non-armor
+	AttackDamage   float32 // base attack damage dealt by this weapon; 0 for non-weapons
 	IsCompass      bool    // true for compass items that point to spawn
 	IsClock        bool    // true for clock items that show day/night cycle
 }

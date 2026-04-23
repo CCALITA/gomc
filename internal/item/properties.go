@@ -68,6 +68,17 @@ func init() {
 	registerTool(IronAxe, "Iron Axe", ToolAxe, LevelIron, 250)
 	registerTool(DiamondAxe, "Diamond Axe", ToolAxe, LevelDiamond, 1561)
 
+	// Axe attack damage values.
+	setAttackDamage := func(id ItemID, dmg float32) {
+		p := properties[id]
+		p.AttackDamage = dmg
+		properties[id] = p
+	}
+	setAttackDamage(WoodenAxe, 7)
+	setAttackDamage(StoneAxe, 9)
+	setAttackDamage(IronAxe, 9)
+	setAttackDamage(DiamondAxe, 9)
+
 	// Shovels
 	registerTool(WoodenShovel, "Wooden Shovel", ToolShovel, LevelWood, 59)
 	registerTool(StoneShovel, "Stone Shovel", ToolShovel, LevelStone, 131)
@@ -79,6 +90,12 @@ func init() {
 	registerTool(StoneSword, "Stone Sword", ToolSword, LevelStone, 131)
 	registerTool(IronSword, "Iron Sword", ToolSword, LevelIron, 250)
 	registerTool(DiamondSword, "Diamond Sword", ToolSword, LevelDiamond, 1561)
+
+	// Sword attack damage values.
+	setAttackDamage(WoodenSword, 4)
+	setAttackDamage(StoneSword, 5)
+	setAttackDamage(IronSword, 6)
+	setAttackDamage(DiamondSword, 7)
 
 	// Hoes
 	registerTool(WoodenHoe, "Wooden Hoe", ToolHoe, LevelWood, 59)
@@ -285,6 +302,17 @@ func GetProperties(id ItemID) ItemProperties {
 		MaxStackSize: DefaultMaxStackSize,
 		ToolType:     ToolNone,
 	}
+}
+
+// GetAttackDamage returns the base melee attack damage for the given item.
+// Weapons (swords, axes) return their configured AttackDamage; all other items
+// (including bare fist / Air) return 1.0.
+func GetAttackDamage(id ItemID) float32 {
+	props := GetProperties(id)
+	if props.AttackDamage > 0 {
+		return props.AttackDamage
+	}
+	return 1.0
 }
 
 // IsStackable reports whether the item can be stacked (max stack > 1).
