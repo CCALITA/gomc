@@ -291,6 +291,8 @@ func (g *Game) handleGlobalInput() {
 			g.State.SetState(GameStatePlaying)
 		}
 	}
+
+	g.handleItemDrop()
 }
 
 func (g *Game) tick(dt float64) {
