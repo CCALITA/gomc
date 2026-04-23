@@ -509,6 +509,12 @@ func (g *Game) startNewWorld(storage *world.Storage) {
 	g.Player.Mode = g.Mode
 	g.Player.Inventory = g.Inventory
 
+	g.Inventory.AddItem(item.NewItemStack(item.WoodenPickaxe, 1))
+	g.Inventory.AddItem(item.NewItemStack(item.WoodenAxe, 1))
+	g.Inventory.AddItem(item.NewItemStack(item.OakLog, 16))
+	g.Inventory.AddItem(item.NewItemStack(item.Bread, 8))
+	g.Inventory.AddItem(item.NewItemStack(item.Torch, 16))
+
 	g.Spawner = g.newConfiguredSpawner()
 	g.applyPlayerConfig(g.Player)
 
