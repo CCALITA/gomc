@@ -315,12 +315,15 @@ func (g *Game) render() {
 		}
 	}
 
+	// Draw UI overlay: crosshair + hotbar
+	uiVerts := g.buildUIVertices()
+	g.Renderer.DrawUI(cmdBuf, uiVerts)
+
 	if err := g.Renderer.EndFrame(imageIndex); err != nil {
 		log.Printf("end frame error: %v", err)
 	}
 
 	g.processMeshQueue()
-
 }
 
 func (g *Game) processMeshQueue() {
@@ -640,4 +643,78 @@ func (g *Game) buildPlayerData() world.PlayerData {
 	}
 
 	return pd
+}
+
+func (g *Game) buildUIVertices() []render.UIVertex {
+	sw := float32(g.Config.Window.Width)
+	sh := float32(g.Config.Window.Height)
+	cx, cy := sw/2, sh/2
+
+	var verts []render.UIVertex
+
+	// Crosshair: white cross, 2px thick, 20px long
+	cross := func(x, y, w, h float32) {
+		verts = append(verts,
+			render.UIVertex{X: x, Y: y, R: 1, G: 1, B: 1, A: 0.8},
+			render.UIVertex{X: x + w, Y: y, R: 1, G: 1, B: 1, A: 0.8},
+			render.UIVertex{X: x + w, Y: y + h, R: 1, G: 1, B: 1, A: 0.8},
+			render.UIVertex{X: x, Y: y, R: 1, G: 1, B: 1, A: 0.8},
+			render.UIVertex{X: x + w, Y: y + h, R: 1, G: 1, B: 1, A: 0.8},
+			render.UIVertex{X: x, Y: y + h, R: 1, G: 1, B: 1, A: 0.8},
+		)
+	}
+	cross(cx-10, cy-1, 20, 2)  // horizontal
+	cross(cx-1, cy-10, 2, 20)  // vertical
+
+	// Hotbar background: dark semi-transparent bar at bottom center
+	barW := float32(9*40 + 8*2) // 9 slots * 40px + 8 gaps * 2px
+	barH := float32(44)
+	barX := cx - barW/2
+	barY := sh - barH - 4
+
+	rect := func(x, y, w, h, r, gg, b, a float32) {
+		verts = append(verts,
+			render.UIVertex{X: x, Y: y, R: r, G: gg, B: b, A: a},
+			render.UIVertex{X: x + w, Y: y, R: r, G: gg, B: b, A: a},
+			render.UIVertex{X: x + w, Y: y + h, R: r, G: gg, B: b, A: a},
+			render.UIVertex{X: x, Y: y, R: r, G: gg, B: b, A: a},
+			render.UIVertex{X: x + w, Y: y + h, R: r, G: gg, B: b, A: a},
+			render.UIVertex{X: x, Y: y + h, R: r, G: gg, B: b, A: a},
+		)
+	}
+
+	// Hotbar background
+	rect(barX-2, barY-2, barW+4, barH+4, 0, 0, 0, 0.6)
+
+	// Individual slots
+	for i := 0; i < 9; i++ {
+		slotX := barX + float32(i)*42
+		slotY := barY
+		if i == g.Player.SelectedSlot {
+			rect(slotX-1, slotY-1, 42, 42, 1, 1, 1, 0.5) // selected highlight
+		}
+		rect(slotX, slotY, 40, 40, 0.2, 0.2, 0.2, 0.5) // slot background
+	}
+
+	// Health bar: red hearts area (top-left of hotbar)
+	if g.Player != nil {
+		healthStore := ecs.GetStore[entity.Health](g.ECSWorld)
+		if h, ok := healthStore.Get(g.Player.Entity); ok {
+			healthFrac := float32(h.Current) / float32(h.Max)
+			healthW := barW * healthFrac
+			rect(barX, barY-14, healthW, 8, 0.8, 0.1, 0.1, 0.8)       // red health
+			rect(barX, barY-14, barW, 8, 0.3, 0.05, 0.05, 0.4)        // dark background
+		}
+
+		// Hunger bar: above health
+		hungerStore := ecs.GetStore[entity.Hunger](g.ECSWorld)
+		if hu, ok := hungerStore.Get(g.Player.Entity); ok {
+			hungerFrac := float32(hu.FoodLevel) / float32(20)
+			hungerW := barW * hungerFrac
+			rect(barX, barY-26, hungerW, 8, 0.7, 0.5, 0.1, 0.8)      // orange hunger
+			rect(barX, barY-26, barW, 8, 0.25, 0.15, 0.05, 0.4)       // dark background
+		}
+	}
+
+	return verts
 }

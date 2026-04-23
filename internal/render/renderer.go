@@ -2,6 +2,8 @@ package render
 
 import (
 	"fmt"
+	"log"
+	"unsafe"
 
 	"github.com/fanxiyao/gomc/internal/texgen"
 	"github.com/go-gl/glfw/v3.3/glfw"
@@ -19,6 +21,7 @@ type Renderer struct {
 	CmdPool       *CommandPool
 	ChunkRenderer *ChunkRenderer
 	Atlas         *TextureAtlas
+	UIpipe        *UIPipeline
 
 	width  uint32
 	height uint32
@@ -103,6 +106,12 @@ func (r *Renderer) Init(windowWidth, windowHeight int, title string) error {
 	}
 	r.ChunkRenderer = chunkRenderer
 
+	uiPipe, err := NewUIPipeline(&r.Context, r.Pipeline.RenderPass)
+	if err != nil {
+		log.Printf("UI pipeline creation failed (continuing without UI): %v", err)
+	}
+	r.UIpipe = uiPipe
+
 	return nil
 }
 
@@ -154,8 +163,38 @@ func (r *Renderer) DrawChunks(cmdBuf vk.CommandBuffer, camera *Camera) {
 }
 
 // DrawUI is a placeholder for future UI rendering (HUD, inventory, etc.).
-func (r *Renderer) DrawUI(_ vk.CommandBuffer) {
-	// UI rendering will be implemented in a future pass.
+func (r *Renderer) DrawUI(cmdBuf vk.CommandBuffer, vertices []UIVertex) {
+	if r.UIpipe == nil || len(vertices) == 0 {
+		return
+	}
+
+	vk.CmdBindPipeline(cmdBuf, vk.PipelineBindPointGraphics, r.UIpipe.GraphicsPipeline)
+
+	pc := uiPushConstants{
+		ScreenW: float32(r.Swapchain.Extent.Width),
+		ScreenH: float32(r.Swapchain.Extent.Height),
+	}
+	vk.CmdPushConstants(cmdBuf, r.UIpipe.PipelineLayout,
+		vk.ShaderStageFlags(vk.ShaderStageVertexBit), 0,
+		uint32(8), unsafe.Pointer(&pc))
+
+	dataSize := len(vertices) * uiVertexStride
+	buf, err := CreateBuffer(
+		&r.Context, vk.DeviceSize(dataSize),
+		vk.BufferUsageFlags(vk.BufferUsageVertexBufferBit),
+		vk.MemoryPropertyFlags(vk.MemoryPropertyHostVisibleBit|vk.MemoryPropertyHostCoherentBit),
+	)
+	if err != nil {
+		return
+	}
+	defer buf.Cleanup()
+
+	mapAndCopy(r.Context.Device, buf.Memory, vk.DeviceSize(dataSize), unsafe.Pointer(&vertices[0]))
+
+	offsets := []vk.DeviceSize{0}
+	buffers := []vk.Buffer{buf.Handle}
+	vk.CmdBindVertexBuffers(cmdBuf, 0, 1, buffers, offsets)
+	vk.CmdDraw(cmdBuf, uint32(len(vertices)), 1, 0, 0)
 }
 
 // Resize handles a window resize event by flagging the swapchain for
