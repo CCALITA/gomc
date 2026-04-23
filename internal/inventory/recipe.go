@@ -248,6 +248,27 @@ func registerRecipes() {
 		},
 		Result: item.NewItemStack(item.FishingRod, 1),
 	})
+
+	// -- Armor: helmets, chestplates, leggings, boots
+	registerHelmet(item.Leather, item.LeatherHelmet)
+	registerHelmet(item.IronIngot, item.IronHelmet)
+	registerHelmet(item.GoldIngot, item.GoldHelmet)
+	registerHelmet(item.Diamond, item.DiamondHelmet)
+
+	registerChestplate(item.Leather, item.LeatherChestplate)
+	registerChestplate(item.IronIngot, item.IronChestplate)
+	registerChestplate(item.GoldIngot, item.GoldChestplate)
+	registerChestplate(item.Diamond, item.DiamondChestplate)
+
+	registerLeggings(item.Leather, item.LeatherLeggings)
+	registerLeggings(item.IronIngot, item.IronLeggings)
+	registerLeggings(item.GoldIngot, item.GoldLeggings)
+	registerLeggings(item.Diamond, item.DiamondLeggings)
+
+	registerBoots(item.Leather, item.LeatherBoots)
+	registerBoots(item.IronIngot, item.IronBoots)
+	registerBoots(item.GoldIngot, item.GoldBoots)
+	registerBoots(item.Diamond, item.DiamondBoots)
 }
 
 // registerPickaxe registers a pickaxe recipe: 3 material on top, 2 sticks vertical center.
@@ -342,6 +363,54 @@ func registerPlusPattern(outer, center, result uint16) {
 			{0, outer, 0},
 			{outer, center, outer},
 			{0, outer, 0},
+		},
+		Result: item.NewItemStack(result, 1),
+	})
+}
+
+// registerHelmet registers a helmet recipe: 5 material (top row full, left+right on second row).
+func registerHelmet(material, result uint16) {
+	RegisterRecipe(Recipe{
+		Pattern: [3][3]uint16{
+			{material, material, material},
+			{material, 0, material},
+			{0, 0, 0},
+		},
+		Result: item.NewItemStack(result, 1),
+	})
+}
+
+// registerChestplate registers a chestplate recipe: 8 material (left+right top, full middle+bottom).
+func registerChestplate(material, result uint16) {
+	RegisterRecipe(Recipe{
+		Pattern: [3][3]uint16{
+			{material, 0, material},
+			{material, material, material},
+			{material, material, material},
+		},
+		Result: item.NewItemStack(result, 1),
+	})
+}
+
+// registerLeggings registers a leggings recipe: 7 material (full top, left+right middle+bottom).
+func registerLeggings(material, result uint16) {
+	RegisterRecipe(Recipe{
+		Pattern: [3][3]uint16{
+			{material, material, material},
+			{material, 0, material},
+			{material, 0, material},
+		},
+		Result: item.NewItemStack(result, 1),
+	})
+}
+
+// registerBoots registers a boots recipe: 4 material (left+right on two rows).
+func registerBoots(material, result uint16) {
+	RegisterRecipe(Recipe{
+		Pattern: [3][3]uint16{
+			{material, 0, material},
+			{material, 0, material},
+			{0, 0, 0},
 		},
 		Result: item.NewItemStack(result, 1),
 	})
