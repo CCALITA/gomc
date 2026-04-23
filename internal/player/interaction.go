@@ -188,8 +188,6 @@ func (c *Controller) resetBreaking() {
 const (
 	// combatReach is the maximum distance for melee attacks against entities.
 	combatReach float32 = 5.0
-	// handDamage is the damage dealt by an empty-hand melee attack.
-	handDamage float32 = 1.0
 	// knockbackStrength is the horizontal knockback speed applied on hit.
 	knockbackStrength float32 = 8.0
 	// knockbackUpward is the upward velocity component of knockback.
@@ -239,6 +237,10 @@ func (c *Controller) UpdateCombat(inp *input.Manager, ecsWorld *ecs.World, _ flo
 		return
 	}
 
+	// Resolve damage from the held weapon (defaults to 1.0 for bare fist).
+	selectedItem := c.getSelectedHotbarItem()
+	damage := item.GetAttackDamage(selectedItem.ItemID)
+
 	// Compute knockback direction away from the player.
 	playerTransform := c.getTransform()
 	if playerTransform == nil {
@@ -248,7 +250,7 @@ func (c *Controller) UpdateCombat(inp *input.Manager, ecsWorld *ecs.World, _ flo
 	kb := entity.KnockbackFromTo(playerTransform.Position, nearest.pos, knockbackStrength, knockbackUpward)
 
 	ecs.GetStore[entity.Damage](ecsWorld).Set(nearest.entity, entity.Damage{
-		Amount:    handDamage,
+		Amount:    damage,
 		Knockback: kb,
 	})
 }

@@ -378,3 +378,47 @@ func TestMerge_BucketStack(t *testing.T) {
 	assert.Equal(t, 16, a.Count)
 	assert.Equal(t, 2, remaining.Count)
 }
+
+// ---------------------------------------------------------------------------
+// GetAttackDamage
+// ---------------------------------------------------------------------------
+
+func TestGetAttackDamage_Swords(t *testing.T) {
+	tests := []struct {
+		id       ItemID
+		name     string
+		expected float32
+	}{
+		{WoodenSword, "Wooden Sword", 4},
+		{StoneSword, "Stone Sword", 5},
+		{IronSword, "Iron Sword", 6},
+		{DiamondSword, "Diamond Sword", 7},
+	}
+	for _, tc := range tests {
+		assert.Equal(t, tc.expected, GetAttackDamage(tc.id), "attack damage for %s", tc.name)
+	}
+}
+
+func TestGetAttackDamage_Axes(t *testing.T) {
+	tests := []struct {
+		id       ItemID
+		name     string
+		expected float32
+	}{
+		{WoodenAxe, "Wooden Axe", 7},
+		{StoneAxe, "Stone Axe", 9},
+		{IronAxe, "Iron Axe", 9},
+		{DiamondAxe, "Diamond Axe", 9},
+	}
+	for _, tc := range tests {
+		assert.Equal(t, tc.expected, GetAttackDamage(tc.id), "attack damage for %s", tc.name)
+	}
+}
+
+func TestGetAttackDamage_DefaultForNonWeapons(t *testing.T) {
+	// Non-weapons should return 1.0 (bare fist equivalent).
+	nonWeapons := []ItemID{Air, Stone, Dirt, Stick, IronPickaxe, WoodenShovel, DiamondHoe}
+	for _, id := range nonWeapons {
+		assert.Equal(t, float32(1.0), GetAttackDamage(id), "non-weapon id %d should return 1.0", id)
+	}
+}
