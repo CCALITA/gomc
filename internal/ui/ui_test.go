@@ -347,6 +347,60 @@ func TestHUD_HandleKey_NoOp(t *testing.T) {
 	hud.HandleKey(input.KeyEscape)
 }
 
+func TestHUD_TooltipAppearsOnSlotChange(t *testing.T) {
+	hotbar := inventory.NewInventory(9)
+	hotbar.SetSlot(2, item.ItemStack{ItemID: item.Stone, Count: 1})
+	hud := NewHUD(hotbar)
+	inp := input.NewManager()
+
+	// Select slot 2 (key '3') to trigger tooltip.
+	inp.KeyCallback(input.Key3, 0, input.ActionPress, 0)
+	hud.Update(inp, 0.016)
+
+	assert.Equal(t, 2, hud.SelectedSlot)
+
+	// Draw and verify tooltip text command with item name.
+	r := NewUIRenderer(800, 600)
+	hud.Draw(r)
+
+	found := false
+	for _, cmd := range r.Commands() {
+		if cmd.Type == drawCmdText && cmd.Text == "Stone" {
+			found = true
+			break
+		}
+	}
+	assert.True(t, found, "Tooltip text 'Stone' should be drawn after slot change")
+}
+
+func TestHUD_TooltipDisappearsAfterTimeout(t *testing.T) {
+	hotbar := inventory.NewInventory(9)
+	hotbar.SetSlot(1, item.ItemStack{ItemID: item.DiamondPickaxe, Count: 1})
+	hud := NewHUD(hotbar)
+	inp := input.NewManager()
+
+	// Select slot 1 (key '2') to trigger tooltip.
+	inp.KeyCallback(input.Key2, 0, input.ActionPress, 0)
+	hud.Update(inp, 0.016)
+
+	// Advance time beyond the 2-second tooltip duration.
+	inp.Update()
+	hud.Update(inp, 2.5)
+
+	// Draw and verify tooltip is gone.
+	r := NewUIRenderer(800, 600)
+	hud.Draw(r)
+
+	found := false
+	for _, cmd := range r.Commands() {
+		if cmd.Type == drawCmdText && cmd.Text == "Diamond Pickaxe" {
+			found = true
+			break
+		}
+	}
+	assert.False(t, found, "Tooltip should disappear after timeout")
+}
+
 func TestHUD_HealthBar_HalfHeart(t *testing.T) {
 	hud := NewHUD(inventory.NewInventory(9))
 	hud.Health = 7 // 3 full hearts + 1 half

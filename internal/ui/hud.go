@@ -18,8 +18,10 @@ const (
 	heartSize      = 16.0
 	heartPadding   = 2.0
 	hudBarHeight   = 48.0
-	crosshairSize  = 16.0
-	crosshairWidth = 2.0
+	crosshairSize    = 16.0
+	crosshairWidth   = 2.0
+	tooltipDuration  = 2.0
+	tooltipCharWidth = 8.0
 )
 
 // HUD is the always-visible heads-up display: crosshair, hotbar, health
@@ -75,6 +77,15 @@ type HUD struct {
 
 	// GameTick is the current game tick (for clock display).
 	GameTick int64
+
+	// tooltipTimer counts down from tooltipDuration when the selected
+	// hotbar slot changes. While positive, the selected item's name is
+	// drawn above the hotbar.
+	tooltipTimer float32
+
+	// lastSelectedSlot tracks the previous SelectedSlot so we can detect
+	// changes and reset the tooltip timer.
+	lastSelectedSlot int
 }
 
 // NewHUD creates a HUD bound to the given hotbar inventory.
@@ -90,7 +101,7 @@ func NewHUD(hotbar *inventory.Inventory) *HUD {
 
 // Update processes HUD-specific input: hotbar selection via number keys
 // and FPS counter toggle via F3.
-func (h *HUD) Update(inp *input.Manager, _ float64) {
+func (h *HUD) Update(inp *input.Manager, dt float64) {
 	// Hotbar slot selection via 1-9 keys.
 	hotbarKeys := []int{
 		input.Key1, input.Key2, input.Key3,
@@ -101,6 +112,20 @@ func (h *HUD) Update(inp *input.Manager, _ float64) {
 		if inp.IsKeyJustPressed(key) {
 			h.SelectedSlot = i
 			break
+		}
+	}
+
+	// Detect hotbar slot change and reset tooltip timer.
+	if h.SelectedSlot != h.lastSelectedSlot {
+		h.tooltipTimer = tooltipDuration
+		h.lastSelectedSlot = h.SelectedSlot
+	}
+
+	// Countdown tooltip timer.
+	if h.tooltipTimer > 0 {
+		h.tooltipTimer -= float32(dt)
+		if h.tooltipTimer < 0 {
+			h.tooltipTimer = 0
 		}
 	}
 
@@ -116,6 +141,7 @@ func (h *HUD) Draw(r *UIRenderer) {
 	h.drawHotbar(r)
 	h.drawHealthBar(r)
 	h.drawHungerBar(r)
+	h.drawItemTooltip(r)
 	h.drawFunctionalItemOverlay(r)
 	if h.ShowFPS {
 		h.drawDebugOverlay(r)
@@ -363,6 +389,35 @@ func (h *HUD) SetSpawnPoint(x, z float32) {
 // SetGameTick updates the current game tick used by the clock overlay.
 func (h *HUD) SetGameTick(tick int64) {
 	h.GameTick = tick
+}
+
+// drawItemTooltip renders the selected item's name centered above the
+// hotbar for a short duration after the selected slot changes.
+func (h *HUD) drawItemTooltip(r *UIRenderer) {
+	if h.tooltipTimer <= 0 {
+		return
+	}
+	selected := h.GetSelectedItem()
+	if selected.IsEmpty() {
+		return
+	}
+	name := item.GetProperties(selected.ItemID).Name
+	if name == "" {
+		return
+	}
+
+	// Fade out during the last 0.5 seconds.
+	alpha := float32(1.0)
+	if h.tooltipTimer < 0.5 {
+		alpha = h.tooltipTimer / 0.5
+	}
+
+	// Estimate text width and center above hotbar.
+	textWidth := float32(len(name)) * tooltipCharWidth
+	cx := r.ScreenWidth / 2
+	y := r.ScreenHeight - hudBarHeight - heartSize - 28
+	r.DrawText(cx-textWidth/2, y, name, 1.0, 1, 1, 1)
+	_ = alpha // alpha reserved for future fade support
 }
 
 // drawFunctionalItemOverlay renders context text above the hotbar when the
