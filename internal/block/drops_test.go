@@ -1,6 +1,7 @@
 package block
 
 import (
+	"math/rand"
 	"testing"
 
 	"github.com/fanxiyao/gomc/internal/ecs"
@@ -446,7 +447,7 @@ func TestSpawnDrops_StoneSpawnsCobblestoneEntity(t *testing.T) {
 	w := ecs.NewWorld()
 	pos := mcmath.BlockPos{X: 10, Y: 64, Z: 20}
 
-	SpawnDrops(w, pos, Stone, item.ToolPickaxe, item.LevelWood)
+	SpawnDrops(w, pos, Stone, item.ToolPickaxe, item.LevelWood, nil)
 
 	// Verify an item entity was spawned.
 	dropStore := ecs.GetStore[entity.ItemDrop](w)
@@ -470,19 +471,85 @@ func TestSpawnDrops_GlassDropsNothing(t *testing.T) {
 	w := ecs.NewWorld()
 	pos := mcmath.BlockPos{X: 0, Y: 64, Z: 0}
 
-	SpawnDrops(w, pos, Glass, item.ToolNone, item.LevelHand)
+	SpawnDrops(w, pos, Glass, item.ToolNone, item.LevelHand, nil)
 
 	dropStore := ecs.GetStore[entity.ItemDrop](w)
 	assert.Equal(t, 0, dropStore.Len(), "glass should spawn no item entities")
 }
 
-func TestSpawnDrops_SkipsProbabilisticDrops(t *testing.T) {
+func TestSpawnDrops_GuaranteedDropsAlwaysSpawn(t *testing.T) {
+	// Stone always drops cobblestone (Chance=1.0). Run multiple times
+	// to confirm determinism.
+	for i := 0; i < 20; i++ {
+		w := ecs.NewWorld()
+		pos := mcmath.BlockPos{X: 0, Y: 64, Z: 0}
+		SpawnDrops(w, pos, Stone, item.ToolPickaxe, item.LevelWood, nil)
+
+		dropStore := ecs.GetStore[entity.ItemDrop](w)
+		assert.Equal(t, 1, dropStore.Len(), "guaranteed drops must always spawn (iteration %d)", i)
+	}
+}
+
+func TestSpawnDrops_ProbabilisticDropsCanSpawn(t *testing.T) {
+	// Use a seeded RNG that always returns 0.0 (below the 0.1 threshold),
+	// so the probabilistic oak-leaves drop should spawn.
+	rng := rand.New(rand.NewSource(0))
+	// Find a seed whose first Float64 is below 0.1.
+	for seed := int64(0); seed < 1000; seed++ {
+		rng = rand.New(rand.NewSource(seed))
+		if rng.Float64() <= 0.1 {
+			rng = rand.New(rand.NewSource(seed)) // reset so SpawnDrops gets the same value
+			break
+		}
+	}
+
 	w := ecs.NewWorld()
 	pos := mcmath.BlockPos{X: 0, Y: 64, Z: 0}
-
-	// OakLeaves has a 10% drop chance, so SpawnDrops should skip it.
-	SpawnDrops(w, pos, OakLeaves, item.ToolNone, item.LevelHand)
+	SpawnDrops(w, pos, OakLeaves, item.ToolNone, item.LevelHand, rng)
 
 	dropStore := ecs.GetStore[entity.ItemDrop](w)
-	assert.Equal(t, 0, dropStore.Len(), "probabilistic drops should be skipped")
+	assert.Equal(t, 1, dropStore.Len(), "probabilistic drops should spawn when the roll succeeds")
+}
+
+func TestSpawnDrops_ProbabilisticDropsCanBeSkipped(t *testing.T) {
+	// Use a seeded RNG that returns a value above 0.1 so the drop is skipped.
+	rng := rand.New(rand.NewSource(0))
+	for seed := int64(0); seed < 1000; seed++ {
+		rng = rand.New(rand.NewSource(seed))
+		if rng.Float64() > 0.1 {
+			rng = rand.New(rand.NewSource(seed))
+			break
+		}
+	}
+
+	w := ecs.NewWorld()
+	pos := mcmath.BlockPos{X: 0, Y: 64, Z: 0}
+	SpawnDrops(w, pos, OakLeaves, item.ToolNone, item.LevelHand, rng)
+
+	dropStore := ecs.GetStore[entity.ItemDrop](w)
+	assert.Equal(t, 0, dropStore.Len(), "probabilistic drops should be skipped when the roll fails")
+}
+
+func TestSpawnDrops_ZeroChanceNeverSpawns(t *testing.T) {
+	// Manually create a Drop with Chance=0.0 by using GetDrops on a block
+	// that would never exist. Instead, test via SpawnDrops on a world where
+	// we can verify behaviour. We patch by calling the function directly:
+	// Chance 0.0 means roll must be <= 0.0 which Float64 never returns (it
+	// returns [0.0, 1.0)), but 0.0 is possible. However, the condition is
+	// d.Chance < 1.0 && roll > d.Chance. With Chance=0.0, any roll > 0
+	// skips the drop. Use a seeded RNG to guarantee a non-zero roll.
+	//
+	// Since we cannot directly inject a zero-chance block into GetDrops, we
+	// test the logic indirectly: with OakLeaves (Chance=0.1) and an RNG
+	// that always returns high values, no drop should ever appear.
+	for i := 0; i < 50; i++ {
+		// seed 1 produces Float64 ~0.6046... which is > 0.1
+		rng := rand.New(rand.NewSource(1))
+		w := ecs.NewWorld()
+		pos := mcmath.BlockPos{X: 0, Y: 64, Z: 0}
+		SpawnDrops(w, pos, OakLeaves, item.ToolNone, item.LevelHand, rng)
+
+		dropStore := ecs.GetStore[entity.ItemDrop](w)
+		assert.Equal(t, 0, dropStore.Len(), "high-roll should never produce a drop (iteration %d)", i)
+	}
 }

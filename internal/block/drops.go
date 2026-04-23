@@ -1,6 +1,8 @@
 package block
 
 import (
+	"math/rand"
+
 	"github.com/fanxiyao/gomc/internal/ecs"
 	"github.com/fanxiyao/gomc/internal/entity"
 	"github.com/fanxiyao/gomc/internal/item"
@@ -174,8 +176,9 @@ func CalculateBreakSpeed(blockID uint16, toolType string, toolLevel int) float32
 
 // SpawnDrops evaluates the drops for the given block and spawns item
 // entities at the centre of the block position. toolType and toolLevel
-// describe the tool used to break the block.
-func SpawnDrops(w *ecs.World, pos mcmath.BlockPos, blockID uint16, toolType string, toolLevel int) {
+// describe the tool used to break the block. An optional rng may be
+// provided for deterministic testing; pass nil to use the global source.
+func SpawnDrops(w *ecs.World, pos mcmath.BlockPos, blockID uint16, toolType string, toolLevel int, rng *rand.Rand) {
 	drops := GetDrops(blockID, toolType, toolLevel)
 	// Offset to centre of block (+0.5 on X and Z, +0.25 above floor).
 	spawnPos := mcmath.Vec3{
@@ -185,10 +188,13 @@ func SpawnDrops(w *ecs.World, pos mcmath.BlockPos, blockID uint16, toolType stri
 	}
 	for _, d := range drops {
 		if d.Chance < 1.0 {
-			// Probabilistic drops are skipped here; caller should roll
-			// the dice and filter before calling SpawnDrops, or use this
-			// for guaranteed drops only.
-			continue
+			roll := rand.Float64()
+			if rng != nil {
+				roll = rng.Float64()
+			}
+			if roll > d.Chance {
+				continue
+			}
 		}
 		entity.SpawnItemDrop(w, spawnPos, d.ItemID, d.Count)
 	}
