@@ -248,6 +248,22 @@ func registerRecipes() {
 		},
 		Result: item.NewItemStack(item.FishingRod, 1),
 	})
+
+	// -- Stairs: 6 material in stair shape -> 4 stairs
+	registerStairs(item.OakPlanks, item.OakStairs)
+	registerStairs(item.Cobblestone, item.CobblestoneStairs)
+	registerStairs(item.Stone, item.StoneStairs)
+	registerStairs(item.BirchPlanks, item.BirchStairs)
+	registerStairs(item.SprucePlanks, item.SpruceStairs)
+	registerStairs(item.Sandstone, item.SandstoneStairs)
+
+	// -- Slabs: 3 material horizontal -> 6 slabs
+	registerSlab(item.OakPlanks, item.OakSlab)
+	registerSlab(item.Cobblestone, item.CobblestoneSlab)
+	registerSlab(item.Stone, item.StoneSlab)
+	registerSlab(item.BirchPlanks, item.BirchSlab)
+	registerSlab(item.SprucePlanks, item.SpruceSlab)
+	registerSlab(item.Sandstone, item.SandstoneSlab)
 }
 
 // registerPickaxe registers a pickaxe recipe: 3 material on top, 2 sticks vertical center.
@@ -344,5 +360,29 @@ func registerPlusPattern(outer, center, result uint16) {
 			{0, outer, 0},
 		},
 		Result: item.NewItemStack(result, 1),
+	})
+}
+
+// registerStairs registers a stair recipe: 6 material in stair shape -> 4 stairs.
+func registerStairs(material, result uint16) {
+	RegisterRecipe(Recipe{
+		Pattern: [3][3]uint16{
+			{material, 0, 0},
+			{material, material, 0},
+			{material, material, material},
+		},
+		Result: item.NewItemStack(result, 4),
+	})
+}
+
+// registerSlab registers a slab recipe: 3 material horizontal -> 6 slabs.
+func registerSlab(material, result uint16) {
+	RegisterRecipe(Recipe{
+		Pattern: [3][3]uint16{
+			{material, material, material},
+			{0, 0, 0},
+			{0, 0, 0},
+		},
+		Result: item.NewItemStack(result, 6),
 	})
 }

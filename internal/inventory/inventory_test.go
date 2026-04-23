@@ -654,3 +654,69 @@ func TestFurnace_BurnTimeCarriesOver(t *testing.T) {
 	f.Update(10.0)
 	assert.Equal(t, 1, f.OutputSlot.Count) // unchanged
 }
+
+// ---------------------------------------------------------------------------
+// Stair and slab crafting tests
+// ---------------------------------------------------------------------------
+
+func TestCraftStairs(t *testing.T) {
+	tests := []struct {
+		name     string
+		material uint16
+		result   uint16
+	}{
+		{"OakStairs", item.OakPlanks, item.OakStairs},
+		{"CobblestoneStairs", item.Cobblestone, item.CobblestoneStairs},
+		{"StoneStairs", item.Stone, item.StoneStairs},
+		{"BirchStairs", item.BirchPlanks, item.BirchStairs},
+		{"SpruceStairs", item.SprucePlanks, item.SpruceStairs},
+		{"SandstoneStairs", item.Sandstone, item.SandstoneStairs},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var g CraftingGrid
+			// Stair shape:
+			// M . .
+			// M M .
+			// M M M
+			g.SetSlot(0, 0, item.NewItemStack(tt.material, 1))
+			g.SetSlot(1, 0, item.NewItemStack(tt.material, 1))
+			g.SetSlot(1, 1, item.NewItemStack(tt.material, 1))
+			g.SetSlot(2, 0, item.NewItemStack(tt.material, 1))
+			g.SetSlot(2, 1, item.NewItemStack(tt.material, 1))
+			g.SetSlot(2, 2, item.NewItemStack(tt.material, 1))
+
+			result := g.GetResult()
+			assert.Equal(t, tt.result, result.ItemID, "wrong stair item ID")
+			assert.Equal(t, 4, result.Count, "stairs should produce 4")
+		})
+	}
+}
+
+func TestCraftSlabs(t *testing.T) {
+	tests := []struct {
+		name     string
+		material uint16
+		result   uint16
+	}{
+		{"OakSlab", item.OakPlanks, item.OakSlab},
+		{"CobblestoneSlab", item.Cobblestone, item.CobblestoneSlab},
+		{"StoneSlab", item.Stone, item.StoneSlab},
+		{"BirchSlab", item.BirchPlanks, item.BirchSlab},
+		{"SpruceSlab", item.SprucePlanks, item.SpruceSlab},
+		{"SandstoneSlab", item.Sandstone, item.SandstoneSlab},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var g CraftingGrid
+			// Slab shape: 3 material in top row
+			g.SetSlot(0, 0, item.NewItemStack(tt.material, 1))
+			g.SetSlot(0, 1, item.NewItemStack(tt.material, 1))
+			g.SetSlot(0, 2, item.NewItemStack(tt.material, 1))
+
+			result := g.GetResult()
+			assert.Equal(t, tt.result, result.ItemID, "wrong slab item ID")
+			assert.Equal(t, 6, result.Count, "slabs should produce 6")
+		})
+	}
+}
