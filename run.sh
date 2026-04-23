@@ -1,5 +1,5 @@
 #!/bin/bash
-# GoMC launcher — builds and runs with correct Vulkan/MoltenVK settings for macOS.
+# GoMC launcher — compiles shaders, builds, and runs with correct Vulkan/MoltenVK settings.
 
 set -e
 
@@ -8,6 +8,16 @@ VULKAN_ICD="$MOLTEN_VK_PREFIX/../../etc/vulkan/icd.d/MoltenVK_icd.json"
 if [ ! -f "$VULKAN_ICD" ]; then
     VULKAN_ICD="/opt/homebrew/etc/vulkan/icd.d/MoltenVK_icd.json"
 fi
+
+# Compile shaders
+echo "Compiling shaders..."
+for shader in assets/shaders/*.vert assets/shaders/*.frag; do
+    [ -f "$shader" ] || continue
+    spv="${shader}.spv"
+    if [ ! -f "$spv" ] || [ "$shader" -nt "$spv" ]; then
+        glslc "$shader" -o "$spv" && echo "  $shader → $spv"
+    fi
+done
 
 echo "Building..."
 CGO_LDFLAGS="-L$MOLTEN_VK_PREFIX/lib" GODEBUG=cgocheck=0 go build -o gomc ./cmd/client
