@@ -139,6 +139,11 @@ func (c *Controller) updatePlacement(inp *input.Manager, w BlockWorld) {
 	}
 
 	w.SetBlock(placePos, itemProps.BlockID)
+
+	if c.Mode != nil && c.Mode.HasInfiniteItems() {
+		return
+	}
+	c.Inventory.RemoveItem(c.SelectedSlot, 1)
 }
 
 // getSelectedHotbarItem returns the item stack in the currently selected

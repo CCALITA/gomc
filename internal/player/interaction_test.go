@@ -9,6 +9,7 @@ import (
 	"github.com/fanxiyao/gomc/internal/ecs"
 	"github.com/fanxiyao/gomc/internal/entity"
 	"github.com/fanxiyao/gomc/internal/input"
+	"github.com/fanxiyao/gomc/internal/inventory"
 	"github.com/fanxiyao/gomc/internal/item"
 	"github.com/fanxiyao/gomc/internal/mcmath"
 	"github.com/fanxiyao/gomc/internal/render"
@@ -111,6 +112,65 @@ func TestBreakBlock_InstantBreak_SpawnsDrops(t *testing.T) {
 	// Confirm breaking state was reset.
 	assert.Nil(t, ctrl.BreakingBlock, "breaking state should be reset after instant break")
 	assert.Equal(t, float32(0), ctrl.BreakProgress)
+}
+
+// TestPlacement_DecrementsItemCount verifies that placing a block in survival
+// mode consumes 1 item from the selected hotbar slot.
+func TestPlacement_DecrementsItemCount(t *testing.T) {
+	ctrl, _, bw, mgr := setupBreakingTest(block.Air)
+
+	// Give the player 10 dirt in hotbar slot 0.
+	inv := inventory.NewInventory(9)
+	inv.SetSlot(0, item.ItemStack{ItemID: item.Dirt, Count: 10})
+	ctrl.Inventory = inv
+	ctrl.SelectedSlot = 0
+
+	// Clear the block in front so placement succeeds.
+	placeTarget := mcmath.BlockPos{X: 0, Y: 65, Z: -1}
+	bw.SetBlock(placeTarget, block.Air)
+
+	// Place a solid block next to the target so the raycast hits something.
+	// The player looks at -Z; put a solid block at Z=-2 so the adjacent face
+	// places at Z=-1.
+	bw.SetBlock(mcmath.BlockPos{X: 0, Y: 65, Z: -2}, block.Stone)
+
+	useBtn := ctrl.KeyMap.GetKey(input.Use)
+	mgr.MouseButtonCallback(useBtn, input.ActionPress, 0)
+
+	ctrl.updatePlacement(mgr, bw)
+
+	slot := ctrl.Inventory.GetSlot(0)
+	assert.Equal(t, 9, slot.Count, "placing a block should decrement item count by 1")
+}
+
+// TestPlacement_CreativeMode_DoesNotDecrement verifies that placing a block in
+// creative mode does NOT consume items from the hotbar.
+func TestPlacement_CreativeMode_DoesNotDecrement(t *testing.T) {
+	ctrl, _, bw, mgr := setupBreakingTest(block.Air)
+
+	// Enable creative mode.
+	ctrl.Mode = &creativeModeStub{}
+
+	// Give the player 10 dirt in hotbar slot 0.
+	inv := inventory.NewInventory(9)
+	inv.SetSlot(0, item.ItemStack{ItemID: item.Dirt, Count: 10})
+	ctrl.Inventory = inv
+	ctrl.SelectedSlot = 0
+
+	// Clear the block in front so placement succeeds.
+	placeTarget := mcmath.BlockPos{X: 0, Y: 65, Z: -1}
+	bw.SetBlock(placeTarget, block.Air)
+
+	// Place a solid block at Z=-2 so raycast hits it and places at Z=-1.
+	bw.SetBlock(mcmath.BlockPos{X: 0, Y: 65, Z: -2}, block.Stone)
+
+	useBtn := ctrl.KeyMap.GetKey(input.Use)
+	mgr.MouseButtonCallback(useBtn, input.ActionPress, 0)
+
+	ctrl.updatePlacement(mgr, bw)
+
+	slot := ctrl.Inventory.GetSlot(0)
+	assert.Equal(t, 10, slot.Count, "creative mode should not consume items")
 }
 
 // creativeModeStub implements ModeChecker for creative mode testing.
