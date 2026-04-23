@@ -602,6 +602,79 @@ func TestCraftingTableScreen_GridSize(t *testing.T) {
 	assert.Equal(t, 3, ctGridSize, "Crafting table should use 3x3 grid")
 }
 
+// ---------- InventoryScreen right-click tests ----------
+
+func TestInventoryScreen_RightClick_PickUpHalf(t *testing.T) {
+	inv := inventory.NewInventory(36)
+	inv.SetSlot(0, item.ItemStack{ItemID: item.Stone, Count: 10})
+	grid := &inventory.CraftingGrid{}
+	screen := NewInventoryScreen(inv, grid, nil)
+	screen.SetScreenSize(800, 600)
+
+	screen.rightClickSlot(0)
+
+	// Should pick up ceil(10/2) = 5 items.
+	assert.Equal(t, item.Stone, screen.HeldItem.ItemID)
+	assert.Equal(t, 5, screen.HeldItem.Count)
+	// Slot should have the remaining 5.
+	slot := inv.GetSlot(0)
+	assert.Equal(t, item.Stone, slot.ItemID)
+	assert.Equal(t, 5, slot.Count)
+}
+
+func TestInventoryScreen_RightClick_PickUpHalfOdd(t *testing.T) {
+	inv := inventory.NewInventory(36)
+	inv.SetSlot(0, item.ItemStack{ItemID: item.Dirt, Count: 7})
+	grid := &inventory.CraftingGrid{}
+	screen := NewInventoryScreen(inv, grid, nil)
+	screen.SetScreenSize(800, 600)
+
+	screen.rightClickSlot(0)
+
+	// Should pick up ceil(7/2) = 4 items.
+	assert.Equal(t, item.Dirt, screen.HeldItem.ItemID)
+	assert.Equal(t, 4, screen.HeldItem.Count)
+	slot := inv.GetSlot(0)
+	assert.Equal(t, item.Dirt, slot.ItemID)
+	assert.Equal(t, 3, slot.Count)
+}
+
+func TestInventoryScreen_RightClick_PlaceOneInEmptySlot(t *testing.T) {
+	inv := inventory.NewInventory(36)
+	grid := &inventory.CraftingGrid{}
+	screen := NewInventoryScreen(inv, grid, nil)
+	screen.SetScreenSize(800, 600)
+
+	screen.HeldItem = item.ItemStack{ItemID: item.Stone, Count: 10}
+	screen.rightClickSlot(5)
+
+	// Slot 5 should have 1 item.
+	slot := inv.GetSlot(5)
+	assert.Equal(t, item.Stone, slot.ItemID)
+	assert.Equal(t, 1, slot.Count)
+	// Held should have 9.
+	assert.Equal(t, item.Stone, screen.HeldItem.ItemID)
+	assert.Equal(t, 9, screen.HeldItem.Count)
+}
+
+func TestInventoryScreen_RightClick_IncompatibleDoesNothing(t *testing.T) {
+	inv := inventory.NewInventory(36)
+	inv.SetSlot(0, item.ItemStack{ItemID: item.Dirt, Count: 5})
+	grid := &inventory.CraftingGrid{}
+	screen := NewInventoryScreen(inv, grid, nil)
+	screen.SetScreenSize(800, 600)
+
+	screen.HeldItem = item.ItemStack{ItemID: item.Stone, Count: 3}
+	screen.rightClickSlot(0)
+
+	// Nothing should change.
+	assert.Equal(t, item.Stone, screen.HeldItem.ItemID)
+	assert.Equal(t, 3, screen.HeldItem.Count)
+	slot := inv.GetSlot(0)
+	assert.Equal(t, item.Dirt, slot.ItemID)
+	assert.Equal(t, 5, slot.Count)
+}
+
 // ---------- Integration: container screens in UIManager ----------
 
 func TestUIManager_IsBlockingInput_ChestScreen(t *testing.T) {
