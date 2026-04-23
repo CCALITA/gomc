@@ -342,6 +342,67 @@ func TestFurnaceScreen_SetScreenSize(t *testing.T) {
 	assert.Equal(t, float32(1080), screen.screenHeight)
 }
 
+func TestFurnaceScreen_ShiftClickOutputMovesToPlayer(t *testing.T) {
+	furnace := inventory.NewFurnace()
+	furnace.OutputSlot = item.ItemStack{ItemID: item.IronIngot, Count: 5}
+	player := inventory.NewInventory(36)
+	screen := NewFurnaceScreen(furnace, player, nil)
+	screen.SetScreenSize(800, 600)
+
+	// Locate the output slot center using hit-test layout.
+	r := makeHitRenderer(800, 600)
+	ox, oy := screen.outputSlotPos(r)
+	cx, cy := ox+invSlotSize/2, oy+invSlotSize/2
+
+	screen.handleShiftClick(cx, cy)
+
+	// Output should be empty and player should have the ingots.
+	assert.True(t, furnace.OutputSlot.IsEmpty(), "output slot should be cleared")
+	slot := player.GetSlot(0)
+	assert.Equal(t, item.IronIngot, slot.ItemID)
+	assert.Equal(t, 5, slot.Count)
+}
+
+func TestFurnaceScreen_ShiftClickPlayerFuelMovesToFuelSlot(t *testing.T) {
+	furnace := inventory.NewFurnace()
+	player := inventory.NewInventory(36)
+	player.SetSlot(0, item.ItemStack{ItemID: item.Coal, Count: 10})
+	screen := NewFurnaceScreen(furnace, player, nil)
+	screen.SetScreenSize(800, 600)
+
+	// Locate player slot 0 center.
+	r := makeHitRenderer(800, 600)
+	px, py := screen.playerSlotPos(r, 0, 0)
+	cx, cy := px+invSlotSize/2, py+invSlotSize/2
+
+	screen.handleShiftClick(cx, cy)
+
+	// Coal should move to the fuel slot.
+	assert.Equal(t, item.Coal, furnace.FuelSlot.ItemID)
+	assert.Equal(t, 10, furnace.FuelSlot.Count)
+	assert.True(t, player.GetSlot(0).IsEmpty(), "player slot should be cleared")
+}
+
+func TestFurnaceScreen_ShiftClickPlayerSmeltableMovesToInputSlot(t *testing.T) {
+	furnace := inventory.NewFurnace()
+	player := inventory.NewInventory(36)
+	player.SetSlot(0, item.ItemStack{ItemID: item.IronOre, Count: 8})
+	screen := NewFurnaceScreen(furnace, player, nil)
+	screen.SetScreenSize(800, 600)
+
+	// Locate player slot 0 center.
+	r := makeHitRenderer(800, 600)
+	px, py := screen.playerSlotPos(r, 0, 0)
+	cx, cy := px+invSlotSize/2, py+invSlotSize/2
+
+	screen.handleShiftClick(cx, cy)
+
+	// Iron ore should move to the input slot.
+	assert.Equal(t, item.IronOre, furnace.InputSlot.ItemID)
+	assert.Equal(t, 8, furnace.InputSlot.Count)
+	assert.True(t, player.GetSlot(0).IsEmpty(), "player slot should be cleared")
+}
+
 // ---------- CraftingTableScreen tests ----------
 
 func TestCraftingTableScreen_New(t *testing.T) {

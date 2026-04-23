@@ -8,6 +8,13 @@ import (
 	"github.com/fanxiyao/gomc/internal/item"
 )
 
+// fuelItems lists item IDs recognised as furnace fuel.
+var fuelItems = map[item.ItemID]bool{
+	item.Coal:     true,
+	item.OakLog:   true,
+	item.OakPlanks: true,
+}
+
 // FurnaceScreen displays a furnace GUI with input, fuel, and output slots,
 // a progress arrow, a flame indicator, and the player inventory at the bottom.
 type FurnaceScreen struct {
@@ -47,7 +54,11 @@ func (s *FurnaceScreen) Update(inp *input.Manager, _ float64) {
 	}
 
 	if inp.IsMouseJustPressed(input.MouseButtonLeft) {
-		s.handleClick(float32(s.mouseX), float32(s.mouseY))
+		if inp.IsKeyDown(input.KeyLeftShift) {
+			s.handleShiftClick(float32(s.mouseX), float32(s.mouseY))
+		} else {
+			s.handleClick(float32(s.mouseX), float32(s.mouseY))
+		}
 	}
 }
 
@@ -231,6 +242,62 @@ func (s *FurnaceScreen) handleClick(mx, my float32) {
 	}
 }
 
+// handleShiftClick processes a shift-click at screen coordinates by moving
+// items directly between furnace slots and the player inventory without
+// picking them up on the cursor.
+func (s *FurnaceScreen) handleShiftClick(mx, my float32) {
+	if s.Furnace == nil || s.PlayerInv == nil {
+		return
+	}
+
+	// Shift-click output slot: move smelted output to player inventory.
+	if s.hitTestOutput(mx, my) {
+		if !s.Furnace.OutputSlot.IsEmpty() {
+			remaining := s.PlayerInv.AddItem(s.Furnace.OutputSlot)
+			s.Furnace.OutputSlot = remaining
+		}
+		return
+	}
+
+	// Shift-click input slot: move to player inventory.
+	if s.hitTestInput(mx, my) {
+		if !s.Furnace.InputSlot.IsEmpty() {
+			remaining := s.PlayerInv.AddItem(s.Furnace.InputSlot)
+			s.Furnace.InputSlot = remaining
+		}
+		return
+	}
+
+	// Shift-click fuel slot: move to player inventory.
+	if s.hitTestFuel(mx, my) {
+		if !s.Furnace.FuelSlot.IsEmpty() {
+			remaining := s.PlayerInv.AddItem(s.Furnace.FuelSlot)
+			s.Furnace.FuelSlot = remaining
+		}
+		return
+	}
+
+	// Shift-click player slot: route to fuel or input slot.
+	playerIdx := s.hitTestPlayer(mx, my)
+	if playerIdx >= 0 {
+		stack := s.PlayerInv.GetSlot(playerIdx)
+		if stack.IsEmpty() {
+			return
+		}
+		if isFuel(stack.ItemID) {
+			remaining := mergeIntoSlot(&s.Furnace.FuelSlot, stack)
+			s.PlayerInv.SetSlot(playerIdx, remaining)
+			return
+		}
+		if isSmeltable(stack.ItemID) {
+			remaining := mergeIntoSlot(&s.Furnace.InputSlot, stack)
+			s.PlayerInv.SetSlot(playerIdx, remaining)
+			return
+		}
+		// Item is neither fuel nor smeltable; no-op.
+	}
+}
+
 // swapWithFurnaceSlot swaps the held item with a furnace slot.
 func (s *FurnaceScreen) swapWithFurnaceSlot(slot *item.ItemStack) {
 	if s.Furnace == nil || slot == nil {
@@ -272,6 +339,32 @@ func (s *FurnaceScreen) takeOutput() {
 // swapWithPlayerSlot swaps the held item with a player inventory slot.
 func (s *FurnaceScreen) swapWithPlayerSlot(slotIdx int) {
 	s.HeldItem = swapHeldWithSlot(s.HeldItem, s.PlayerInv, slotIdx)
+}
+
+// isFuel reports whether the item is usable as furnace fuel.
+func isFuel(id item.ItemID) bool {
+	return fuelItems[id]
+}
+
+// isSmeltable reports whether the item has a smelting recipe.
+func isSmeltable(id item.ItemID) bool {
+	_, found := inventory.FindSmeltingRecipe(id)
+	return found
+}
+
+// mergeIntoSlot places src into the target furnace slot. If the slot is empty
+// the whole stack is placed. If the slot contains the same item type the
+// stacks are merged. Returns whatever could not fit.
+func mergeIntoSlot(slot *item.ItemStack, src item.ItemStack) item.ItemStack {
+	if slot.IsEmpty() {
+		*slot = src
+		return item.ItemStack{}
+	}
+	if slot.CanStackWith(src) {
+		remaining := slot.Merge(src)
+		return remaining
+	}
+	return src
 }
 
 // --- Layout helpers ---
