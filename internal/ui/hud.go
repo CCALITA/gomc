@@ -13,6 +13,8 @@ const (
 	hotbarSlots    = 9
 	maxHearts      = 10
 	maxHunger      = 10
+	maxArmorIcons  = 10
+	maxBubbles     = 10
 	slotSize       = 40.0
 	slotPadding    = 4.0
 	heartSize      = 16.0
@@ -42,6 +44,15 @@ type HUD struct {
 
 	// MaxHunger is the maximum hunger value.
 	MaxHunger int
+
+	// ArmorPoints is the current armor value (0-20, displayed as shield icons).
+	ArmorPoints int
+
+	// AirBubbles is the current air supply (0-10, displayed as bubble icons).
+	AirBubbles int
+
+	// MaxAirBubbles is the maximum air supply (default 10).
+	MaxAirBubbles int
 
 	// ShowFPS toggles the debug overlay in the top-left corner.
 	ShowFPS bool
@@ -80,11 +91,13 @@ type HUD struct {
 // NewHUD creates a HUD bound to the given hotbar inventory.
 func NewHUD(hotbar *inventory.Inventory) *HUD {
 	return &HUD{
-		Hotbar:    hotbar,
-		Health:    20,
-		MaxHealth: 20,
-		Hunger:    20,
-		MaxHunger: 20,
+		Hotbar:        hotbar,
+		Health:        20,
+		MaxHealth:     20,
+		Hunger:        20,
+		MaxHunger:     20,
+		AirBubbles:    10,
+		MaxAirBubbles: 10,
 	}
 }
 
@@ -116,6 +129,8 @@ func (h *HUD) Draw(r *UIRenderer) {
 	h.drawHotbar(r)
 	h.drawHealthBar(r)
 	h.drawHungerBar(r)
+	h.drawArmorBar(r)
+	h.drawBreathBar(r)
 	h.drawFunctionalItemOverlay(r)
 	if h.ShowFPS {
 		h.drawDebugOverlay(r)
@@ -229,6 +244,70 @@ func (h *HUD) drawHungerBar(r *UIRenderer) {
 		} else if i == drumsticks && halfDrumstick {
 			// Half drumstick.
 			r.DrawRect(x+2, y+2, (heartSize-4)/2, heartSize-4, 0.8, 0.6, 0.2, 1.0)
+		}
+	}
+}
+
+// drawArmorBar renders shield icons above the health bar on the left side.
+// The bar is only visible when ArmorPoints > 0.
+func (h *HUD) drawArmorBar(r *UIRenderer) {
+	if h.ArmorPoints <= 0 {
+		return
+	}
+
+	totalWidth := float32(hotbarSlots)*slotSize + float32(hotbarSlots-1)*slotPadding
+	startX := (r.ScreenWidth - totalWidth) / 2
+	// Position one row above the health bar.
+	y := r.ScreenHeight - hudBarHeight - 2*(heartSize+4)
+
+	fullIcons := h.ArmorPoints / 2
+	halfIcon := h.ArmorPoints%2 == 1
+	maxIconCount := maxArmorIcons
+
+	for i := 0; i < maxIconCount; i++ {
+		x := startX + float32(i)*(heartSize+heartPadding)
+		// Background (empty shield).
+		r.DrawRect(x, y, heartSize, heartSize, 0.3, 0.3, 0.3, 0.4)
+
+		if i < fullIcons {
+			// Full shield.
+			r.DrawRect(x+2, y+2, heartSize-4, heartSize-4, 0.7, 0.7, 0.7, 1.0)
+		} else if i == fullIcons && halfIcon {
+			// Half shield (left half filled).
+			r.DrawRect(x+2, y+2, (heartSize-4)/2, heartSize-4, 0.7, 0.7, 0.7, 1.0)
+		}
+	}
+}
+
+// drawBreathBar renders bubble icons above the hunger bar on the right side.
+// The bar is only visible when AirBubbles < MaxAirBubbles (i.e. underwater).
+func (h *HUD) drawBreathBar(r *UIRenderer) {
+	maxBubbleCount := h.MaxAirBubbles
+	if maxBubbleCount <= 0 {
+		maxBubbleCount = maxBubbles
+	}
+	if maxBubbleCount > maxBubbles {
+		maxBubbleCount = maxBubbles
+	}
+
+	if h.AirBubbles >= maxBubbleCount {
+		return
+	}
+
+	totalWidth := float32(hotbarSlots)*slotSize + float32(hotbarSlots-1)*slotPadding
+	endX := (r.ScreenWidth+totalWidth)/2 - heartSize
+	// Position one row above the hunger bar.
+	y := r.ScreenHeight - hudBarHeight - 2*(heartSize+4)
+
+	for i := 0; i < maxBubbleCount; i++ {
+		// Draw right-to-left, matching hunger bar direction.
+		x := endX - float32(i)*(heartSize+heartPadding)
+		// Background (empty bubble).
+		r.DrawRect(x, y, heartSize, heartSize, 0.1, 0.2, 0.4, 0.4)
+
+		if i < h.AirBubbles {
+			// Full bubble.
+			r.DrawRect(x+2, y+2, heartSize-4, heartSize-4, 0.3, 0.6, 0.9, 1.0)
 		}
 	}
 }
