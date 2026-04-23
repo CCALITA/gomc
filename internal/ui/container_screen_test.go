@@ -639,3 +639,107 @@ func TestIntegration_CraftingTableOpenClose(t *testing.T) {
 
 	assert.Equal(t, 1, m.ScreenCount())
 }
+
+// ---------- InventoryScreen shift-click tests ----------
+
+func TestInventoryScreen_ShiftClickCraftResult(t *testing.T) {
+	grid := &inventory.CraftingGrid{}
+	// Set up a 2x2 planks recipe for a crafting table.
+	grid.SetSlot(0, 0, item.ItemStack{ItemID: item.OakPlanks, Count: 1})
+	grid.SetSlot(0, 1, item.ItemStack{ItemID: item.OakPlanks, Count: 1})
+	grid.SetSlot(1, 0, item.ItemStack{ItemID: item.OakPlanks, Count: 1})
+	grid.SetSlot(1, 1, item.ItemStack{ItemID: item.OakPlanks, Count: 1})
+
+	inv := inventory.NewInventory(36)
+	screen := NewInventoryScreen(inv, grid, nil)
+	screen.SetScreenSize(800, 600)
+
+	// Determine the craft result position via hit test.
+	r := NewUIRenderer(800, 600)
+	baseX, baseY := screen.craftGridOrigin(r)
+	arrowX := baseX + float32(craftGridSize)*(invSlotSize+invSlotPadding) + 8
+	resultX := arrowX + 32
+	resultY := baseY + (invSlotSize+invSlotPadding)/2 - invSlotSize/2 + invSlotSize/4
+
+	// Verify a recipe result exists before shift-clicking.
+	result := grid.GetResult()
+	if result.IsEmpty() {
+		t.Skip("No recipe registered for 2x2 planks; skipping shift-click craft result test")
+	}
+
+	// Simulate shift+left-click on craft result.
+	screen.handleShiftClick(resultX+1, resultY+1)
+
+	// The crafted item should go directly into the inventory, not the cursor.
+	assert.True(t, screen.HeldItem.IsEmpty(), "Held item should remain empty after shift-click craft")
+
+	// The item should be in the player inventory.
+	found := false
+	for i := 0; i < inv.Size(); i++ {
+		if !inv.GetSlot(i).IsEmpty() {
+			found = true
+			break
+		}
+	}
+	assert.True(t, found, "Crafted item should be added to player inventory")
+}
+
+func TestInventoryScreen_ShiftClickCraftGrid(t *testing.T) {
+	grid := &inventory.CraftingGrid{}
+	grid.SetSlot(0, 0, item.ItemStack{ItemID: item.Stone, Count: 5})
+
+	inv := inventory.NewInventory(36)
+	screen := NewInventoryScreen(inv, grid, nil)
+	screen.SetScreenSize(800, 600)
+
+	// Determine the craft grid slot (0,0) position.
+	r := NewUIRenderer(800, 600)
+	baseX, baseY := screen.craftGridOrigin(r)
+	slotX := baseX + 1
+	slotY := baseY + 1
+
+	screen.handleShiftClick(slotX, slotY)
+
+	// The craft grid slot should now be empty.
+	assert.True(t, grid.GetSlot(0, 0).IsEmpty(), "Craft grid slot should be emptied")
+
+	// The item should be in the player inventory.
+	slot := inv.GetSlot(0)
+	assert.Equal(t, item.Stone, slot.ItemID)
+	assert.Equal(t, 5, slot.Count)
+
+	// Cursor should remain empty.
+	assert.True(t, screen.HeldItem.IsEmpty(), "Held item should remain empty")
+}
+
+func TestInventoryScreen_ShiftClickInventorySlot_HotbarToMain(t *testing.T) {
+	inv := inventory.NewInventory(36)
+	inv.SetSlot(0, item.ItemStack{ItemID: item.Dirt, Count: 16}) // hotbar slot 0
+
+	grid := &inventory.CraftingGrid{}
+	screen := NewInventoryScreen(inv, grid, nil)
+	screen.SetScreenSize(800, 600)
+
+	// Determine the position of hotbar slot 0 (row=0, col=0).
+	r := NewUIRenderer(800, 600)
+	sx, sy := screen.inventorySlotPos(r, 0, 0)
+
+	screen.handleShiftClick(sx+1, sy+1)
+
+	// Hotbar slot 0 should now be empty.
+	assert.True(t, inv.GetSlot(0).IsEmpty(), "Hotbar slot should be emptied")
+
+	// The item should have moved to main inventory (slots 9+).
+	found := false
+	for i := invCols; i < invTotalSlots; i++ {
+		s := inv.GetSlot(i)
+		if s.ItemID == item.Dirt && s.Count == 16 {
+			found = true
+			break
+		}
+	}
+	assert.True(t, found, "Item should be moved to main inventory area")
+
+	// Cursor should remain empty.
+	assert.True(t, screen.HeldItem.IsEmpty(), "Held item should remain empty")
+}

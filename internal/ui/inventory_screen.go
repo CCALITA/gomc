@@ -65,7 +65,11 @@ func (s *InventoryScreen) Update(inp *input.Manager, _ float64) {
 
 	// Handle left-click for slot interaction.
 	if inp.IsMouseJustPressed(input.MouseButtonLeft) {
-		s.handleClick(float32(s.mouseX), float32(s.mouseY))
+		if inp.IsKeyDown(input.KeyLeftShift) {
+			s.handleShiftClick(float32(s.mouseX), float32(s.mouseY))
+		} else {
+			s.handleClick(float32(s.mouseX), float32(s.mouseY))
+		}
 	}
 }
 
@@ -160,6 +164,93 @@ func (s *InventoryScreen) handleClick(mx, my float32) {
 	if s.hitTestCraftResult(mx, my) {
 		s.takeCraftResult()
 	}
+}
+
+// handleShiftClick processes a shift-click at screen coordinates (mx, my).
+// Shift-clicking moves items directly into the player inventory without
+// picking them up on the cursor.
+func (s *InventoryScreen) handleShiftClick(mx, my float32) {
+	// Check crafting result slot: craft and add result to inventory.
+	if s.hitTestCraftResult(mx, my) {
+		if s.CraftGrid == nil || s.Inv == nil {
+			return
+		}
+		result, ok := s.CraftGrid.Craft()
+		if ok {
+			s.Inv.AddItem(result)
+		}
+		return
+	}
+
+	// Check crafting grid slots: move item to inventory.
+	cr, cc := s.hitTestCraftGrid(mx, my)
+	if cr >= 0 && cc >= 0 {
+		if s.CraftGrid == nil || s.Inv == nil {
+			return
+		}
+		stack := s.CraftGrid.GetSlot(cr, cc)
+		if !stack.IsEmpty() {
+			s.CraftGrid.SetSlot(cr, cc, item.ItemStack{})
+			s.Inv.AddItem(stack)
+		}
+		return
+	}
+
+	// Check player inventory slots: move between hotbar (row 0) and main
+	// inventory (rows 1-3).
+	slotIdx := s.hitTestInventory(mx, my)
+	if slotIdx >= 0 && s.Inv != nil {
+		stack := s.Inv.GetSlot(slotIdx)
+		if stack.IsEmpty() {
+			return
+		}
+		hotbarEnd := invCols // slots 0..8 are row 0 (hotbar)
+		if slotIdx < hotbarEnd {
+			// In hotbar: move to first available main inventory slot (rows 1-3).
+			s.Inv.SetSlot(slotIdx, item.ItemStack{})
+			remainder := s.addItemToRange(stack, hotbarEnd, invTotalSlots)
+			if !remainder.IsEmpty() {
+				// Could not fit; put it back.
+				s.Inv.SetSlot(slotIdx, remainder)
+			}
+		} else {
+			// In main inventory: move to first available hotbar slot (row 0).
+			s.Inv.SetSlot(slotIdx, item.ItemStack{})
+			remainder := s.addItemToRange(stack, 0, hotbarEnd)
+			if !remainder.IsEmpty() {
+				s.Inv.SetSlot(slotIdx, remainder)
+			}
+		}
+	}
+}
+
+// addItemToRange tries to add a stack into inventory slots [start, end).
+// It first merges with compatible stacks, then fills empty slots.
+// Returns whatever could not fit.
+func (s *InventoryScreen) addItemToRange(stack item.ItemStack, start, end int) item.ItemStack {
+	// First pass: merge into existing compatible stacks.
+	for i := start; i < end; i++ {
+		current := s.Inv.GetSlot(i)
+		if current.IsEmpty() {
+			continue
+		}
+		if current.CanStackWith(stack) {
+			merged := current
+			stack = merged.Merge(stack)
+			s.Inv.SetSlot(i, merged)
+			if stack.IsEmpty() {
+				return stack
+			}
+		}
+	}
+	// Second pass: place into empty slots.
+	for i := start; i < end; i++ {
+		if s.Inv.GetSlot(i).IsEmpty() {
+			s.Inv.SetSlot(i, stack)
+			return item.ItemStack{}
+		}
+	}
+	return stack
 }
 
 // swapWithSlot swaps the held item with the item in the given inventory slot.
