@@ -395,6 +395,53 @@ func TestFurnaceScreen_SetScreenSize(t *testing.T) {
 	assert.Equal(t, float32(1080), screen.screenHeight)
 }
 
+func TestFurnaceScreen_RightClickPickUpHalf_FurnaceSlot(t *testing.T) {
+	furnace := inventory.NewFurnace()
+	furnace.InputSlot = item.ItemStack{ItemID: item.IronOre, Count: 10}
+	player := inventory.NewInventory(36)
+	screen := NewFurnaceScreen(furnace, player, nil)
+
+	// Right-click with empty hand picks up half (floor = 5 taken, ceiling = 5 stays).
+	screen.rightClickSlot(&furnace.InputSlot)
+
+	assert.Equal(t, item.IronOre, screen.HeldItem.ItemID)
+	assert.Equal(t, 5, screen.HeldItem.Count)
+	assert.Equal(t, item.IronOre, furnace.InputSlot.ItemID)
+	assert.Equal(t, 5, furnace.InputSlot.Count)
+}
+
+func TestFurnaceScreen_RightClickPlaceOne_FurnaceSlot(t *testing.T) {
+	furnace := inventory.NewFurnace()
+	player := inventory.NewInventory(36)
+	screen := NewFurnaceScreen(furnace, player, nil)
+
+	screen.HeldItem = item.ItemStack{ItemID: item.Coal, Count: 8}
+
+	// Right-click with held items on empty slot places one.
+	screen.rightClickSlot(&furnace.FuelSlot)
+
+	assert.Equal(t, item.Coal, furnace.FuelSlot.ItemID)
+	assert.Equal(t, 1, furnace.FuelSlot.Count)
+	assert.Equal(t, item.Coal, screen.HeldItem.ItemID)
+	assert.Equal(t, 7, screen.HeldItem.Count)
+}
+
+func TestFurnaceScreen_RightClickPlayerSlot_PickUpHalf(t *testing.T) {
+	furnace := inventory.NewFurnace()
+	player := inventory.NewInventory(36)
+	player.SetSlot(0, item.ItemStack{ItemID: item.Stone, Count: 16})
+	screen := NewFurnaceScreen(furnace, player, nil)
+
+	// Right-click with empty hand picks up half from player slot.
+	screen.rightClickPlayerSlot(0)
+
+	assert.Equal(t, item.Stone, screen.HeldItem.ItemID)
+	assert.Equal(t, 8, screen.HeldItem.Count)
+	slot := player.GetSlot(0)
+	assert.Equal(t, item.Stone, slot.ItemID)
+	assert.Equal(t, 8, slot.Count)
+}
+
 // ---------- CraftingTableScreen tests ----------
 
 func TestCraftingTableScreen_New(t *testing.T) {
