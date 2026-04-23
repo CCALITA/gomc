@@ -16,15 +16,23 @@ const (
 	invBgPadding   = 16.0
 )
 
+// armorSlotCount is the number of armor equipment slots.
+const armorSlotCount = 4
+
 // InventoryScreen displays the player inventory (36 slots in a 4x9 grid)
-// with a 2x2 crafting grid and a crafting result slot. Items can be
-// dragged and dropped between slots.
+// with a 2x2 crafting grid, a crafting result slot, and 4 armor equipment
+// slots (helmet, chestplate, leggings, boots). Items can be dragged and
+// dropped between slots.
 type InventoryScreen struct {
 	// Inv is the player inventory (36 slots).
 	Inv *inventory.Inventory
 
 	// CraftGrid is the 2x2 (uses top-left of 3x3) crafting grid.
 	CraftGrid *inventory.CraftingGrid
+
+	// ArmorSlots holds the four armor equipment slots:
+	// [0]=Helmet, [1]=Chestplate, [2]=Leggings, [3]=Boots.
+	ArmorSlots [4]item.ItemStack
 
 	// HeldItem is the item stack currently held by the cursor.
 	HeldItem item.ItemStack
@@ -102,6 +110,9 @@ func (s *InventoryScreen) Draw(r *UIRenderer) {
 		}
 	}
 
+	// Armor slots — positioned to the left of the crafting grid.
+	s.drawArmorSlots(r)
+
 	// Crafting grid (2x2) — positioned above and to the right of inventory.
 	s.drawCraftingGrid(r)
 
@@ -151,6 +162,13 @@ func (s *InventoryScreen) handleClick(mx, my float32) {
 	slotIdx := s.hitTestInventory(mx, my)
 	if slotIdx >= 0 {
 		s.swapWithSlot(slotIdx)
+		return
+	}
+
+	// Check armor slots.
+	armorIdx := s.hitTestArmorSlots(mx, my)
+	if armorIdx >= 0 {
+		s.handleArmorSlotClick(armorIdx)
 		return
 	}
 
@@ -407,4 +425,73 @@ func (s *InventoryScreen) hitTestCraftResult(mx, my float32) bool {
 	resultX := arrowX + 32
 	resultY := baseY + (invSlotSize+invSlotPadding)/2 - invSlotSize/2 + invSlotSize/4
 	return mx >= resultX && mx <= resultX+invSlotSize && my >= resultY && my <= resultY+invSlotSize
+}
+
+// armorSlotLabels maps each armor slot index to its display label.
+var armorSlotLabels = [armorSlotCount]string{"Helmet", "Chest", "Legs", "Boots"}
+
+// armorSlotOrigin returns the top-left position of the armor slot column.
+// The slots are positioned to the left of the crafting grid.
+func (s *InventoryScreen) armorSlotOrigin(r *UIRenderer) (float32, float32) {
+	craftX, craftY := s.craftGridOrigin(r)
+	x := craftX - invSlotSize - invSlotPadding - 40
+	return x, craftY
+}
+
+// drawArmorSlots renders the 4 armor slot outlines: helmet (top) to boots (bottom).
+func (s *InventoryScreen) drawArmorSlots(r *UIRenderer) {
+	baseX, baseY := s.armorSlotOrigin(r)
+
+	r.DrawText(baseX, baseY-20, "Armor", 0.8, 0.9, 0.9, 0.9)
+
+	for i := 0; i < armorSlotCount; i++ {
+		sy := baseY + float32(i)*(invSlotSize+invSlotPadding)
+		// Slot outline with a slightly different tint to distinguish armor slots.
+		r.DrawRect(baseX, sy, invSlotSize, invSlotSize, 0.25, 0.2, 0.15, 0.8)
+		stack := s.ArmorSlots[i]
+		if !stack.IsEmpty() {
+			r.DrawItemSlot(baseX+2, sy+2, stack)
+		}
+	}
+}
+
+// hitTestArmorSlots returns the armor slot index (0-3) under (mx, my), or -1.
+func (s *InventoryScreen) hitTestArmorSlots(mx, my float32) int {
+	r := makeHitRenderer(s.screenWidth, s.screenHeight)
+	baseX, baseY := s.armorSlotOrigin(r)
+	for i := 0; i < armorSlotCount; i++ {
+		sy := baseY + float32(i)*(invSlotSize+invSlotPadding)
+		if mx >= baseX && mx <= baseX+invSlotSize && my >= sy && my <= sy+invSlotSize {
+			return i
+		}
+	}
+	return -1
+}
+
+// handleArmorSlotClick processes a click on the given armor slot index.
+// - Holding an armor piece for the correct slot: equip it (swap with current).
+// - Empty hands on occupied slot: unequip (pick up).
+// - Wrong slot type: reject (no-op).
+func (s *InventoryScreen) handleArmorSlotClick(slotIdx int) {
+	current := s.ArmorSlots[slotIdx]
+
+	// Empty hands: unequip whatever is in the slot.
+	if s.HeldItem.IsEmpty() {
+		if !current.IsEmpty() {
+			s.HeldItem = current
+			s.ArmorSlots[slotIdx] = item.ItemStack{}
+		}
+		return
+	}
+
+	// Holding an item: check if it is armor for this slot.
+	props := item.GetProperties(s.HeldItem.ItemID)
+	if !props.IsArmor() || props.ArmorSlot != slotIdx {
+		// Wrong slot type or not armor: reject.
+		return
+	}
+
+	// Correct armor piece for this slot: equip (swap with current).
+	s.ArmorSlots[slotIdx] = s.HeldItem
+	s.HeldItem = current
 }
