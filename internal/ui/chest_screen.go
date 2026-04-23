@@ -54,6 +54,10 @@ func (s *ChestScreen) Update(inp *input.Manager, _ float64) {
 	if inp.IsMouseJustPressed(input.MouseButtonLeft) {
 		s.handleClick(float32(s.mouseX), float32(s.mouseY))
 	}
+
+	if inp.IsMouseJustPressed(input.MouseButtonRight) {
+		s.handleRightClick(float32(s.mouseX), float32(s.mouseY))
+	}
 }
 
 // Draw renders the chest screen.
@@ -157,6 +161,71 @@ func (s *ChestScreen) handleClick(mx, my float32) {
 // Kept as a convenience method for direct testing.
 func (s *ChestScreen) swapWithInventory(inv *inventory.Inventory, slotIdx int) {
 	s.HeldItem = swapHeldWithSlot(s.HeldItem, inv, slotIdx)
+}
+
+// handleRightClick processes a right-click at screen coordinates (mx, my).
+func (s *ChestScreen) handleRightClick(mx, my float32) {
+	chestIdx := s.hitTestChest(mx, my)
+	if chestIdx >= 0 {
+		s.HeldItem = rightClickSlot(s.HeldItem, s.ChestInv, chestIdx)
+		return
+	}
+
+	playerIdx := s.hitTestPlayer(mx, my)
+	if playerIdx >= 0 {
+		s.HeldItem = rightClickSlot(s.HeldItem, s.PlayerInv, playerIdx)
+	}
+}
+
+// rightClickSlot performs a right-click interaction between held and a slot:
+//   - Holding nothing + slot has items: pick up half (rounded up) via Split.
+//   - Holding items + empty slot: place exactly 1 item.
+//   - Holding items + compatible slot with room: place exactly 1 item.
+//   - Incompatible items: no-op.
+func rightClickSlot(held item.ItemStack, inv *inventory.Inventory, slotIdx int) item.ItemStack {
+	if inv == nil {
+		return held
+	}
+	current := inv.GetSlot(slotIdx)
+
+	// Holding nothing: pick up half.
+	if held.IsEmpty() {
+		if current.IsEmpty() {
+			return held
+		}
+		halfAmount := (current.Count + 1) / 2
+		taken, remaining := current.Split(halfAmount)
+		inv.SetSlot(slotIdx, remaining)
+		return taken
+	}
+
+	// Holding items + empty slot: place one.
+	if current.IsEmpty() {
+		oneItem, rest := held.Split(1)
+		inv.SetSlot(slotIdx, oneItem)
+		return rest
+	}
+
+	// Holding items + compatible slot: place one if there is room.
+	if held.CanStackWith(current) {
+		max := item.MaxStack(current.ItemID)
+		if current.Count >= max {
+			return held
+		}
+		oneItem := item.ItemStack{
+			ItemID:     current.ItemID,
+			Count:      1,
+			Durability: current.Durability,
+		}
+		merged := current
+		merged.Merge(oneItem)
+		inv.SetSlot(slotIdx, merged)
+		_, rest := held.Split(1)
+		return rest
+	}
+
+	// Incompatible: no-op.
+	return held
 }
 
 // --- Layout helpers ---
