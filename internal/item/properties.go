@@ -1,5 +1,7 @@
 package item
 
+import "strings"
+
 // DefaultMaxStackSize is used when no explicit stack size is set.
 const DefaultMaxStackSize = 64
 
@@ -310,4 +312,19 @@ func HasDurability(id ItemID) bool {
 // IsFood reports whether the item restores hunger when eaten.
 func IsFood(id ItemID) bool {
 	return GetProperties(id).FoodRestore > 0
+}
+
+// GetIDByName performs a case-insensitive search of the properties table
+// and returns the ItemID for the first item whose Name matches. Spaces and
+// underscores are treated as equivalent so that both "diamond_pickaxe" and
+// "Diamond Pickaxe" resolve to the same item. Returns (0, false) when no
+// match is found.
+func GetIDByName(name string) (ItemID, bool) {
+	norm := strings.ToLower(strings.ReplaceAll(name, "_", " "))
+	for id, p := range properties {
+		if strings.ToLower(p.Name) == norm {
+			return id, true
+		}
+	}
+	return 0, false
 }

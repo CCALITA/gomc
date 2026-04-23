@@ -47,6 +47,7 @@ type Game struct {
 
 	meshQueue   chan mcmath.ChunkPos
 
+	Commands    *CommandRegistry
 	Mode        *ModeManager
 	Spawner     *entity.Spawner
 	Time        *TimeKeeper
@@ -114,7 +115,62 @@ func (g *Game) Init(cfg *config.Config) error {
 		g.Renderer.Window.SetInputMode(glfw.CursorMode, glfw.CursorNormal)
 	})
 
+	g.Commands = NewCommandRegistry(&CommandCallbacks{
+		SetGameMode: func(mode GameMode) {
+			g.Mode.SetMode(mode)
+		},
+		SetTime: func(ticks int64) {
+			g.Time = &TimeKeeper{GameTime: ticks}
+		},
+		SetWeather: func(state WeatherState) {
+			// Weather state is tracked but not yet rendered.
+			_ = state
+		},
+		KillPlayer: func() {
+			if g.Player == nil || g.ECSWorld == nil {
+				return
+			}
+			healthStore := ecs.GetStore[entity.Health](g.ECSWorld)
+			healthStore.Set(g.Player.Entity, entity.Health{Current: 0, Max: 20})
+		},
+		Teleport: func(x, y, z float64) {
+			if g.Player == nil || g.ECSWorld == nil {
+				return
+			}
+			pos := mcmath.Vec3{X: float32(x), Y: float32(y), Z: float32(z)}
+			transformStore := ecs.GetStore[entity.Transform](g.ECSWorld)
+			transformStore.Set(g.Player.Entity, entity.Transform{Position: pos})
+			g.Player.Camera.SetPosition(pos.Add(mcmath.Vec3{Y: player.EyeOffset}))
+		},
+		GiveItem: func(itemName string, count int) {
+			if g.Inventory == nil {
+				return
+			}
+			id, ok := item.GetIDByName(itemName)
+			if !ok {
+				return
+			}
+			g.Inventory.AddItem(item.NewItemStack(id, count))
+		},
+		GetSeed: func() int64 {
+			if g.World != nil {
+				return g.World.Seed()
+			}
+			return 0
+		},
+	})
+
 	return nil
+}
+
+// HandleCommand processes a slash-command string (e.g. "/give stone 5")
+// and returns the response message. If the command registry has not been
+// initialised, it returns an empty string.
+func (g *Game) HandleCommand(line string) string {
+	if g.Commands == nil {
+		return ""
+	}
+	return g.Commands.Execute(line)
 }
 
 func (g *Game) setupInputCallbacks() {
