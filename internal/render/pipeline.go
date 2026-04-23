@@ -227,7 +227,7 @@ func (p *Pipeline) CreateGraphicsPipeline(vertShaderPath, fragShaderPath string,
 		PAttachments:    []vk.PipelineColorBlendAttachmentState{colorBlendAttachment},
 	}
 
-	// Descriptor set layout for uniform buffer (set 0, binding 0)
+	// Descriptor set layout: binding 0 = UBO (vertex), binding 1 = sampler (fragment)
 	uboLayoutBinding := vk.DescriptorSetLayoutBinding{
 		Binding:         0,
 		DescriptorType:  vk.DescriptorTypeUniformBuffer,
@@ -235,7 +235,14 @@ func (p *Pipeline) CreateGraphicsPipeline(vertShaderPath, fragShaderPath string,
 		StageFlags:      vk.ShaderStageFlags(vk.ShaderStageVertexBit),
 	}
 
-	layoutBindings := []vk.DescriptorSetLayoutBinding{uboLayoutBinding}
+	samplerLayoutBinding := vk.DescriptorSetLayoutBinding{
+		Binding:         1,
+		DescriptorType:  vk.DescriptorTypeCombinedImageSampler,
+		DescriptorCount: 1,
+		StageFlags:      vk.ShaderStageFlags(vk.ShaderStageFragmentBit),
+	}
+
+	layoutBindings := []vk.DescriptorSetLayoutBinding{uboLayoutBinding, samplerLayoutBinding}
 
 	descriptorLayoutInfo := &vk.DescriptorSetLayoutCreateInfo{
 		SType:        vk.StructureTypeDescriptorSetLayoutCreateInfo,

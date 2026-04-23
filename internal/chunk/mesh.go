@@ -62,6 +62,7 @@ type faceDir struct {
 // mergedQuad represents a rectangle found by greedy merging.
 type mergedQuad struct {
 	u, v, w, h int
+	blockID    uint16
 }
 
 // meshSection performs greedy meshing for a single 16x16x16 section.
@@ -93,7 +94,7 @@ func meshSection(
 			buildFaceMask(&mask, chunk, getBlock, d, layer, baseY, isSolid, isTransparent)
 			quads := greedyMerge(&mask)
 			for _, q := range quads {
-				emitQuad(m, chunk, neighbors, d.ax, d.sign, layer, q.u, q.v, q.w, q.h, baseY,
+				emitQuad(m, chunk, neighbors, d.ax, d.sign, layer, q.u, q.v, q.w, q.h, q.blockID, baseY,
 					d.nx, d.ny, d.nz, getBlock, isSolid)
 			}
 		}
@@ -217,7 +218,7 @@ func greedyMerge(mask *[mcmath.ChunkSize * mcmath.ChunkSize]uint16) []mergedQuad
 				}
 			}
 
-			quads = append(quads, mergedQuad{u: u, v: v, w: w, h: h})
+			quads = append(quads, mergedQuad{u: u, v: v, w: w, h: h, blockID: bid})
 		}
 	}
 
@@ -234,7 +235,9 @@ func emitQuad(
 	neighbors [4]*Chunk,
 	ax axis,
 	sign int,
-	layer, u, v, w, h, baseY int,
+	layer, u, v, w, h int,
+	blockID uint16,
+	baseY int,
 	normalX, normalY, normalZ float32,
 	getBlock func(int, int, int) uint16,
 	isSolid func(uint16) bool,
@@ -277,12 +280,18 @@ func emitQuad(
 		corners[1], corners[3] = corners[3], corners[1]
 	}
 
-	// UV coordinates based on quad dimensions.
+	// UV coordinates mapped to atlas tile for this block type.
+	// Atlas is 16x16 tiles; each tile is 1/16 of the atlas.
+	const gridSize = 16.0
+	tileU := float32(int(blockID)%16) / gridSize
+	tileV := float32(int(blockID)/16) / gridSize
+	tileS := float32(1.0) / gridSize
+
 	uvs := [4][2]float32{
-		{0, 0},
-		{float32(w), 0},
-		{float32(w), float32(h)},
-		{0, float32(h)},
+		{tileU, tileV},
+		{tileU + tileS*float32(w), tileV},
+		{tileU + tileS*float32(w), tileV + tileS*float32(h)},
+		{tileU, tileV + tileS*float32(h)},
 	}
 
 	// Match UV swap to corner swap.

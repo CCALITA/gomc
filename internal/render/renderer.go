@@ -97,7 +97,7 @@ func (r *Renderer) Init(windowWidth, windowHeight int, title string) error {
 	r.Atlas = atlas
 
 	// Chunk renderer
-	chunkRenderer, err := NewChunkRenderer(&r.Context, r.CmdPool, r.Pipeline)
+	chunkRenderer, err := NewChunkRenderer(&r.Context, r.CmdPool, r.Pipeline, r.Atlas)
 	if err != nil {
 		return fmt.Errorf("failed to create chunk renderer: %w", err)
 	}

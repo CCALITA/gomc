@@ -75,7 +75,7 @@ type ChunkRenderer struct {
 }
 
 // NewChunkRenderer creates a ChunkRenderer.
-func NewChunkRenderer(ctx *VulkanContext, cmdPool *CommandPool, pipe *Pipeline) (*ChunkRenderer, error) {
+func NewChunkRenderer(ctx *VulkanContext, cmdPool *CommandPool, pipe *Pipeline, atlas *TextureAtlas) (*ChunkRenderer, error) {
 	cr := &ChunkRenderer{
 		meshes:  make(map[[2]int32]*chunkMesh),
 		ctx:     ctx,
@@ -96,6 +96,7 @@ func NewChunkRenderer(ctx *VulkanContext, cmdPool *CommandPool, pipe *Pipeline) 
 	// Create descriptor pool.
 	poolSizes := []vk.DescriptorPoolSize{
 		{Type: vk.DescriptorTypeUniformBuffer, DescriptorCount: maxFramesInFlight},
+		{Type: vk.DescriptorTypeCombinedImageSampler, DescriptorCount: maxFramesInFlight},
 	}
 	poolInfo := &vk.DescriptorPoolCreateInfo{
 		SType:         vk.StructureTypeDescriptorPoolCreateInfo,
@@ -132,16 +133,32 @@ func NewChunkRenderer(ctx *VulkanContext, cmdPool *CommandPool, pipe *Pipeline) 
 			Offset: 0,
 			Range:  vk.DeviceSize(unsafe.Sizeof(ViewProjectionUBO{})),
 		}
-		write := vk.WriteDescriptorSet{
-			SType:           vk.StructureTypeWriteDescriptorSet,
-			DstSet:          cr.descriptorSets[i],
-			DstBinding:      0,
-			DstArrayElement: 0,
-			DescriptorType:  vk.DescriptorTypeUniformBuffer,
-			DescriptorCount: 1,
-			PBufferInfo:     []vk.DescriptorBufferInfo{bufferInfo},
+		imageInfo := vk.DescriptorImageInfo{
+			Sampler:     atlas.Texture.Sampler,
+			ImageView:   atlas.Texture.ImageView,
+			ImageLayout: vk.ImageLayoutShaderReadOnlyOptimal,
 		}
-		vk.UpdateDescriptorSets(ctx.Device, 1, []vk.WriteDescriptorSet{write}, 0, nil)
+		writes := []vk.WriteDescriptorSet{
+			{
+				SType:           vk.StructureTypeWriteDescriptorSet,
+				DstSet:          cr.descriptorSets[i],
+				DstBinding:      0,
+				DstArrayElement: 0,
+				DescriptorType:  vk.DescriptorTypeUniformBuffer,
+				DescriptorCount: 1,
+				PBufferInfo:     []vk.DescriptorBufferInfo{bufferInfo},
+			},
+			{
+				SType:           vk.StructureTypeWriteDescriptorSet,
+				DstSet:          cr.descriptorSets[i],
+				DstBinding:      1,
+				DstArrayElement: 0,
+				DescriptorType:  vk.DescriptorTypeCombinedImageSampler,
+				DescriptorCount: 1,
+				PImageInfo:      []vk.DescriptorImageInfo{imageInfo},
+			},
+		}
+		vk.UpdateDescriptorSets(ctx.Device, 2, writes, 0, nil)
 	}
 
 	return cr, nil
