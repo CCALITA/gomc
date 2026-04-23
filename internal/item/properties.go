@@ -102,6 +102,7 @@ func init() {
 	registerMaterial(Diamond, "Diamond")
 	registerMaterial(Leather, "Leather")
 	registerMaterial(RedstoneItem, "Redstone")
+	registerMaterial(Gunpowder, "Gunpowder")
 
 	// ---- functional items ----
 	properties[Compass] = ItemProperties{
@@ -146,6 +147,8 @@ func init() {
 	registerBlock(GoldBlock, "Gold Block", GoldBlock)
 	registerBlock(DiamondBlock, "Diamond Block", DiamondBlock)
 	registerBlock(AnvilItem, "Anvil", AnvilItem)
+	registerBlock(BedItem, "Bed", BedItem)
+	registerBlock(SignItem, "Sign", SignItem)
 
 	// ---- boat (non-block, non-tool) ----
 	properties[Boat] = ItemProperties{
