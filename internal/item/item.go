@@ -219,6 +219,14 @@ const (
 	Wool    ItemID = 24
 )
 
+// Nature / crop item IDs.
+const (
+	Sugarcane    ItemID = 270
+	CactusItem   ItemID = 271
+	ClayBall     ItemID = 272
+	LapisLazuli  ItemID = 273
+)
+
 // Villager trading items.
 const (
 	Emerald   ItemID = 450

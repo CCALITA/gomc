@@ -42,6 +42,8 @@ var blockToItemID = map[BlockID]item.ItemID{
 	Sandstone:     Sandstone,
 	Bedrock:       item.Bedrock,
 	Bed:           item.BedItem,
+	Sugarcane:     item.Sugarcane,
+	Cactus:        item.CactusItem,
 }
 
 // toolCategory maps block IDs to the tool type that is effective
@@ -55,6 +57,9 @@ var toolCategory = map[BlockID]string{
 	GoldOre:     item.ToolPickaxe,
 	Obsidian:    item.ToolPickaxe,
 	Sandstone:   item.ToolPickaxe,
+	RedstoneOre: item.ToolPickaxe,
+	LapisOre:    item.ToolPickaxe,
+	EmeraldOre:  item.ToolPickaxe,
 	OakLog:      item.ToolAxe,
 	OakPlanks:   item.ToolAxe,
 	OakLeaves:   item.ToolAxe,
@@ -62,14 +67,18 @@ var toolCategory = map[BlockID]string{
 	Grass:       item.ToolShovel,
 	Sand:        item.ToolShovel,
 	Gravel:      item.ToolShovel,
+	Clay:        item.ToolShovel,
 }
 
 // minToolLevel specifies the minimum tool level required to obtain
 // drops from certain blocks. Blocks not listed have no requirement.
 var minToolLevel = map[BlockID]int{
-	DiamondOre: item.LevelIron,
-	IronOre:    item.LevelStone,
-	GoldOre:    item.LevelStone,
+	DiamondOre:  item.LevelIron,
+	IronOre:     item.LevelStone,
+	GoldOre:     item.LevelStone,
+	RedstoneOre: item.LevelIron,
+	LapisOre:    item.LevelStone,
+	EmeraldOre:  item.LevelIron,
 }
 
 // GetDrops returns the items that drop when the given block is broken
@@ -110,6 +119,33 @@ func GetDrops(blockID uint16, toolType string, toolLevel int) []Drop {
 			return nil
 		}
 		return []Drop{{ItemID: item.GoldOre, Count: 1, Chance: 1.0}}
+
+	case Sugarcane:
+		return []Drop{{ItemID: item.Sugarcane, Count: 1, Chance: 1.0}}
+
+	case Cactus:
+		return []Drop{{ItemID: item.CactusItem, Count: 1, Chance: 1.0}}
+
+	case Clay:
+		return []Drop{{ItemID: item.ClayBall, Count: 4, Chance: 1.0}}
+
+	case RedstoneOre:
+		if toolType != item.ToolPickaxe || toolLevel < item.LevelIron {
+			return nil
+		}
+		return []Drop{{ItemID: item.RedstoneItem, Count: 4, Chance: 1.0}}
+
+	case LapisOre:
+		if toolType != item.ToolPickaxe || toolLevel < item.LevelStone {
+			return nil
+		}
+		return []Drop{{ItemID: item.LapisLazuli, Count: 4, Chance: 1.0}}
+
+	case EmeraldOre:
+		if toolType != item.ToolPickaxe || toolLevel < item.LevelIron {
+			return nil
+		}
+		return []Drop{{ItemID: item.Emerald, Count: 1, Chance: 1.0}}
 
 	case OakLeaves:
 		return []Drop{{ItemID: OakLeaves, Count: 1, Chance: 0.1}}
