@@ -136,6 +136,59 @@ func TestChestScreen_SwapWithNilInventory(t *testing.T) {
 	assert.Equal(t, 1, screen.HeldItem.Count)
 }
 
+// ---------- ChestScreen right-click tests ----------
+
+func TestChestScreen_RightClick_PickUpHalf(t *testing.T) {
+	chest := inventory.NewInventory(27)
+	chest.SetSlot(0, item.ItemStack{ItemID: item.Stone, Count: 10})
+	player := inventory.NewInventory(36)
+	screen := NewChestScreen(chest, player, nil)
+
+	// Right-click with empty hand on a slot with 10 items: pick up half (rounded up = 5).
+	screen.HeldItem = rightClickSlot(screen.HeldItem, chest, 0)
+
+	assert.Equal(t, item.Stone, screen.HeldItem.ItemID)
+	assert.Equal(t, 5, screen.HeldItem.Count)
+	remaining := chest.GetSlot(0)
+	assert.Equal(t, item.Stone, remaining.ItemID)
+	assert.Equal(t, 5, remaining.Count)
+}
+
+func TestChestScreen_RightClick_PlaceOne(t *testing.T) {
+	chest := inventory.NewInventory(27)
+	player := inventory.NewInventory(36)
+	screen := NewChestScreen(chest, player, nil)
+
+	// Holding 10 stone, right-click on empty slot: place exactly 1.
+	screen.HeldItem = item.ItemStack{ItemID: item.Stone, Count: 10}
+	screen.HeldItem = rightClickSlot(screen.HeldItem, chest, 0)
+
+	assert.Equal(t, item.Stone, screen.HeldItem.ItemID)
+	assert.Equal(t, 9, screen.HeldItem.Count)
+	placed := chest.GetSlot(0)
+	assert.Equal(t, item.Stone, placed.ItemID)
+	assert.Equal(t, 1, placed.Count)
+}
+
+func TestChestScreen_RightClick_Incompatible(t *testing.T) {
+	chest := inventory.NewInventory(27)
+	chest.SetSlot(0, item.ItemStack{ItemID: item.Dirt, Count: 5})
+	player := inventory.NewInventory(36)
+	screen := NewChestScreen(chest, player, nil)
+
+	// Holding stone, right-click on slot with dirt: no-op.
+	screen.HeldItem = item.ItemStack{ItemID: item.Stone, Count: 10}
+	screen.HeldItem = rightClickSlot(screen.HeldItem, chest, 0)
+
+	// Held item unchanged.
+	assert.Equal(t, item.Stone, screen.HeldItem.ItemID)
+	assert.Equal(t, 10, screen.HeldItem.Count)
+	// Slot unchanged.
+	slot := chest.GetSlot(0)
+	assert.Equal(t, item.Dirt, slot.ItemID)
+	assert.Equal(t, 5, slot.Count)
+}
+
 func TestChestScreen_Draw(t *testing.T) {
 	chest := inventory.NewInventory(27)
 	chest.SetSlot(0, item.ItemStack{ItemID: item.Stone, Count: 64})
