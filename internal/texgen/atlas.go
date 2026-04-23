@@ -156,11 +156,12 @@ func isSpeckle(px, py int) bool {
 // applyNoise adjusts a color's RGB channels by a small noise offset for
 // visual variety. The alpha channel is preserved.
 func applyNoise(c color.RGBA, noise int) color.RGBA {
-	offset := int16(noise) - 8 // range [-8, +7]
+	offset := int16(noise) - 8
+	scale := int16(3)
 	return color.RGBA{
-		R: clampByte(int16(c.R) + offset),
-		G: clampByte(int16(c.G) + offset),
-		B: clampByte(int16(c.B) + offset),
+		R: clampByte(int16(c.R) + offset*scale),
+		G: clampByte(int16(c.G) + offset*scale),
+		B: clampByte(int16(c.B) + offset*scale),
 		A: c.A,
 	}
 }

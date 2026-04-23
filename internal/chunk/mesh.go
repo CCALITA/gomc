@@ -325,20 +325,19 @@ func emitQuad(
 		corners[1], corners[3] = corners[3], corners[1]
 	}
 
-	// UV coordinates mapped to atlas tile for this block type.
-	// Atlas is 16x16 tiles; each tile is 1/16 of the atlas.
-	// Some blocks use different textures per face (e.g., grass top vs dirt sides).
+	// UV coordinates: store tile origin in the UV.
+	// The shader uses fract(worldPos) to tile within the tile.
 	texID := faceTextureID(blockID, normalY)
 	const gridSize = 16.0
 	tileU := float32(int(texID)%16) / gridSize
 	tileV := float32(int(texID)/16) / gridSize
-	tileS := float32(1.0) / gridSize
 
+	// All 4 corners get the same tile origin — the shader tiles per-block.
 	uvs := [4][2]float32{
 		{tileU, tileV},
-		{tileU + tileS*float32(w), tileV},
-		{tileU + tileS*float32(w), tileV + tileS*float32(h)},
-		{tileU, tileV + tileS*float32(h)},
+		{tileU, tileV},
+		{tileU, tileV},
+		{tileU, tileV},
 	}
 
 	// Match UV swap to corner swap.
