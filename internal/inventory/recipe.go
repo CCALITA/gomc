@@ -248,6 +248,36 @@ func registerRecipes() {
 		},
 		Result: item.NewItemStack(item.FishingRod, 1),
 	})
+
+	// -- Bed: 3 Wool top + 3 OakPlanks bottom
+	RegisterRecipe(Recipe{
+		Pattern: [3][3]uint16{
+			{item.Wool, item.Wool, item.Wool},
+			{item.OakPlanks, item.OakPlanks, item.OakPlanks},
+			{0, 0, 0},
+		},
+		Result: item.NewItemStack(item.BedItem, 1),
+	})
+
+	// -- Sign: 6 OakPlanks (top 2 rows) + 1 Stick (center bottom)
+	RegisterRecipe(Recipe{
+		Pattern: [3][3]uint16{
+			{item.OakPlanks, item.OakPlanks, item.OakPlanks},
+			{item.OakPlanks, item.OakPlanks, item.OakPlanks},
+			{0, item.Stick, 0},
+		},
+		Result: item.NewItemStack(item.SignItem, 3),
+	})
+
+	// -- TNT: 5 Gunpowder + 4 Sand alternating pattern
+	RegisterRecipe(Recipe{
+		Pattern: [3][3]uint16{
+			{item.Gunpowder, item.Sand, item.Gunpowder},
+			{item.Sand, item.Gunpowder, item.Sand},
+			{item.Gunpowder, item.Sand, item.Gunpowder},
+		},
+		Result: item.NewItemStack(item.TNT, 1),
+	})
 }
 
 // registerPickaxe registers a pickaxe recipe: 3 material on top, 2 sticks vertical center.

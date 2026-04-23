@@ -215,8 +215,9 @@ const (
 
 // Crafting material items.
 const (
-	Leather ItemID = 128
-	Wool    ItemID = 24
+	Leather   ItemID = 128
+	Wool      ItemID = 24
+	Gunpowder ItemID = 129
 )
 
 // Villager trading items.

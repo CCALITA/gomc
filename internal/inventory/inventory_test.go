@@ -654,3 +654,54 @@ func TestFurnace_BurnTimeCarriesOver(t *testing.T) {
 	f.Update(10.0)
 	assert.Equal(t, 1, f.OutputSlot.Count) // unchanged
 }
+
+func TestCraftBed(t *testing.T) {
+	var g CraftingGrid
+	// Top row: 3 Wool
+	g.SetSlot(0, 0, item.NewItemStack(item.Wool, 1))
+	g.SetSlot(0, 1, item.NewItemStack(item.Wool, 1))
+	g.SetSlot(0, 2, item.NewItemStack(item.Wool, 1))
+	// Bottom row: 3 OakPlanks
+	g.SetSlot(1, 0, item.NewItemStack(item.OakPlanks, 1))
+	g.SetSlot(1, 1, item.NewItemStack(item.OakPlanks, 1))
+	g.SetSlot(1, 2, item.NewItemStack(item.OakPlanks, 1))
+
+	result := g.GetResult()
+	assert.Equal(t, item.BedItem, result.ItemID)
+	assert.Equal(t, 1, result.Count)
+}
+
+func TestCraftSign(t *testing.T) {
+	var g CraftingGrid
+	// Top two rows: 6 OakPlanks
+	g.SetSlot(0, 0, item.NewItemStack(item.OakPlanks, 1))
+	g.SetSlot(0, 1, item.NewItemStack(item.OakPlanks, 1))
+	g.SetSlot(0, 2, item.NewItemStack(item.OakPlanks, 1))
+	g.SetSlot(1, 0, item.NewItemStack(item.OakPlanks, 1))
+	g.SetSlot(1, 1, item.NewItemStack(item.OakPlanks, 1))
+	g.SetSlot(1, 2, item.NewItemStack(item.OakPlanks, 1))
+	// Center bottom: 1 Stick
+	g.SetSlot(2, 1, item.NewItemStack(item.Stick, 1))
+
+	result := g.GetResult()
+	assert.Equal(t, item.SignItem, result.ItemID)
+	assert.Equal(t, 3, result.Count)
+}
+
+func TestCraftTNT(t *testing.T) {
+	var g CraftingGrid
+	// Alternating Gunpowder and Sand
+	g.SetSlot(0, 0, item.NewItemStack(item.Gunpowder, 1))
+	g.SetSlot(0, 1, item.NewItemStack(item.Sand, 1))
+	g.SetSlot(0, 2, item.NewItemStack(item.Gunpowder, 1))
+	g.SetSlot(1, 0, item.NewItemStack(item.Sand, 1))
+	g.SetSlot(1, 1, item.NewItemStack(item.Gunpowder, 1))
+	g.SetSlot(1, 2, item.NewItemStack(item.Sand, 1))
+	g.SetSlot(2, 0, item.NewItemStack(item.Gunpowder, 1))
+	g.SetSlot(2, 1, item.NewItemStack(item.Sand, 1))
+	g.SetSlot(2, 2, item.NewItemStack(item.Gunpowder, 1))
+
+	result := g.GetResult()
+	assert.Equal(t, item.TNT, result.ItemID)
+	assert.Equal(t, 1, result.Count)
+}
