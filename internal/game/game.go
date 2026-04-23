@@ -53,6 +53,9 @@ type Game struct {
 
 	SpawnPoint  mcmath.Vec3
 
+	Furnaces map[mcmath.BlockPos]*inventory.Furnace
+	Chests   map[mcmath.BlockPos]*inventory.Inventory
+
 	Storage     *world.Storage
 	Running       bool
 	tickCount     int64
@@ -473,6 +476,7 @@ func (g *Game) loadExistingSave(storage *world.Storage) {
 
 	g.Spawner = g.newConfiguredSpawner()
 	g.applyPlayerConfig(g.Player)
+	g.wireOnUseBlock()
 
 	// Restore player orientation.
 	if playerErr == nil {
@@ -517,6 +521,7 @@ func (g *Game) startNewWorld(storage *world.Storage) {
 
 	g.Spawner = g.newConfiguredSpawner()
 	g.applyPlayerConfig(g.Player)
+	g.wireOnUseBlock()
 
 	// Save initial level data.
 	levelData := world.LevelData{
@@ -736,4 +741,68 @@ func (g *Game) buildUIVertices() []render.UIVertex {
 	}
 
 	return verts
+}
+
+// getOrCreateFurnace returns the furnace at the given position, creating a
+// new one if none exists yet.
+func (g *Game) getOrCreateFurnace(pos mcmath.BlockPos) *inventory.Furnace {
+	if g.Furnaces == nil {
+		g.Furnaces = make(map[mcmath.BlockPos]*inventory.Furnace)
+	}
+	f, ok := g.Furnaces[pos]
+	if !ok {
+		f = inventory.NewFurnace()
+		g.Furnaces[pos] = f
+	}
+	return f
+}
+
+// getOrCreateChest returns the chest inventory at the given position,
+// creating a new 27-slot inventory if none exists yet.
+func (g *Game) getOrCreateChest(pos mcmath.BlockPos) *inventory.Inventory {
+	if g.Chests == nil {
+		g.Chests = make(map[mcmath.BlockPos]*inventory.Inventory)
+	}
+	inv, ok := g.Chests[pos]
+	if !ok {
+		inv = inventory.NewInventory(27)
+		g.Chests[pos] = inv
+	}
+	return inv
+}
+
+// wireOnUseBlock assigns the OnUseBlock callback on the player controller,
+// opening the appropriate container screen when the player uses a crafting
+// table, furnace, or chest.
+func (g *Game) wireOnUseBlock() {
+	g.Player.OnUseBlock = func(blockID uint16, pos mcmath.BlockPos) {
+		switch blockID {
+		case block.CraftingTable:
+			grid := &inventory.CraftingGrid{}
+			screen := ui.NewCraftingTableScreen(grid, g.Inventory, func() {
+				g.UI.PopScreen()
+				g.State.SetState(GameStatePlaying)
+			})
+			g.UI.PushScreen(screen)
+			g.State.SetState(GameStatePaused)
+
+		case block.Furnace:
+			furnace := g.getOrCreateFurnace(pos)
+			screen := ui.NewFurnaceScreen(furnace, g.Inventory, func() {
+				g.UI.PopScreen()
+				g.State.SetState(GameStatePlaying)
+			})
+			g.UI.PushScreen(screen)
+			g.State.SetState(GameStatePaused)
+
+		case block.Chest:
+			chestInv := g.getOrCreateChest(pos)
+			screen := ui.NewChestScreen(chestInv, g.Inventory, func() {
+				g.UI.PopScreen()
+				g.State.SetState(GameStatePlaying)
+			})
+			g.UI.PushScreen(screen)
+			g.State.SetState(GameStatePaused)
+		}
+	}
 }
