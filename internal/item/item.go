@@ -239,6 +239,18 @@ const (
 	Saddle       ItemID = 469
 )
 
+// Ranged combat items.
+const (
+	Arrow   ItemID = 470
+	Feather ItemID = 471
+	Flint   ItemID = 472
+)
+
+// Farming material items.
+const (
+	Sugarcane ItemID = 480
+)
+
 // Brewing item IDs.
 const (
 	WaterBottle      ItemID = iota + 500 // 500
