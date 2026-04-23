@@ -654,3 +654,67 @@ func TestFurnace_BurnTimeCarriesOver(t *testing.T) {
 	f.Update(10.0)
 	assert.Equal(t, 1, f.OutputSlot.Count) // unchanged
 }
+
+// ---------------------------------------------------------------------------
+// New crafting recipe tests: bread, paper, book, bow, arrow
+// ---------------------------------------------------------------------------
+
+func TestCraftBread(t *testing.T) {
+	var g CraftingGrid
+	g.SetSlot(0, 0, item.NewItemStack(item.Wheat, 1))
+	g.SetSlot(0, 1, item.NewItemStack(item.Wheat, 1))
+	g.SetSlot(0, 2, item.NewItemStack(item.Wheat, 1))
+
+	result := g.GetResult()
+	assert.Equal(t, item.Bread, result.ItemID)
+	assert.Equal(t, 1, result.Count)
+}
+
+func TestCraftPaper(t *testing.T) {
+	var g CraftingGrid
+	g.SetSlot(0, 0, item.NewItemStack(item.Sugarcane, 1))
+	g.SetSlot(0, 1, item.NewItemStack(item.Sugarcane, 1))
+	g.SetSlot(0, 2, item.NewItemStack(item.Sugarcane, 1))
+
+	result := g.GetResult()
+	assert.Equal(t, item.Paper, result.ItemID)
+	assert.Equal(t, 3, result.Count)
+}
+
+func TestCraftBook(t *testing.T) {
+	var g CraftingGrid
+	// Shapeless: 3 Paper + 1 Leather, any positions
+	g.SetSlot(0, 0, item.NewItemStack(item.Paper, 1))
+	g.SetSlot(0, 1, item.NewItemStack(item.Paper, 1))
+	g.SetSlot(1, 0, item.NewItemStack(item.Paper, 1))
+	g.SetSlot(1, 1, item.NewItemStack(item.Leather, 1))
+
+	result := g.GetResult()
+	assert.Equal(t, item.Book, result.ItemID)
+	assert.Equal(t, 1, result.Count)
+}
+
+func TestCraftBow(t *testing.T) {
+	var g CraftingGrid
+	g.SetSlot(0, 1, item.NewItemStack(item.Stick, 1))
+	g.SetSlot(0, 2, item.NewItemStack(item.StringItem, 1))
+	g.SetSlot(1, 0, item.NewItemStack(item.Stick, 1))
+	g.SetSlot(1, 2, item.NewItemStack(item.StringItem, 1))
+	g.SetSlot(2, 1, item.NewItemStack(item.Stick, 1))
+	g.SetSlot(2, 2, item.NewItemStack(item.StringItem, 1))
+
+	result := g.GetResult()
+	assert.Equal(t, item.Bow, result.ItemID)
+	assert.Equal(t, 1, result.Count)
+}
+
+func TestCraftArrow(t *testing.T) {
+	var g CraftingGrid
+	g.SetSlot(0, 0, item.NewItemStack(item.Flint, 1))
+	g.SetSlot(1, 0, item.NewItemStack(item.Stick, 1))
+	g.SetSlot(2, 0, item.NewItemStack(item.Feather, 1))
+
+	result := g.GetResult()
+	assert.Equal(t, item.Arrow, result.ItemID)
+	assert.Equal(t, 4, result.Count)
+}

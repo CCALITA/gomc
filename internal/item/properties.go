@@ -291,6 +291,14 @@ func init() {
 		MaxStackSize: 1,
 		ToolType:     ToolNone,
 	}
+
+	// ---- ranged combat items ----
+	registerMaterial(Arrow, "Arrow")
+	registerMaterial(Feather, "Feather")
+	registerMaterial(Flint, "Flint")
+
+	// ---- farming materials ----
+	registerMaterial(Sugarcane, "Sugar Cane")
 }
 
 // GetProperties returns the static properties for the given item ID.

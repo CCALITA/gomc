@@ -248,6 +248,57 @@ func registerRecipes() {
 		},
 		Result: item.NewItemStack(item.FishingRod, 1),
 	})
+
+	// -- Bread: 3 Wheat horizontal -> 1 Bread
+	RegisterRecipe(Recipe{
+		Pattern: [3][3]uint16{
+			{item.Wheat, item.Wheat, item.Wheat},
+			{0, 0, 0},
+			{0, 0, 0},
+		},
+		Result: item.NewItemStack(item.Bread, 1),
+	})
+
+	// -- Paper: 3 Sugarcane horizontal -> 3 Paper
+	RegisterRecipe(Recipe{
+		Pattern: [3][3]uint16{
+			{item.Sugarcane, item.Sugarcane, item.Sugarcane},
+			{0, 0, 0},
+			{0, 0, 0},
+		},
+		Result: item.NewItemStack(item.Paper, 3),
+	})
+
+	// -- Book: 3 Paper + 1 Leather -> 1 Book (shapeless)
+	RegisterRecipe(Recipe{
+		Pattern: [3][3]uint16{
+			{item.Paper, item.Paper, 0},
+			{item.Paper, item.Leather, 0},
+			{0, 0, 0},
+		},
+		Result:    item.NewItemStack(item.Book, 1),
+		Shapeless: true,
+	})
+
+	// -- Bow: 3 String + 3 Stick diagonal
+	RegisterRecipe(Recipe{
+		Pattern: [3][3]uint16{
+			{0, item.Stick, item.StringItem},
+			{item.Stick, 0, item.StringItem},
+			{0, item.Stick, item.StringItem},
+		},
+		Result: item.NewItemStack(item.Bow, 1),
+	})
+
+	// -- Arrow: 1 Flint + 1 Stick + 1 Feather vertical -> 4 Arrows
+	RegisterRecipe(Recipe{
+		Pattern: [3][3]uint16{
+			{item.Flint, 0, 0},
+			{item.Stick, 0, 0},
+			{item.Feather, 0, 0},
+		},
+		Result: item.NewItemStack(item.Arrow, 4),
+	})
 }
 
 // registerPickaxe registers a pickaxe recipe: 3 material on top, 2 sticks vertical center.
